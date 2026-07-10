@@ -25,3 +25,89 @@
     background-color: var(--color-gray-50);
   }
 }
+
+@media print {
+  /* @page: A4 size, no default browser margins */
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  html, body {
+    width: 210mm;
+    height: auto;
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color-adjust: exact;
+  }
+
+  /* Hide ALL direct body children EXCEPT the print portal
+     This works because .print-portal is a direct body child (via React Portal),
+     so it is NOT inside a display:none parent. */
+  body > *:not(.print-portal) {
+    display: none !important;
+  }
+
+  /* Print portal: the root container injected directly into body */
+  .print-portal {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Each A4 page within the portal */
+  .print-page {
+    height: 297mm !important;
+    min-height: 0 !important;
+    width: 210mm !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    position: relative !important;
+    overflow: hidden !important;
+    background: white !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    /* Tighter padding in mm for print accuracy */
+    padding: 8mm 10mm 10mm 10mm !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  /* Scale all page content down 15% so it fits within one physical page.
+     zoom scales EVERYTHING proportionally (text, padding, images, borders). */
+  .page-inner {
+    zoom: 0.85 !important;
+    flex: 1 !important;
+    /* Clearance so content doesn't go behind the absolute footer.
+       12mm / 0.85 zoom ≈ 14mm padding needed to yield 12mm visual gap */
+    padding-bottom: 14mm !important;
+  }
+
+  /* Shrink the footer bar to match the reduced bottom padding */
+  .print-footer {
+    height: 9mm !important;
+    font-size: 8px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    border-radius: 0 !important;
+  }
+
+  .print-page:last-child {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Preserve all colors and backgrounds in print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+}

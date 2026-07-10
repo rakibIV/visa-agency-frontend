@@ -1,7 +1,7 @@
 import React from 'react';
 import topIllustration from '../../assets/top-illustration.png';
 
-export default function AgreementPrintView({ applicant, templates = [], type, companyInfo }) {
+export default function AgreementPrintView({ applicant, templates = [], type, companyInfo, showBengali = false }) {
   // Page visibility toggles
   const showCover = type === 'all' || type === 'form';
   const showTemplate1Part1 = type === 'all' || type === 'tc';
@@ -34,16 +34,18 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
   };
 
   const template1Clauses = getVisibleClauses(template1);
-  const template1Part1 = template1Clauses.filter(c => c.clause_number <= 6);
-  const template1Part2 = template1Clauses.filter(c => c.clause_number > 6);
+  // Without Bengali: 2 pages for Template 1 (clauses 1-6 / 7+)
+  // With Bengali: 3 pages for Template 1 (clauses 1-3 / 4-8 / 9+)
+  const template1Part1 = template1Clauses.filter(c => showBengali ? c.clause_number <= 3 : c.clause_number <= 6);
+  const template1Part2 = template1Clauses.filter(c => showBengali ? (c.clause_number > 3 && c.clause_number <= 8) : c.clause_number > 6);
+  const template1Part3 = showBengali ? template1Clauses.filter(c => c.clause_number > 8) : [];
   
   const template2Clauses = getVisibleClauses(template2);
 
   // Common Header for Legal Documents
   const DocumentHeader = ({ title, subtitle, showReceiptDetails = false }) => (
     <div className="flex flex-col border-b-2 border-slate-800 pb-4 mb-6 relative">
-      {/* Top Right Illustration */}
-      <img src={topIllustration} alt="Decoration" className="absolute -top-14 -right-12 w-48 opacity-90 pointer-events-none z-10 print:block" />
+      {/* Illustration removed here — now rendered at page level in PageContainer */}
       
       <div className="flex items-center gap-4 relative z-20">
         {companyInfo?.company_logo ? (
@@ -93,7 +95,9 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
         {clause.title_en && (
           <div className="flex justify-between items-end border-b border-slate-100 pb-1 mb-1">
             <h4 className="font-bold text-slate-800 text-sm uppercase tracking-wide font-serif">{clause.title_en}</h4>
-            <h4 className="font-bold text-slate-700 text-[11px]">{clause.title_ar} | {clause.title_bn}</h4>
+            <h4 className="font-bold text-slate-700 text-[11px]">
+              {clause.title_ar}{showBengali ? ` | ${clause.title_bn}` : ''}
+            </h4>
           </div>
         )}
         <div className="grid grid-cols-1 gap-2">
@@ -102,14 +106,14 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
               {clause.body_en.replace(/\{staff_name\}/g, applicant?.assigned_staff_name || 'Authorized Representative')}
             </p>
           )}
-          <div className="grid grid-cols-2 gap-6 pt-1">
-            {clause.body_bn && (
+          <div className={showBengali ? 'grid grid-cols-2 gap-6 pt-1' : 'pt-1'}>
+            {showBengali && clause.body_bn && (
               <p className="text-slate-600 text-[11px] leading-relaxed font-sans text-justify">
                 {clause.body_bn.replace(/\{staff_name\}/g, applicant?.assigned_staff_name || 'Authorized Representative')}
               </p>
             )}
             {clause.body_ar && (
-              <p className="text-slate-800 text-[11px] leading-relaxed font-sans text-justify" dir="rtl">
+              <p className={`text-slate-800 text-[11px] leading-relaxed font-sans text-justify ${showBengali ? '' : 'w-full'}`} dir="rtl">
                 {clause.body_ar.replace(/\{staff_name\}/g, applicant?.assigned_staff_name || 'Authorized Representative')}
               </p>
             )}
@@ -158,7 +162,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
   );
 
   const DocumentFooter = () => (
-    <div className="absolute bottom-0 left-0 right-0 h-12 bg-blue-900 text-white flex items-center justify-between px-8 text-[9px] font-medium z-30 w-full rounded-b-lg print:rounded-none">
+    <div className="print-footer absolute bottom-0 left-0 right-0 h-12 bg-blue-900 text-white flex items-center justify-between px-8 text-[9px] font-medium z-30 w-full rounded-b-lg print:rounded-none">
       <div className="flex items-center gap-2">
         <span>📍</span> Head Office - {companyInfo?.company_address || 'Kingdom of Saudi Arabia (KSA)'}
       </div>
@@ -171,24 +175,32 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
 
   // A4 Page Container styling wrapper
   const PageContainer = ({ children }) => (
-    <div className="w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white mb-8 shadow-[0_0_15px_rgba(0,0,0,0.1)] print:shadow-none print:mb-0 print:break-after-page flex flex-col justify-between pt-12 pb-20 px-12 box-border relative overflow-hidden">
-      {/* Optional decorative watermarks for a premium feel */}
+    <div className="print-page w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white mb-8 shadow-[0_0_15px_rgba(0,0,0,0.1)] print:shadow-none print:mb-0 flex flex-col pt-12 pb-20 px-12 box-border relative overflow-hidden">
+      {/* Watermark */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] pointer-events-none z-0">
          <h1 className="text-[120px] font-serif font-black uppercase tracking-[1.5rem] rotate-[-45deg] whitespace-nowrap">AL-RAYYAN</h1>
       </div>
-      <div className="relative z-10 flex-1 flex flex-col justify-between h-full w-full">
+      {/* Top-right illustration: absolute on the PAGE, not inside padding — goes flush to paper edge */}
+      <img
+        src={topIllustration}
+        alt=""
+        className="absolute top-0 right-0 w-52 opacity-90 pointer-events-none z-10"
+      />
+      {/* Content */}
+      <div className="page-inner relative z-10 flex-1 flex flex-col justify-between h-full w-full">
         {children}
       </div>
       <DocumentFooter />
     </div>
   );
 
+
   // Compute Second Payment refund value (80%)
   const secondPayment = applicant?.payments?.[1]?.amount ? Number(applicant.payments[1].amount) : 0;
   const refundAmount = secondPayment * 0.8;
 
   return (
-    <div className="w-full bg-slate-100 py-8 print:p-0 print:bg-white text-slate-900">
+    <div className="w-full bg-slate-100 py-8 print:py-0 print:bg-white text-slate-900">
       
       {/* ========================================================== */}
       {/* PAGE 1: COVER PAGE / SUMMARY */}
@@ -308,7 +320,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
       )}
 
       {/* ========================================================== */}
-      {/* PAGE 3: TEMPLATE 1 (Clauses 7-15) */}
+      {/* PAGE 3: TEMPLATE 1 Part 2 (clauses 4-8 Bengali / 7-15 non-Bengali) */}
       {/* ========================================================== */}
       {showTemplate1Part2 && (
         <PageContainer>
@@ -316,6 +328,23 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
             <DocumentHeader title="Agreement Terms (Continued)" />
             <div className="space-y-1 mt-6">
               {template1Part2.map(clause => (
+                <ClauseBlock key={clause.id} clause={clause} />
+              ))}
+            </div>
+          </div>
+          <SignatureBlock />
+        </PageContainer>
+      )}
+
+      {/* ========================================================== */}
+      {/* PAGE 3b: TEMPLATE 1 Part 3 — only shown when Bengali is ON (clauses 9-15) */}
+      {/* ========================================================== */}
+      {showBengali && showTemplate1Part2 && template1Part3.length > 0 && (
+        <PageContainer>
+          <div className="flex-1 w-full relative z-20">
+            <DocumentHeader title="Agreement Terms (Continued)" />
+            <div className="space-y-1 mt-6">
+              {template1Part3.map(clause => (
                 <ClauseBlock key={clause.id} clause={clause} />
               ))}
             </div>
@@ -372,8 +401,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
                  <h2 className="text-xl font-bold font-serif text-slate-800" dir="rtl">مجموعة الريان</h2>
                  <p className="text-sm font-serif italic text-slate-700 mt-1" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</p>
               </div>
-              {/* Top Right Illustration explicitly here */}
-              <img src={topIllustration} alt="Decoration" className="absolute -top-12 -right-12 w-48 opacity-90 pointer-events-none z-10 print:block" />
+              {/* Illustration is now handled by PageContainer at the page level */}
             </div>
 
             {/* ACKNOWLEDGEMENT TITLE */}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -24,6 +25,7 @@ export default function ApplicantDetailPage() {
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [showPrintView, setShowPrintView] = useState(false);
   const [printType, setPrintType] = useState('all'); // 'all', 'form', 'tc', 'clauses', 'refund'
+  const [showBengali, setShowBengali] = useState(false);
 
   // Payment Form State
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -133,10 +135,6 @@ export default function ApplicantDetailPage() {
   const handlePrint = (type) => {
     setPrintType(type);
     setShowPrintView(true);
-    // Let dynamic layout render first, then trigger print
-    setTimeout(() => {
-      window.print();
-    }, 500);
   };
 
   const getStatusColor = (status) => {
@@ -171,28 +169,38 @@ export default function ApplicantDetailPage() {
 
   return (
     <div className="space-y-6 max-w-screen-xl mx-auto">
-      {/* Print View Overlays */}
+      {/* Screen preview overlay */}
       {showPrintView && (
-        <div className="fixed inset-0 bg-white z-[999] overflow-y-auto print:hidden">
-          <div className="p-4 bg-slate-100 print:hidden flex items-center justify-between border-b">
-            <span className="font-semibold text-slate-700">Print Preview Mode</span>
-            <button
-              onClick={() => setShowPrintView(false)}
-              className="px-4 py-2 bg-blue-700 text-white rounded-lg text-sm font-semibold"
-            >
-              Close Preview
-            </button>
+        <div className="fixed inset-0 bg-white z-[999] overflow-y-auto">
+          <div className="p-4 bg-slate-100 print:hidden flex items-center justify-between border-b sticky top-0 z-10">
+            <span className="font-semibold text-slate-700">🖨️ Print Preview</span>
+            <div className="flex gap-3">
+              <button
+                onClick={() => window.print()}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition"
+              >
+                Print / Save as PDF
+              </button>
+              <button
+                onClick={() => setShowPrintView(false)}
+                className="px-4 py-2 bg-slate-600 text-white rounded-lg text-sm font-semibold hover:bg-slate-700 transition"
+              >
+                ✕ Close
+              </button>
+            </div>
           </div>
-          <AgreementPrintView applicant={applicant} templates={templates} type={printType} companyInfo={companyInfo} />
+          <AgreementPrintView applicant={applicant} templates={templates} type={printType} companyInfo={companyInfo} showBengali={showBengali} />
         </div>
       )}
 
-      {/* Hidden Print View container for PDF generation */}
-      {showPrintView && (
-        <div className="hidden print:block fixed inset-0 bg-white z-[9999] overflow-visible">
-          <AgreementPrintView applicant={applicant} templates={templates} type={printType} companyInfo={companyInfo} />
-        </div>
+      {/* Print portal: injected directly into document.body so CSS body>*:not(.print-portal) works correctly */}
+      {showPrintView && createPortal(
+        <div className="print-portal">
+          <AgreementPrintView applicant={applicant} templates={templates} type={printType} companyInfo={companyInfo} showBengali={showBengali} />
+        </div>,
+        document.body
       )}
+
 
       {/* Header / Back */}
       <div className="flex items-center justify-between">
@@ -761,6 +769,29 @@ export default function ApplicantDetailPage() {
                   <p className="text-slate-400 text-sm mt-0.5">Generate printable PDF pages for the applicant agreements.</p>
                 </div>
 
+                {/* Bengali Language Toggle */}
+                <label className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl cursor-pointer hover:bg-amber-100 transition-colors select-none">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={showBengali}
+                      onChange={(e) => setShowBengali(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`w-11 h-6 rounded-full transition-colors ${showBengali ? 'bg-amber-500' : 'bg-slate-300'}`}>
+                      <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${showBengali ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800 text-sm">Include Bengali (বাংলা)</p>
+                    <p className="text-slate-500 text-xs mt-0.5">
+                      {showBengali
+                        ? 'ON — Agreement shows EN + AR + BN · Main agreement split into 3 pages'
+                        : 'OFF — Agreement shows EN + AR only · Main agreement fits in 2 pages'}
+                    </p>
+                  </div>
+                </label>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[
                     { title: 'Page 1: Client Bio & Cover Page', desc: 'Application info, payment amounts, and signatures.', type: 'form' },
@@ -791,7 +822,7 @@ export default function ApplicantDetailPage() {
                     className="flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-xl text-sm font-semibold shadow hover:bg-blue-800 transition-colors"
                   >
                     <PrinterIcon className="w-5 h-5" />
-                    Print Full Agreement Package (All 5 Pages)
+                    Print Full Agreement Package ({showBengali ? '6' : '5'} Pages)
                   </button>
                 </div>
               </>
