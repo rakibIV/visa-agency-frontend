@@ -14,6 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import AgreementPrintView from './AgreementPrintView';
+import ReceiptPrintView from './ReceiptPrintView';
 
 export default function ApplicantDetailPage() {
   const { id } = useParams();
@@ -24,6 +25,8 @@ export default function ApplicantDetailPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [showPrintView, setShowPrintView] = useState(false);
+  const [showReceiptPrintView, setShowReceiptPrintView] = useState(false);
+  const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState(null);
   const [printType, setPrintType] = useState('all'); // 'all', 'form', 'tc', 'clauses', 'refund'
   const [showBengali, setShowBengali] = useState(false);
 
@@ -137,6 +140,11 @@ export default function ApplicantDetailPage() {
     setShowPrintView(true);
   };
 
+  const handlePrintReceipt = (payment) => {
+    setSelectedPaymentForReceipt(payment);
+    setShowReceiptPrintView(true);
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'approved': return 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200';
@@ -172,7 +180,7 @@ export default function ApplicantDetailPage() {
       {/* Screen preview overlay */}
       {showPrintView && (
         <div className="fixed inset-0 bg-white z-[999] overflow-y-auto">
-          <div className="p-4 bg-slate-100 print:hidden flex items-center justify-between border-b sticky top-0 z-10">
+          <div className="p-4 bg-slate-100 print:hidden flex items-center justify-between border-b sticky top-0 z-50">
             <span className="font-semibold text-slate-700">🖨️ Print Preview</span>
             <div className="flex gap-3">
               <button
@@ -201,6 +209,41 @@ export default function ApplicantDetailPage() {
         document.body
       )}
 
+      {/* Receipt Screen preview overlay */}
+      {showReceiptPrintView && selectedPaymentForReceipt && (
+        <div className="fixed inset-0 bg-white z-[999] overflow-y-auto">
+          <div className="p-4 bg-slate-100 print:hidden flex items-center justify-between border-b sticky top-0 z-50">
+            <span className="font-semibold text-slate-700">🖨️ Receipt Print Preview</span>
+            <div className="flex gap-3">
+              <button
+                onClick={() => window.print()}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition"
+              >
+                Print / Save as PDF
+              </button>
+              <button
+                onClick={() => {
+                  setShowReceiptPrintView(false);
+                  setSelectedPaymentForReceipt(null);
+                }}
+                className="px-4 py-2 bg-slate-600 text-white rounded-lg text-sm font-semibold hover:bg-slate-700 transition"
+              >
+                ✕ Close
+              </button>
+            </div>
+          </div>
+          <ReceiptPrintView applicant={applicant} payment={selectedPaymentForReceipt} companyInfo={companyInfo} />
+        </div>
+      )}
+
+      {/* Receipt Print portal */}
+      {showReceiptPrintView && selectedPaymentForReceipt && createPortal(
+        <div className="print-portal">
+          <ReceiptPrintView applicant={applicant} payment={selectedPaymentForReceipt} companyInfo={companyInfo} />
+        </div>,
+        document.body
+      )}
+
 
       {/* Header / Back */}
       <div className="flex items-center justify-between">
@@ -221,8 +264,12 @@ export default function ApplicantDetailPage() {
       {/* Profile Overview Card */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between gap-6">
         <div className="flex items-start gap-4">
-          <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center shrink-0">
-            <UserIcon className="w-8 h-8 text-blue-600" />
+          <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center shrink-0 overflow-hidden border border-blue-100 shadow-sm">
+            {applicant.photo ? (
+              <img src={applicant.photo} alt={applicant.full_name} className="w-full h-full object-cover" />
+            ) : (
+              <UserIcon className="w-8 h-8 text-blue-600" />
+            )}
           </div>
           <div>
             <h1 className="text-xl font-bold text-slate-800">{applicant.full_name}</h1>
@@ -278,7 +325,7 @@ export default function ApplicantDetailPage() {
             {/* Identity & Passport */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-4">
               <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider border-b pb-2">Identity & Passport</h3>
-              <div className="grid grid-cols-2 gap-y-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 text-sm">
                 <span className="text-slate-400">Full Name</span>
                 <span className="text-slate-700 font-semibold">{applicant.full_name || '—'}</span>
                 <span className="text-slate-400">Passport Number</span>
@@ -301,7 +348,7 @@ export default function ApplicantDetailPage() {
             {/* Profile Details */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-4">
               <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider border-b pb-2">Profile & Contact</h3>
-              <div className="grid grid-cols-2 gap-y-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 text-sm">
                 <span className="text-slate-400">Gender</span>
                 <span className="text-slate-700 font-semibold capitalize">{applicant.profile?.gender?.toLowerCase() || '—'}</span>
                 <span className="text-slate-400">Phone</span>
@@ -324,7 +371,7 @@ export default function ApplicantDetailPage() {
             {/* Process Assignment */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-4">
               <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider border-b pb-2">Visa & Assignment</h3>
-              <div className="grid grid-cols-2 gap-y-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 text-sm">
                 <span className="text-slate-400">Visa</span>
                 <span className="text-slate-700 font-semibold">{applicant.visa_name || '—'}</span>
                 <span className="text-slate-400">Status</span>
@@ -341,7 +388,7 @@ export default function ApplicantDetailPage() {
             {/* Emergency Contact */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-4">
               <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider border-b pb-2">Emergency Contact</h3>
-              <div className="grid grid-cols-2 gap-y-3 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 text-sm">
                 <span className="text-slate-400">Contact Name</span>
                 <span className="text-slate-700 font-semibold">{applicant.profile?.emergency_contact_name || '—'}</span>
                 <span className="text-slate-400">Contact Phone</span>
@@ -380,11 +427,11 @@ export default function ApplicantDetailPage() {
             </div>
 
             {/* Payments Table */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto w-full">
+              <table className="w-full text-sm whitespace-nowrap min-w-[600px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100">
-                    {['Receipt No.', 'Amount', 'Date', 'Method', 'Remarks'].map((h) => (
+                    {['Receipt No.', 'Amount', 'Date', 'Method', 'Remarks', 'Action'].map((h) => (
                       <th key={h} className="px-5 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
@@ -397,11 +444,20 @@ export default function ApplicantDetailPage() {
                       <td className="px-5 py-4 text-slate-500">{payment.payment_date || '—'}</td>
                       <td className="px-5 py-4 capitalize text-slate-600">{payment.payment_method || '—'}</td>
                       <td className="px-5 py-4 text-slate-500">{payment.remarks || '—'}</td>
+                      <td className="px-5 py-4">
+                        <button
+                          onClick={() => handlePrintReceipt(payment)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors"
+                          title="Download Receipt"
+                        >
+                          <PrinterIcon className="w-4 h-4" /> Receipt
+                        </button>
+                      </td>
                     </tr>
                   ))}
                   {(!applicant.payments || applicant.payments.length === 0) && (
                     <tr>
-                      <td colSpan={5} className="py-12 text-center text-slate-400">No payment logs found</td>
+                      <td colSpan={6} className="py-12 text-center text-slate-400">No payment logs found</td>
                     </tr>
                   )}
                 </tbody>
@@ -415,7 +471,7 @@ export default function ApplicantDetailPage() {
                   <h3 className="font-bold text-slate-800 text-lg">Record Payment</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Amount *</label>
+                      <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Amount <span className="text-red-500">*</span></label>
                       <input
                         type="number"
                         value={paymentAmount}
@@ -575,17 +631,17 @@ export default function ApplicantDetailPage() {
         {activeTab === 'refunds' && (
           <div className="space-y-6">
             {/* Warning Banner if not rejected */}
-            {applicant.status?.slug !== 'rejected' && applicant.status_name?.toLowerCase() !== 'rejected' && (
-              <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl text-xs font-semibold leading-relaxed">
-                Notice: Refund records can only be auto-generated when an applicant's status is set to "Rejected".
-                To generate a refund, first change their status to "Rejected" in the configuration or applicant edit options.
+            {!(applicant.status?.slug?.includes('reject') || applicant.status?.name?.toLowerCase().includes('reject') || applicant.status_name?.toLowerCase().includes('reject')) && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-xl text-sm mb-4">
+                Notice: Refund records can only be auto-generated when an applicant's status indicates a rejection.
+                To generate a refund, first change their status to "Rejected" (or any status containing 'reject') in the configuration or applicant edit options.
               </div>
             )}
             <div className="flex justify-between items-center">
               <h3 className="font-bold text-slate-800 text-base">Refund Logs</h3>
               <button
                 onClick={() => setShowRefundModal(true)}
-                disabled={applicant.status?.slug !== 'rejected' && applicant.status_name?.toLowerCase() !== 'rejected'}
+                disabled={!(applicant.status?.slug?.includes('reject') || applicant.status?.name?.toLowerCase().includes('reject') || applicant.status_name?.toLowerCase().includes('reject'))}
                 className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-xl text-sm font-semibold shadow hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <PlusIcon className="w-4 h-4" />
@@ -678,8 +734,8 @@ export default function ApplicantDetailPage() {
             </div>
 
             {/* Refunds Table */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto w-full">
+              <table className="w-full text-sm whitespace-nowrap min-w-[600px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100">
                     {['Refund Receipt No.', 'Amount', 'Status', 'Method', 'Remarks'].map((h) => (

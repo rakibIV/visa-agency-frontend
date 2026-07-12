@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { 
   DocumentCheckIcon, 
   MagnifyingGlassIcon,
-  DocumentIcon
+  DocumentIcon,
+  CogIcon
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
+import AgreementTemplatesConfig from './AgreementTemplatesConfig';
 
 export default function AgreementsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const currentTab = searchParams.get('tab') || 'ledger';
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch applicants for agreements. We can use a larger page size or search.
@@ -26,29 +30,53 @@ export default function AgreementsPage() {
             Agreements & Documents
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Manage, print, and track all applicant agreements.
+            Manage, print, and track all applicant agreements and templates.
           </p>
+        </div>
+        
+        {/* Tabs */}
+        <div className="flex bg-slate-100 p-1 rounded-xl">
+          <button
+            onClick={() => setSearchParams({ tab: 'ledger' })}
+            className={`px-4 py-2 text-sm font-semibold rounded-lg flex items-center gap-2 transition-colors ${
+              currentTab === 'ledger' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <DocumentIcon className="w-4 h-4" /> Issued Agreements
+          </button>
+          <button
+            onClick={() => setSearchParams({ tab: 'templates' })}
+            className={`px-4 py-2 text-sm font-semibold rounded-lg flex items-center gap-2 transition-colors ${
+              currentTab === 'templates' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <CogIcon className="w-4 h-4" /> Templates Config
+          </button>
         </div>
       </div>
 
-      {/* Search and Filters */}
-      <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row gap-4 items-center">
-        <div className="relative flex-1 w-full">
-          <MagnifyingGlassIcon className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search by Applicant Name, Passport, or ID..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-          />
-        </div>
-      </div>
+      {currentTab === 'templates' ? (
+        <AgreementTemplatesConfig />
+      ) : (
+        <>
+          {/* Search and Filters */}
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col sm:flex-row gap-4 items-center">
+            <div className="relative flex-1 w-full">
+              <MagnifyingGlassIcon className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search by Applicant Name, Passport, or ID..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+              />
+            </div>
+          </div>
 
       {/* Ledger Table */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
                 <th className="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Applicant</th>
@@ -122,6 +150,8 @@ export default function AgreementsPage() {
           </table>
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }

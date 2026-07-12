@@ -24,6 +24,14 @@
     color: var(--color-gray-900);
     background-color: var(--color-gray-50);
   }
+  
+  img, svg, video, canvas, figure, picture, [style*="background-image"] {
+    image-rendering: auto;
+  }
+}
+
+.print-portal {
+  display: none;
 }
 
 @media print {

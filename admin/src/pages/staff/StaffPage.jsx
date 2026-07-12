@@ -1,20 +1,19 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
   PlusIcon,
   UserIcon,
   EnvelopeIcon,
   PhoneIcon,
-  CheckCircleIcon,
-  XCircleIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 
 export default function StaffPage() {
   const [search, setSearch] = useState('');
-  const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Fetch staff list
   const { data: staffs, isLoading, isError } = useQuery({
@@ -32,6 +31,7 @@ export default function StaffPage() {
           <p className="text-slate-400 text-sm mt-0.5">Manage office representatives and agents</p>
         </div>
         <motion.button
+          onClick={() => navigate('/staff/new')}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
           className="flex items-center gap-2 px-4 py-2.5 bg-blue-700 text-white rounded-xl text-sm font-semibold shadow hover:bg-blue-800 transition-colors"
@@ -70,7 +70,8 @@ export default function StaffPage() {
           {staffs?.map((staff) => (
             <div
               key={staff.id}
-              className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md transition-shadow relative"
+              onClick={() => navigate(`/staff/${staff.id}`)}
+              className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-md hover:border-blue-200 transition-all cursor-pointer relative"
             >
               {/* Photo & Basic Details */}
               <div className="flex gap-4">
@@ -85,7 +86,7 @@ export default function StaffPage() {
                   <span className="text-[10px] font-bold text-slate-400 font-mono tracking-wider">
                     {staff.employee_id || `ID: #${staff.id}`}
                   </span>
-                  <h4 className="font-bold text-slate-800 text-sm truncate mt-0.5">{staff.full_name || 'No Name'}</h4>
+                  <h4 className="font-bold text-slate-800 text-sm truncate mt-0.5 group-hover:text-blue-700">{staff.full_name || 'No Name'}</h4>
                   <p className="text-slate-500 text-xs font-semibold mt-0.5">{staff.designation || 'Representative'}</p>
                 </div>
               </div>

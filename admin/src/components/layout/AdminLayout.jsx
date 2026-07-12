@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
+import api from '../../api/client';
 import {
   Squares2X2Icon,
   UsersIcon,
@@ -16,6 +18,14 @@ import {
   PaperAirplaneIcon,
   ArrowUturnLeftIcon,
   DocumentCheckIcon,
+  Cog8ToothIcon,
+  MegaphoneIcon,
+  StarIcon,
+  ChatBubbleLeftEllipsisIcon,
+  LinkIcon,
+  RectangleStackIcon,
+  TagIcon,
+  CalendarIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../context/AuthContext';
 
@@ -26,18 +36,31 @@ const NAV_ITEMS = [
   { label: 'Agreements', icon: DocumentCheckIcon, to: '/agreements' },
   { label: 'Staff', icon: IdentificationIcon, to: '/staff' },
   {
+    label: 'Website Content',
+    icon: GlobeAltIcon,
+    children: [
+      { label: 'Services', icon: RectangleStackIcon, to: '/website/services' },
+      { label: 'Notices', icon: MegaphoneIcon, to: '/website/notices' },
+      { label: 'Reviews', icon: StarIcon, to: '/website/reviews' },
+      { label: 'Messages', icon: ChatBubbleLeftEllipsisIcon, to: '/website/messages' },
+      { label: 'Social Links', icon: LinkIcon, to: '/website/social-links' },
+    ],
+  },
+  {
     label: 'Configuration',
     icon: ClipboardDocumentListIcon,
     children: [
       { label: 'Countries', icon: GlobeAltIcon, to: '/config/countries' },
+      { label: 'Visa Categories', icon: TagIcon, to: '/config/visa-categories' },
       { label: 'Visas', icon: PaperAirplaneIcon, to: '/config/visas' },
       { label: 'Jobs', icon: BriefcaseIcon, to: '/config/jobs' },
-      { label: 'FAQs', icon: QuestionMarkCircleIcon, to: '/config/faqs' },
+      { label: 'Slots', icon: CalendarIcon, to: '/config/slots' },
     ],
   },
+  { label: 'Settings', icon: Cog8ToothIcon, to: '/settings' },
 ];
 
-function NavItem({ item, collapsed }) {
+function NavItem({ item, collapsed, onNavClick }) {
   const location = useLocation();
   const isChildActive = item.children?.some((c) => location.pathname.startsWith(c.to));
   const [open, setOpen] = useState(isChildActive || false);
@@ -75,6 +98,7 @@ function NavItem({ item, collapsed }) {
                   <NavLink
                     key={child.to}
                     to={child.to}
+                    onClick={onNavClick}
                     className={({ isActive }) =>
                       `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all
                       ${isActive ? 'bg-white/20 text-white font-semibold' : 'text-slate-400 hover:bg-white/10 hover:text-white'}`
@@ -95,6 +119,7 @@ function NavItem({ item, collapsed }) {
   return (
     <NavLink
       to={item.to}
+      onClick={onNavClick}
       className={({ isActive }) =>
         `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
         ${isActive
@@ -109,10 +134,33 @@ function NavItem({ item, collapsed }) {
 }
 
 export default function AdminLayout({ children }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const [collapsed, setCollapsed] = useState(window.innerWidth < 1024);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (mobile) setCollapsed(true);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleNavClick = () => {
+    if (isMobile) {
+      setCollapsed(true);
+    }
+  };
+
+  const { data: companyInfo } = useQuery({
+    queryKey: ['company-info'],
+    queryFn: () => api.get('/companies/').then(r => r.data.results?.[0] || r.data?.[0] || {}).catch(() => ({})),
+    staleTime: 1000 * 60 * 60,
+  });
 
   const handleLogout = () => {
     logout();
@@ -127,27 +175,42 @@ export default function AdminLayout({ children }) {
     if (path.startsWith('/config/countries')) return 'Countries';
     if (path.startsWith('/config/visas')) return 'Visas';
     if (path.startsWith('/config/jobs')) return 'Jobs';
-    if (path.startsWith('/config/faqs')) return 'FAQs';
+    if (path.startsWith('/config/slots')) return 'Slots';
     return 'Admin';
   })();
 
   return (
-    <div className="flex h-screen bg-slate-100 overflow-hidden">
+    <div className="flex h-screen bg-slate-100 overflow-hidden relative">
+
+      {/* ===== MOBILE BACKDROP ===== */}
+      {isMobile && !collapsed && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 z-30 backdrop-blur-sm lg:hidden transition-opacity"
+          onClick={() => setCollapsed(true)}
+        />
+      )}
 
       {/* ===== SIDEBAR ===== */}
       <motion.aside
-        animate={{ width: collapsed ? 68 : 260 }}
+        animate={{ 
+          width: isMobile ? 260 : (collapsed ? 68 : 260),
+          x: isMobile ? (collapsed ? -260 : 0) : 0 
+        }}
         transition={{ duration: 0.25, ease: 'easeInOut' }}
-        className="flex flex-col h-full bg-gradient-to-b from-[#0d1f4e] via-[#152f6e] to-[#1e3a8a] shadow-2xl z-20 shrink-0 overflow-hidden"
+        className={`fixed lg:relative flex flex-col h-full bg-gradient-to-b from-[#0d1f4e] via-[#152f6e] to-[#1e3a8a] shadow-2xl z-40 shrink-0 overflow-hidden top-0 left-0`}
       >
         {/* Logo */}
         <div className={`flex items-center gap-3 px-4 py-4 border-b border-white/10 shrink-0 ${collapsed ? 'justify-center px-0' : ''}`}>
-          <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-md">
-            <span className="text-blue-800 font-black text-sm tracking-tight">VA</span>
+          <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-md overflow-hidden p-1">
+            {companyInfo?.company_logo ? (
+              <img src={companyInfo.company_logo} alt="Logo" className="w-full h-full object-contain" />
+            ) : (
+              <span className="text-blue-800 font-black text-sm tracking-tight">VA</span>
+            )}
           </div>
           {!collapsed && (
             <div className="overflow-hidden">
-              <p className="text-white font-bold text-sm leading-tight whitespace-nowrap">Visa Agency</p>
+              <p className="text-white font-bold text-sm leading-tight whitespace-nowrap">{companyInfo?.company_name || 'Visa Agency'}</p>
               <p className="text-blue-300/80 text-xs whitespace-nowrap">Management System</p>
             </div>
           )}
@@ -156,24 +219,24 @@ export default function AdminLayout({ children }) {
         {/* Nav — scrollable middle section */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-0.5" style={{ scrollbarWidth: 'none' }}>
           {NAV_ITEMS.map((item) => (
-            <NavItem key={item.label} item={item} collapsed={collapsed} />
+            <NavItem key={item.label} item={item} collapsed={collapsed && !isMobile} onNavClick={handleNavClick} />
           ))}
         </nav>
 
         {/* Bottom user section — fixed, never gets pushed off screen */}
         <div className="shrink-0 border-t border-white/10 px-3 py-3 space-y-1">
-          {!collapsed ? (
-            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10">
+          {(!collapsed || isMobile) ? (
+            <NavLink to="/profile" className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors cursor-pointer">
               <UserCircleIcon className="w-7 h-7 text-blue-300 shrink-0" />
               <div className="overflow-hidden flex-1 min-w-0">
                 <p className="text-white text-sm font-semibold truncate">{user?.username}</p>
                 <p className="text-blue-300/70 text-xs">Administrator</p>
               </div>
-            </div>
+            </NavLink>
           ) : (
-            <div className="flex justify-center py-1">
+            <NavLink to="/profile" className="flex justify-center py-1 hover:bg-white/5 rounded-lg transition-colors cursor-pointer">
               <UserCircleIcon className="w-7 h-7 text-blue-300" />
-            </div>
+            </NavLink>
           )}
           <button
             onClick={handleLogout}
@@ -182,7 +245,7 @@ export default function AdminLayout({ children }) {
               ${collapsed ? 'justify-center' : ''}`}
           >
             <ArrowRightStartOnRectangleIcon className="w-5 h-5 shrink-0" />
-            {!collapsed && <span>Sign Out</span>}
+            {(!collapsed || isMobile) && <span>Sign Out</span>}
           </button>
         </div>
       </motion.aside>
@@ -201,12 +264,14 @@ export default function AdminLayout({ children }) {
             </button>
             <div>
               <h1 className="text-slate-800 font-semibold text-sm leading-tight">{pageTitle}</h1>
-              <p className="text-slate-400 text-xs">Visa Agency Admin Panel</p>
+              <p className="hidden sm:block text-slate-400 text-xs">Visa Agency Admin Panel</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <UserCircleIcon className="w-5 h-5 text-slate-400" />
-            <span className="text-sm font-medium text-slate-700">{user?.username}</span>
+          <div className="flex items-center gap-3">
+            <NavLink to="/profile" className="flex items-center gap-2 hover:bg-slate-50 px-2 py-1.5 rounded-lg transition-colors cursor-pointer">
+              <UserCircleIcon className="w-5 h-5 text-slate-400" />
+              <span className="text-sm font-medium text-slate-700">{user?.username}</span>
+            </NavLink>
           </div>
         </header>
 

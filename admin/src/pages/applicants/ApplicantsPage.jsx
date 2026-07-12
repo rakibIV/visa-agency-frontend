@@ -79,8 +79,8 @@ export default function ApplicantsPage() {
         ) : isError ? (
           <div className="py-20 text-center text-red-400 text-sm">Failed to load applicants.</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-sm whitespace-nowrap">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100">
                   {['App ID', 'Applicant', 'Passport', 'Visa / Destination', 'Status', 'Assigned Staff', 'Actions'].map((h) => (

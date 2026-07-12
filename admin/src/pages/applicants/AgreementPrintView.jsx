@@ -15,8 +15,9 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
     
   const isCash = refundMethodDisplay.includes('CASH');
 
-  const template1 = templates?.find(t => t.agreement_type === 'MAIN');
-  const template2 = templates?.find(t => t.agreement_type === 'SECOND');
+  const sortedTemplates = [...(templates || [])].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+  const template1 = sortedTemplates.length > 0 ? sortedTemplates[0] : null;
+  const template2 = sortedTemplates.length > 1 ? sortedTemplates[1] : null;
 
   // Filter clauses based on country condition
   const getVisibleClauses = (template) => {
@@ -52,7 +53,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
           <img src={companyInfo.company_logo} alt="Logo" className="w-16 h-16 object-contain" />
         ) : (
           <div className="w-16 h-16 bg-blue-900 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-xs text-center">AL-RAYYAN</span>
+            <span className="text-white font-bold text-[8px] text-center leading-tight px-1 uppercase">{companyInfo?.company_name || 'AL-RAYYAN'}</span>
           </div>
         )}
         <div>
@@ -164,11 +165,11 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
   const DocumentFooter = () => (
     <div className="print-footer absolute bottom-0 left-0 right-0 h-12 bg-blue-900 text-white flex items-center justify-between px-8 text-[9px] font-medium z-30 w-full rounded-b-lg print:rounded-none">
       <div className="flex items-center gap-2">
-        <span>📍</span> Head Office - {companyInfo?.company_address || 'Kingdom of Saudi Arabia (KSA)'}
+        <span>📍</span> Head Office - {companyInfo?.address || 'Kingdom of Saudi Arabia (KSA)'}
       </div>
       <div className="flex items-center gap-6">
-        <span className="flex items-center gap-2">📧 Email- {companyInfo?.email_address || 'alraiyangroup333@gmail.com'}</span>
-        <span className="flex items-center gap-2">🌐 {companyInfo?.website_url || 'al-raiyangroup.com'}</span>
+        <span className="flex items-center gap-2">📧 Email- {companyInfo?.email || 'alraiyangroup333@gmail.com'}</span>
+        <span className="flex items-center gap-2">🌐 {companyInfo?.website || 'al-raiyangroup.com'}</span>
       </div>
     </div>
   );
@@ -178,7 +179,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
     <div className="print-page w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white mb-8 shadow-[0_0_15px_rgba(0,0,0,0.1)] print:shadow-none print:mb-0 flex flex-col pt-12 pb-20 px-12 box-border relative overflow-hidden">
       {/* Watermark */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] pointer-events-none z-0">
-         <h1 className="text-[120px] font-serif font-black uppercase tracking-[1.5rem] rotate-[-45deg] whitespace-nowrap">AL-RAYYAN</h1>
+         <h1 className="text-[100px] font-serif font-black uppercase tracking-[1rem] rotate-[-45deg] whitespace-nowrap text-center leading-none">{companyInfo?.company_name || 'AL-RAYYAN'}</h1>
       </div>
       {/* Top-right illustration: absolute on the PAGE, not inside padding — goes flush to paper edge */}
       <img
@@ -385,8 +386,8 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
                 {companyInfo?.company_logo ? (
                   <img src={companyInfo.company_logo} alt="Logo" className="w-16 h-16 object-contain" />
                 ) : (
-                  <div className="w-16 h-16 bg-blue-900 rounded-full flex items-center justify-center">
-                    <span className="text-white font-bold text-[10px] text-center">AL-RAYYAN</span>
+                  <div className="w-12 h-12 bg-blue-900 rounded-full flex items-center justify-center p-1">
+                    <span className="text-white font-bold text-[6px] text-center uppercase leading-tight">{companyInfo?.company_name || 'AL-RAYYAN'}</span>
                   </div>
                 )}
                 <div>

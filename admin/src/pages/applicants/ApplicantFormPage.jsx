@@ -6,22 +6,24 @@ import api from '../../api/client';
 
 export default function ApplicantFormPage() {
   const navigate = useNavigate();
-  const { id } = useParams(); // If id exists, we are in edit mode
+  const { id } = useParams(); 
   const queryClient = useQueryClient();
-
   const isEdit = Boolean(id);
 
-  // ── Applicant core fields ──
+  const [currentStep, setCurrentStep] = useState(1);
+  const totalSteps = 4;
+
+  // ── Step 1: Basic Info ──
   const [fullName, setFullName] = useState('');
   const [passportNumber, setPassportNumber] = useState('');
   const [passportIssueDate, setPassportIssueDate] = useState('');
   const [passportExpiryDate, setPassportExpiryDate] = useState('');
   const [nidNumber, setNidNumber] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
+
+  // ── Step 2: Profile & Contact ──
   const [placeOfBirth, setPlaceOfBirth] = useState('');
   const [currentCountry, setCurrentCountry] = useState('');
-
-  // ── Profile Fields ──
   const [gender, setGender] = useState('');
   const [fatherName, setFatherName] = useState('');
   const [motherName, setMotherName] = useState('');
@@ -33,36 +35,41 @@ export default function ApplicantFormPage() {
   const [emergencyContactName, setEmergencyContactName] = useState('');
   const [emergencyContactPhone, setEmergencyContactPhone] = useState('');
   const [emergencyContactRelation, setEmergencyContactRelation] = useState('');
+  const [photoFile, setPhotoFile] = useState(null);
 
-  // ── Visa & Job ──
+  // ── Step 3: Visa & Processing ──
   const [selectedVisaId, setSelectedVisaId] = useState('');
   const [selectedJobId, setSelectedJobId] = useState('');
   const [selectedSecondaryJobId, setSelectedSecondaryJobId] = useState('');
   const [paymentPlan, setPaymentPlan] = useState(2);
   const [remarks, setRemarks] = useState('');
-
-  // ── Staff & Slot (optional) ──
   const [selectedStaffId, setSelectedStaffId] = useState('');
   const [selectedSlotId, setSelectedSlotId] = useState('');
-
-  // ── Default status (auto-selected) ──
+  const [selectedLawyerId, setSelectedLawyerId] = useState('');
   const [defaultStatusId, setDefaultStatusId] = useState('');
+  const [selectedStatusId, setSelectedStatusId] = useState('');
 
-  // ── Error state ──
+  // ── Step 4: Refund Information ──
+  const [accountHolderName, setAccountHolderName] = useState('');
+  const [bankName, setBankName] = useState('');
+  const [branchName, setBranchName] = useState('');
+  const [districtName, setDistrictName] = useState('');
+  const [accountNumber, setAccountNumber] = useState('');
+  const [routingNumber, setRoutingNumber] = useState('');
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [refundCountry, setRefundCountry] = useState('');
+
   const [error, setError] = useState('');
 
   // ────────────────────────────────────────
   // Data fetching
   // ────────────────────────────────────────
-
-  // Fetch applicant for editing
   const { data: applicant } = useQuery({
     queryKey: ['applicant', id],
     queryFn: () => api.get(`/applicants/${id}/`).then(r => r.data),
     enabled: isEdit,
   });
 
-  // Pre-fill form when applicant data loads
   useEffect(() => {
     if (applicant && isEdit) {
       setFullName(applicant.full_name || '');
@@ -71,24 +78,10 @@ export default function ApplicantFormPage() {
       setPassportExpiryDate(applicant.passport_expiry_date || '');
       setNidNumber(applicant.nid_number || '');
       setDateOfBirth(applicant.date_of_birth || '');
+
       setPlaceOfBirth(applicant.place_of_birth || '');
       setCurrentCountry(applicant.current_country || '');
-
-      // Visa & Job
-      if (applicant.visa) setSelectedVisaId(applicant.visa);
-      // Wait to set job until after jobs are fetched (handled automatically if job list populates, but we can just set it)
-      if (applicant.job) setSelectedJobId(applicant.job);
-      if (applicant.secondary_job) setSelectedSecondaryJobId(applicant.secondary_job);
-      setPaymentPlan(applicant.payment_plan_installments || 2);
       
-      // Staff & Slot
-      const staffId = applicant.slot?.staff || applicant.assigned_staff;
-      if (staffId) setSelectedStaffId(staffId);
-      if (applicant.slot) setSelectedSlotId(applicant.slot);
-      
-      if (applicant.status?.id) setDefaultStatusId(applicant.status.id);
-
-      // Profile
       if (applicant.profile) {
         const p = applicant.profile;
         setGender(p.gender || '');
@@ -103,10 +96,36 @@ export default function ApplicantFormPage() {
         setEmergencyContactPhone(p.emergency_contact_phone || '');
         setEmergencyContactRelation(p.emergency_contact_relation || '');
       }
+
+      if (applicant.visa) setSelectedVisaId(applicant.visa?.id || applicant.visa);
+      if (applicant.job) setSelectedJobId(applicant.job?.id || applicant.job);
+      if (applicant.secondary_job) setSelectedSecondaryJobId(applicant.secondary_job?.id || applicant.secondary_job);
+      setPaymentPlan(applicant.payment_plan_installments || 2);
+      
+      const staffId = applicant.slot?.staff?.id || applicant.slot?.staff || applicant.assigned_staff?.id || applicant.assigned_staff;
+      if (staffId) setSelectedStaffId(staffId);
+      if (applicant.slot) setSelectedSlotId(applicant.slot?.id || applicant.slot);
+      
+      if (applicant.status) {
+        setDefaultStatusId(applicant.status?.id || applicant.status);
+        setSelectedStatusId(applicant.status?.id || applicant.status);
+      }
+      if (applicant.lawyer) setSelectedLawyerId(applicant.lawyer?.id || applicant.lawyer);
+      
+      if (applicant.refund_bank_detail) {
+        const rbd = applicant.refund_bank_detail;
+        setAccountHolderName(rbd.account_holder_name || '');
+        setBankName(rbd.bank_name || '');
+        setBranchName(rbd.branch_name || '');
+        setDistrictName(rbd.district_name || '');
+        setAccountNumber(rbd.account_number_or_iban || '');
+        setRoutingNumber(rbd.routing_number || '');
+        setMobileNumber(rbd.mobile_number || '');
+        setRefundCountry(rbd.country || '');
+      }
     }
   }, [applicant, isEdit]);
 
-  // Fetch default status
   const { data: statuses } = useQuery({
     queryKey: ['application-statuses'],
     queryFn: () => api.get('/application-statuses/').then(r => r.data.results ?? r.data),
@@ -121,14 +140,12 @@ export default function ApplicantFormPage() {
     }
   }, [statuses, defaultStatusId]);
 
-  // Fetch visas
   const { data: visas } = useQuery({
     queryKey: ['form-visas'],
     queryFn: () => api.get('/visas/').then(r => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 10,
   });
 
-  // Fetch jobs for selected visa
   const { data: jobs } = useQuery({
     queryKey: ['form-jobs', selectedVisaId],
     queryFn: () => api.get(`/visas/${selectedVisaId}/jobs/`).then(r => r.data.results ?? r.data),
@@ -136,22 +153,25 @@ export default function ApplicantFormPage() {
     staleTime: 1000 * 60 * 5,
   });
 
-  // Reset jobs when visa changes
   useEffect(() => {
-    if (!isEdit || (isEdit && selectedVisaId !== applicant?.visa)) {
+    if (!isEdit) {
       setSelectedJobId('');
       setSelectedSecondaryJobId('');
+    } else {
+      const origVisaId = applicant?.visa?.id || applicant?.visa;
+      if (origVisaId && selectedVisaId && String(selectedVisaId) !== String(origVisaId)) {
+        setSelectedJobId('');
+        setSelectedSecondaryJobId('');
+      }
     }
   }, [selectedVisaId, isEdit, applicant]);
 
-  // Fetch staffs
   const { data: staffs } = useQuery({
     queryKey: ['form-staffs'],
     queryFn: () => api.get('/staffs/').then(r => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 10,
   });
 
-  // Fetch slots for selected staff
   const { data: slots } = useQuery({
     queryKey: ['form-slots', selectedStaffId],
     queryFn: () => api.get(`/staffs/${selectedStaffId}/monthly-slots/`).then(r => r.data.results ?? r.data),
@@ -159,21 +179,61 @@ export default function ApplicantFormPage() {
     staleTime: 1000 * 60 * 5,
   });
 
-  // Reset slot when staff changes
   useEffect(() => {
-    if (!isEdit || (isEdit && selectedStaffId !== (applicant?.slot?.staff || applicant?.assigned_staff))) {
+    if (!isEdit) {
       setSelectedSlotId('');
+    } else {
+      const origStaffId = applicant?.slot?.staff?.id || applicant?.slot?.staff || applicant?.assigned_staff?.id || applicant?.assigned_staff;
+      if (origStaffId && selectedStaffId && String(selectedStaffId) !== String(origStaffId)) {
+        setSelectedSlotId('');
+      }
     }
   }, [selectedStaffId, isEdit, applicant]);
 
-
+  const { data: lawyers } = useQuery({
+    queryKey: ['form-lawyers'],
+    queryFn: () => api.get('/lawyers/').then(r => r.data.results ?? r.data),
+    staleTime: 1000 * 60 * 10,
+  });
 
   // ────────────────────────────────────────
-  // Submit
+  // Navigation & Submission
   // ────────────────────────────────────────
+
+  const validateStep = (step) => {
+    setError('');
+    if (step === 1) {
+      if (!fullName || !passportNumber || !dateOfBirth) {
+        return 'Please fill in all required fields (Full Name, Passport Number, Date of Birth).';
+      }
+    } else if (step === 3) {
+      if (!selectedVisaId || !selectedJobId) {
+        return 'Please select a Target Visa and Target Job.';
+      }
+    }
+    return null;
+  };
+
+  const nextStep = () => {
+    const errorMsg = validateStep(currentStep);
+    if (errorMsg) {
+      setError(errorMsg);
+      return;
+    }
+    setCurrentStep(prev => Math.min(prev + 1, totalSteps));
+  };
+  const prevStep = () => {
+    setError('');
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
 
   const saveMutation = useMutation({
-    mutationFn: (payload) => isEdit ? api.put(`/applicants/${id}/`, payload) : api.post('/applicants/', payload),
+    mutationFn: (formData) => {
+      const headers = { 'Content-Type': 'multipart/form-data' };
+      return isEdit 
+        ? api.patch(`/applicants/${id}/`, formData, { headers }) 
+        : api.post('/applicants/', formData, { headers });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(['applicants']);
       navigate('/applicants');
@@ -181,7 +241,6 @@ export default function ApplicantFormPage() {
     onError: (err) => {
       const data = err?.response?.data;
       if (data) {
-        // Build readable error from DRF validation
         const messages = Object.entries(data).map(([k, v]) => {
           const val = Array.isArray(v) ? v.join(', ') : v;
           return `${k}: ${val}`;
@@ -202,28 +261,34 @@ export default function ApplicantFormPage() {
       return;
     }
 
-    const payload = {
-      full_name: fullName,
-      passport_number: passportNumber,
-      date_of_birth: dateOfBirth,
-      visa: selectedVisaId,
-      job: selectedJobId,
-      secondary_job: selectedSecondaryJobId || null,
-      status: defaultStatusId,
-      payment_plan_installments: paymentPlan,
-    };
+    const fd = new FormData();
+    fd.append('full_name', fullName);
+    fd.append('passport_number', passportNumber);
+    fd.append('date_of_birth', dateOfBirth);
+    fd.append('visa', selectedVisaId);
+    fd.append('job', selectedJobId);
+    
+    if (selectedSecondaryJobId) fd.append('secondary_job', selectedSecondaryJobId);
+    
+    const hasPayments = applicant?.payments?.length > 0;
+    if (!isEdit) {
+      fd.append('status', defaultStatusId);
+    } else if (hasPayments && selectedStatusId) {
+      fd.append('status', selectedStatusId);
+    }
+    
+    fd.append('payment_plan_installments', paymentPlan);
 
-    // Optional fields — only send if filled
-    if (passportIssueDate) payload.passport_issue_date = passportIssueDate;
-    if (passportExpiryDate) payload.passport_expiry_date = passportExpiryDate;
-    if (nidNumber) payload.nid_number = nidNumber;
-    if (placeOfBirth) payload.place_of_birth = placeOfBirth;
-    if (currentCountry) payload.current_country = currentCountry;
-    if (remarks) payload.remarks = remarks;
-    if (selectedSlotId) payload.slot = selectedSlotId;
+    if (passportIssueDate) fd.append('passport_issue_date', passportIssueDate);
+    if (passportExpiryDate) fd.append('passport_expiry_date', passportExpiryDate);
+    if (nidNumber) fd.append('nid_number', nidNumber);
+    if (placeOfBirth) fd.append('place_of_birth', placeOfBirth);
+    if (currentCountry) fd.append('current_country', currentCountry);
+    if (remarks) fd.append('remarks', remarks);
+    if (selectedSlotId) fd.append('slot', selectedSlotId);
+    if (selectedLawyerId) fd.append('lawyer', selectedLawyerId);
 
-    // Profile Data
-    payload.profile = {
+    const profileData = {
       gender,
       father_name: fatherName,
       mother_name: motherName,
@@ -236,23 +301,36 @@ export default function ApplicantFormPage() {
       emergency_contact_phone: emergencyContactPhone,
       emergency_contact_relation: emergencyContactRelation,
     };
+    fd.append('profile', JSON.stringify(profileData));
+    
+    const refundData = {
+      account_holder_name: accountHolderName,
+      bank_name: bankName,
+      branch_name: branchName,
+      district_name: districtName,
+      account_number_or_iban: accountNumber,
+      routing_number: routingNumber,
+      mobile_number: mobileNumber,
+      country: refundCountry,
+    };
+    fd.append('refund_bank_detail', JSON.stringify(refundData));
 
-    saveMutation.mutate(payload);
+    if (photoFile) fd.append('photo', photoFile);
+
+    saveMutation.mutate(fd);
   };
 
   // ────────────────────────────────────────
-  // Render helpers
+  // UI Helpers
   // ────────────────────────────────────────
 
   const inputCls = 'w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20';
   const labelCls = 'block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1';
   const sectionCls = 'space-y-4';
-
   const defaultStatusName = statuses?.find(s => s.id === defaultStatusId)?.name || '—';
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Back */}
+    <div className="max-w-3xl mx-auto space-y-6">
       <button
         onClick={() => navigate('/applicants')}
         className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors text-sm font-semibold"
@@ -265,6 +343,23 @@ export default function ApplicantFormPage() {
         <h2 className="text-xl font-bold text-slate-800">{isEdit ? 'Edit Applicant' : 'Register New Applicant'}</h2>
         <p className="text-slate-400 text-sm mt-0.5 font-medium">{isEdit ? 'Update applicant details' : 'Create a new visa applicant file'}</p>
       </div>
+      
+      {/* Step Indicator */}
+      <div className="flex items-center justify-between mb-8">
+        {[
+          { num: 1, label: 'Basic Info' },
+          { num: 2, label: 'Profile' },
+          { num: 3, label: 'Processing' },
+          { num: 4, label: 'Refund Details' },
+        ].map((step, idx) => (
+          <div key={idx} className="flex flex-col items-center gap-2 relative">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${currentStep >= step.num ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+              {step.num}
+            </div>
+            <span className={`text-xs font-semibold ${currentStep >= step.num ? 'text-blue-700' : 'text-slate-400'}`}>{step.label}</span>
+          </div>
+        ))}
+      </div>
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm font-medium whitespace-pre-line">
@@ -272,267 +367,290 @@ export default function ApplicantFormPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6">
-
-        {/* ─── Section 1: Personal Information ─── */}
-        <div className={sectionCls}>
-          <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider border-b border-slate-100 pb-2">
-            Personal Information
-          </h3>
-
-          <div>
-            <label className={labelCls}>Full Name *</label>
-            <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="e.g. Mohammad Ali Khan" className={inputCls} required />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <form className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6">
+        
+        {/* STEP 1 */}
+        {currentStep === 1 && (
+          <div className={sectionCls}>
+            <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider border-b border-slate-100 pb-2">
+              Basic Information
+            </h3>
             <div>
-              <label className={labelCls}>Passport Number *</label>
-              <input type="text" value={passportNumber} onChange={e => setPassportNumber(e.target.value)} placeholder="e.g. AB1234567" className={`${inputCls} font-mono uppercase`} required />
+              <label className={labelCls}>Full Name <span className="text-red-500">*</span></label>
+              <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="e.g. Mohammad Ali Khan" className={inputCls} required />
             </div>
-            <div>
-              <label className={labelCls}>Passport Issue Date</label>
-              <input type="date" value={passportIssueDate} onChange={e => setPassportIssueDate(e.target.value)} className={inputCls} />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className={labelCls}>Passport Number <span className="text-red-500">*</span></label>
+                <input type="text" value={passportNumber} onChange={e => setPassportNumber(e.target.value)} placeholder="e.g. AB1234567" className={`${inputCls} font-mono uppercase`} required />
+              </div>
+              <div>
+                <label className={labelCls}>Passport Issue Date</label>
+                <input type="date" value={passportIssueDate} onChange={e => setPassportIssueDate(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Passport Expiry Date</label>
+                <input type="date" value={passportExpiryDate} onChange={e => setPassportExpiryDate(e.target.value)} className={inputCls} />
+              </div>
             </div>
-            <div>
-              <label className={labelCls}>Passport Expiry Date</label>
-              <input type="date" value={passportExpiryDate} onChange={e => setPassportExpiryDate(e.target.value)} className={inputCls} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>NID Number</label>
-              <input type="text" value={nidNumber} onChange={e => setNidNumber(e.target.value)} placeholder="10 or 17 digit NID" className={`${inputCls} font-mono`} />
-            </div>
-            <div>
-              <label className={labelCls}>Date of Birth *</label>
-              <input type="date" value={dateOfBirth} onChange={e => setDateOfBirth(e.target.value)} className={inputCls} required />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Place of Birth</label>
-              <input type="text" value={placeOfBirth} onChange={e => setPlaceOfBirth(e.target.value)} placeholder="e.g. Dhaka, Bangladesh" className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Current Country</label>
-              <input type="text" value={currentCountry} onChange={e => setCurrentCountry(e.target.value)} placeholder="e.g. Bangladesh" className={inputCls} />
-            </div>
-          </div>
-        </div>
-
-        {/* ─── Profile & Contact (New Fields) ─── */}
-        <div className={sectionCls}>
-          <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider border-b border-slate-100 pb-2">
-            Profile & Contact
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className={labelCls}>Gender</label>
-              <select value={gender} onChange={e => setGender(e.target.value)} className={inputCls}>
-                <option value="">Select Gender</option>
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
-                <option value="OTHER">Other</option>
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>Phone</label>
-              <input type="text" value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g. +8801700000000" className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Email</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="e.g. applicant@example.com" className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Father's Name</label>
-              <input type="text" value={fatherName} onChange={e => setFatherName(e.target.value)} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Mother's Name</label>
-              <input type="text" value={motherName} onChange={e => setMotherName(e.target.value)} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Nationality</label>
-              <input type="text" value={nationality} onChange={e => setNationality(e.target.value)} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Marital Status</label>
-              <select value={maritalStatus} onChange={e => setMaritalStatus(e.target.value)} className={inputCls}>
-                <option value="">Select Status</option>
-                <option value="SINGLE">Single</option>
-                <option value="MARRIED">Married</option>
-                <option value="DIVORCED">Divorced</option>
-                <option value="WIDOWED">Widowed</option>
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>Occupation</label>
-              <input type="text" value={occupation} onChange={e => setOccupation(e.target.value)} className={inputCls} />
-            </div>
-          </div>
-        </div>
-
-        {/* ─── Emergency Contact ─── */}
-        <div className={sectionCls}>
-          <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider border-b border-slate-100 pb-2">
-            Emergency Contact
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className={labelCls}>Contact Name</label>
-              <input type="text" value={emergencyContactName} onChange={e => setEmergencyContactName(e.target.value)} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Contact Phone</label>
-              <input type="text" value={emergencyContactPhone} onChange={e => setEmergencyContactPhone(e.target.value)} className={inputCls} />
-            </div>
-            <div>
-              <label className={labelCls}>Relation</label>
-              <input type="text" value={emergencyContactRelation} onChange={e => setEmergencyContactRelation(e.target.value)} className={inputCls} />
-            </div>
-          </div>
-        </div>
-
-        {/* ─── Section 2: Visa & Processing ─── */}
-        <div className={sectionCls}>
-          <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider border-b border-slate-100 pb-2">
-            Visa & Job Assignment
-          </h3>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className={labelCls}>Target Visa *</label>
-              <select value={selectedVisaId} onChange={e => setSelectedVisaId(e.target.value)} className={`${inputCls} bg-white`} required>
-                <option value="">— Select Visa —</option>
-                {visas?.map(v => (
-                  <option key={v.id} value={v.id}>{v.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>Target Job (Primary) *</label>
-              <select
-                value={selectedJobId}
-                onChange={e => setSelectedJobId(e.target.value)}
-                disabled={!selectedVisaId}
-                className={`${inputCls} bg-white disabled:opacity-50 disabled:cursor-not-allowed`}
-                required
-              >
-                <option value="">— Select Job —</option>
-                {jobs?.map(j => (
-                  <option key={j.id} value={j.id}>{j.title}</option>
-                ))}
-              </select>
-              {selectedVisaId && jobs?.length === 0 && (
-                <p className="text-xs text-amber-600 font-medium mt-1">No jobs configured for this visa</p>
-              )}
-            </div>
-            <div>
-              <label className={labelCls}>Target Job (Secondary)</label>
-              <select
-                value={selectedSecondaryJobId}
-                onChange={e => setSelectedSecondaryJobId(e.target.value)}
-                disabled={!selectedVisaId}
-                className={`${inputCls} bg-white disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                <option value="">— Optional —</option>
-                {jobs?.filter(j => String(j.id) !== String(selectedJobId)).map(j => (
-                  <option key={j.id} value={j.id}>{j.title}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Payment Plan</label>
-              <select value={paymentPlan} onChange={e => setPaymentPlan(Number(e.target.value))} className={`${inputCls} bg-white`}>
-                <option value={2}>Two Installments</option>
-                <option value={3}>Three Installments</option>
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>Initial Status</label>
-              <div className="px-3 py-2 border border-slate-100 rounded-xl text-sm bg-slate-50 text-slate-600 font-semibold">
-                {defaultStatusName}
-                <span className="text-xs text-slate-400 ml-2">(auto-assigned)</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>NID Number</label>
+                <input type="text" value={nidNumber} onChange={e => setNidNumber(e.target.value)} placeholder="10 or 17 digit NID" className={`${inputCls} font-mono`} />
+              </div>
+              <div>
+                <label className={labelCls}>Date of Birth <span className="text-red-500">*</span></label>
+                <input type="date" value={dateOfBirth} onChange={e => setDateOfBirth(e.target.value)} className={inputCls} required />
               </div>
             </div>
           </div>
+        )}
 
-          <div>
-            <label className={labelCls}>Remarks</label>
-            <textarea
-              value={remarks}
-              onChange={e => setRemarks(e.target.value)}
-              rows={2}
-              placeholder="Internal notes about this applicant..."
-              className={inputCls}
-            />
-          </div>
-
-          <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-3 text-xs text-blue-700 font-medium leading-relaxed">
-            <strong>Note:</strong> Agreements are auto-generated when the first payment installment is received.
-          </div>
-        </div>
-
-        {/* ─── Section 3: Staff & Slot Assignment ─── */}
-        <div className={sectionCls}>
-          <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider border-b border-slate-100 pb-2">
-            Staff & Slot Assignment
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Assign Staff</label>
-              <select value={selectedStaffId} onChange={e => setSelectedStaffId(e.target.value)} className={`${inputCls} bg-white`}>
-                <option value="">— Select Staff (Optional) —</option>
-                {staffs?.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.full_name || s.username || s.employee_id} {s.employee_id && `(${s.employee_id})`}
-                  </option>
-                ))}
-              </select>
+        {/* STEP 2 */}
+        {currentStep === 2 && (
+          <div className={sectionCls}>
+            <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider border-b border-slate-100 pb-2">
+              Profile & Contact Details
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Place of Birth</label>
+                <input type="text" value={placeOfBirth} onChange={e => setPlaceOfBirth(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Current Country</label>
+                <input type="text" value={currentCountry} onChange={e => setCurrentCountry(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Gender</label>
+                <select value={gender} onChange={e => setGender(e.target.value)} className={inputCls}>
+                  <option value="">Select Gender</option>
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Nationality</label>
+                <input type="text" value={nationality} onChange={e => setNationality(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Phone</label>
+                <input type="text" value={phone} onChange={e => setPhone(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Email</label>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Father's Name</label>
+                <input type="text" value={fatherName} onChange={e => setFatherName(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Mother's Name</label>
+                <input type="text" value={motherName} onChange={e => setMotherName(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Marital Status</label>
+                <select value={maritalStatus} onChange={e => setMaritalStatus(e.target.value)} className={inputCls}>
+                  <option value="">Select Status</option>
+                  <option value="SINGLE">Single</option>
+                  <option value="MARRIED">Married</option>
+                  <option value="DIVORCED">Divorced</option>
+                  <option value="WIDOWED">Widowed</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Occupation</label>
+                <input type="text" value={occupation} onChange={e => setOccupation(e.target.value)} className={inputCls} />
+              </div>
             </div>
-            <div>
-              <label className={labelCls}>Assign Slot</label>
-              <select
-                value={selectedSlotId}
-                onChange={e => setSelectedSlotId(e.target.value)}
-                disabled={!selectedStaffId}
-                className={`${inputCls} bg-white disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                <option value="">— Select Slot —</option>
-                {slots?.map(sl => {
-                  const rem = sl.remaining_slot ?? 0;
-                  return (
-                    <option key={sl.id} value={sl.id} disabled={rem <= 0 && sl.id !== applicant?.slot?.id}>
-                      {sl.allocation_month} (Remaining: {rem} / {sl.total_slot} slots)
-                    </option>
-                  );
-                })}
-              </select>
-              {selectedStaffId && slots?.length === 0 && (
-                <p className="text-xs text-red-500 font-medium mt-1">This staff member has no monthly slots assigned.</p>
-              )}
-              {selectedStaffId && slots?.length > 0 && slots.every(sl => (sl.remaining_slot ?? 0) <= 0) && (
-                <p className="text-xs text-red-500 font-medium mt-1">This staff member has no remaining slots available.</p>
-              )}
+            
+            <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider mt-6 mb-2 border-t border-slate-50 pt-4">Emergency Contact</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className={labelCls}>Name</label>
+                <input type="text" value={emergencyContactName} onChange={e => setEmergencyContactName(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Phone</label>
+                <input type="text" value={emergencyContactPhone} onChange={e => setEmergencyContactPhone(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Relation</label>
+                <input type="text" value={emergencyContactRelation} onChange={e => setEmergencyContactRelation(e.target.value)} className={inputCls} />
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className={labelCls}>Applicant Photo</label>
+              <input type="file" onChange={e => setPhotoFile(e.target.files[0])} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
             </div>
           </div>
-        </div>
+        )}
 
-        {/* ─── Submit ─── */}
-        <div className="flex justify-end pt-4 border-t border-slate-100">
+        {/* STEP 3 */}
+        {currentStep === 3 && (
+          <div className={sectionCls}>
+            <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider border-b border-slate-100 pb-2">
+              Visa & Processing
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className={labelCls}>Target Visa <span className="text-red-500">*</span></label>
+                <select value={selectedVisaId} onChange={e => setSelectedVisaId(e.target.value)} className={`${inputCls} bg-white`} required>
+                  <option value="">— Select Visa —</option>
+                  {visas?.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Target Job (Primary) <span className="text-red-500">*</span></label>
+                <select value={selectedJobId} onChange={e => setSelectedJobId(e.target.value)} disabled={!selectedVisaId} className={`${inputCls} bg-white disabled:opacity-50`} required>
+                  <option value="">— Select Job —</option>
+                  {jobs?.map(j => <option key={j.id} value={j.id}>{j.title}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Target Job (Secondary)</label>
+                <select value={selectedSecondaryJobId} onChange={e => setSelectedSecondaryJobId(e.target.value)} disabled={!selectedVisaId} className={`${inputCls} bg-white disabled:opacity-50`}>
+                  <option value="">— Optional —</option>
+                  {jobs?.filter(j => String(j.id) !== String(selectedJobId)).map(j => (
+                    <option key={j.id} value={j.id}>{j.title}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Payment Plan</label>
+                <select value={paymentPlan} onChange={e => setPaymentPlan(Number(e.target.value))} className={`${inputCls} bg-white`}>
+                  <option value={2}>Two Installments</option>
+                  <option value={3}>Three Installments</option>
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>{isEdit ? 'Current Status' : 'Initial Status'}</label>
+                {isEdit && applicant?.payments?.length > 0 ? (
+                  <select value={selectedStatusId} onChange={e => setSelectedStatusId(e.target.value)} className={`${inputCls} bg-white`}>
+                    <option value="">— Select Status —</option>
+                    {statuses?.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                ) : (
+                  <div className="px-3 py-2 border border-slate-100 rounded-xl text-sm bg-slate-50 text-slate-600 font-semibold">
+                    {isEdit ? (applicant?.status?.name || defaultStatusName) : defaultStatusName}
+                    <span className="text-xs text-slate-400 ml-2">({isEdit ? 'system managed' : 'auto-assigned'})</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className={labelCls}>Assign Staff</label>
+                <select value={selectedStaffId} onChange={e => setSelectedStaffId(e.target.value)} className={`${inputCls} bg-white`}>
+                  <option value="">— Select Staff (Optional) —</option>
+                  {staffs?.map(s => <option key={s.id} value={s.id}>{s.full_name || s.username || s.employee_id}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Assign Slot</label>
+                <select value={selectedSlotId} onChange={e => setSelectedSlotId(e.target.value)} disabled={!selectedStaffId} className={`${inputCls} bg-white disabled:opacity-50`}>
+                  <option value="">— Select Slot —</option>
+                  {slots?.map(sl => <option key={sl.id} value={sl.id}>{sl.allocation_month}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Assign Lawyer</label>
+                <select value={selectedLawyerId} onChange={e => setSelectedLawyerId(e.target.value)} className={`${inputCls} bg-white`}>
+                  <option value="">— Default System Email —</option>
+                  {lawyers?.map(l => <option key={l.id} value={l.id}>{l.name} ({l.env_key})</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className={labelCls}>Remarks</label>
+              <textarea value={remarks} onChange={e => setRemarks(e.target.value)} rows={2} placeholder="Internal notes about this applicant..." className={inputCls} />
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4 */}
+        {currentStep === 4 && (
+          <div className={sectionCls}>
+            <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider border-b border-slate-100 pb-2">
+              Refund Bank Information
+            </h3>
+            <p className="text-xs text-slate-500 mb-4">
+              If the applicant gets rejected, these details will be used to automatically process their refund.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Account Holder Name</label>
+                <input type="text" value={accountHolderName} onChange={e => setAccountHolderName(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Bank Name</label>
+                <input type="text" value={bankName} onChange={e => setBankName(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Branch Name</label>
+                <input type="text" value={branchName} onChange={e => setBranchName(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>District</label>
+                <input type="text" value={districtName} onChange={e => setDistrictName(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Account Number / IBAN</label>
+                <input type="text" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Routing Number</label>
+                <input type="text" value={routingNumber} onChange={e => setRoutingNumber(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Mobile Number</label>
+                <input type="text" value={mobileNumber} onChange={e => setMobileNumber(e.target.value)} className={inputCls} />
+              </div>
+              <div>
+                <label className={labelCls}>Country</label>
+                <input type="text" value={refundCountry} onChange={e => setRefundCountry(e.target.value)} className={inputCls} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Navigation Buttons */}
+        <div className="flex justify-between pt-6 border-t border-slate-100 mt-8">
           <button
-            type="submit"
-            disabled={saveMutation.isPending}
-            className="px-6 py-2.5 bg-blue-700 text-white font-bold text-sm uppercase tracking-wider rounded-xl hover:bg-blue-800 transition-colors shadow-sm disabled:opacity-50"
+            type="button"
+            onClick={prevStep}
+            disabled={currentStep === 1}
+            className="px-6 py-2.5 bg-slate-100 text-slate-700 font-bold text-sm uppercase tracking-wider rounded-xl hover:bg-slate-200 transition-colors disabled:opacity-50"
           >
-            {saveMutation.isPending ? 'Saving...' : (isEdit ? 'Update Applicant' : 'Create Applicant')}
+            Previous
           </button>
+          
+          {currentStep < totalSteps ? (
+            <button
+              type="button"
+              onClick={nextStep}
+              className="px-6 py-2.5 bg-blue-700 text-white font-bold text-sm uppercase tracking-wider rounded-xl hover:bg-blue-800 transition-colors shadow-sm"
+            >
+              Next
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={saveMutation.isPending}
+              className="px-6 py-2.5 bg-green-600 text-white font-bold text-sm uppercase tracking-wider rounded-xl hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50"
+            >
+              {saveMutation.isPending ? 'Saving...' : (isEdit ? 'Update Applicant' : 'Create Applicant')}
+            </button>
+          )}
         </div>
       </form>
     </div>

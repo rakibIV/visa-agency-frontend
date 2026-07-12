@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { LockClosedIcon, UserIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import api from '../../api/client';
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -12,6 +14,12 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const { data: companyInfo } = useQuery({
+    queryKey: ['company-info'],
+    queryFn: () => api.get('/companies/').then(r => r.data.results?.[0] || r.data?.[0] || {}).catch(() => ({})),
+    staleTime: 1000 * 60 * 60,
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -58,16 +66,20 @@ export default function LoginPage() {
         {/* Glass card */}
         <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-8">
           {/* Logo area */}
-          <div className="flex flex-col items-center mb-8">
+          <div className="flex flex-col items-center mb-8 text-center">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
-              className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg mb-4"
+              className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-lg mb-4 overflow-hidden p-2"
             >
-              <LockClosedIcon className="w-8 h-8 text-blue-700" />
+              {companyInfo?.company_logo ? (
+                <img src={companyInfo.company_logo} alt="Company Logo" className="w-full h-full object-contain" />
+              ) : (
+                <LockClosedIcon className="w-10 h-10 text-blue-700" />
+              )}
             </motion.div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Admin Portal</h1>
+            <h1 className="text-2xl font-bold text-white tracking-tight">{companyInfo?.company_name || 'Admin Portal'}</h1>
             <p className="text-blue-200 text-sm mt-1">Visa Agency Management System</p>
           </div>
 
