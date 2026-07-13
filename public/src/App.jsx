@@ -9,6 +9,7 @@ import VisaDetailPage from './pages/VisaDetailPage';
 import StatusCheckPage from './pages/StatusCheckPage';
 import MonthlySlotsPage from './pages/MonthlySlotsPage';
 import VisaUpdatesPage from './pages/VisaUpdatesPage';
+import VisasPage from './pages/VisasPage';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import NoticesPage from './pages/NoticesPage';
@@ -22,6 +23,7 @@ function App() {
         <Route path="countries" element={<CountriesPage />} />
         <Route path="countries/:slug" element={<CountryDetailPage />} />
         
+        <Route path="visas" element={<VisasPage />} />
         <Route path="visas/:slug" element={<VisaDetailPage />} />
         
         <Route path="status-check" element={<StatusCheckPage />} />

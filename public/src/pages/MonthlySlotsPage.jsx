@@ -73,7 +73,7 @@ export default function MonthlySlotsPage() {
           ) : (
             <div className="bg-white rounded-2xl shadow-sm border border-navy-50 overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full text-left border-collapse min-w-[800px]">
                   <thead>
                     <tr className="bg-navy-900 text-white text-xs uppercase tracking-widest">
                       <th className="px-6 py-4 font-bold whitespace-nowrap">Staff Name</th>
@@ -127,12 +127,12 @@ export default function MonthlySlotsPage() {
                             {slot.used_slot}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-center">
-                            <button
-                              onClick={() => setSelectedStaff({ slug: slot.staff_slug, name: slot.staff_name })}
-                              className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-navy-50 hover:bg-navy-900 hover:text-white text-navy-900 text-xs font-bold rounded-lg transition-colors border border-navy-100 hover:border-navy-900"
-                            >
-                              <LockIcon fontSize="small" className="opacity-70" /> View Profile
-                            </button>
+                              <button
+                                onClick={() => setSelectedStaff({ name: slot.staff_name })}
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-navy-50 hover:bg-navy-900 hover:text-white text-navy-900 text-xs font-bold rounded-lg transition-colors border border-navy-100 hover:border-navy-900"
+                              >
+                                <LockIcon fontSize="small" className="opacity-70" /> View Profile
+                              </button>
                           </td>
                         </tr>
                       );
@@ -149,7 +149,6 @@ export default function MonthlySlotsPage() {
       <StaffProfileModal
         isOpen={!!selectedStaff}
         onClose={() => setSelectedStaff(null)}
-        staffSlug={selectedStaff?.slug}
         staffName={selectedStaff?.name}
       />
     </>

@@ -157,23 +157,7 @@ export default function StaffDetailPage() {
           ]}
         />
 
-        <CrudTable
-          isNested={true}
-          disableDelete={true}
-          title="Public Profile Configuration"
-          subtitle="Configure the public profile access for this staff member."
-          endpoint={`/staffs/${id}/public-profile/`}
-          queryKey={`staff-public-profile-${id}`}
-          columns={[
-            { header: 'Slug', accessor: 'slug' },
-            { header: 'Is Public', render: (item) => item.is_public ? 'Yes' : 'No' },
-          ]}
-          formFields={[
-            { name: 'slug', label: 'Public Slug (URL)', type: 'text' },
-            { name: 'public_password', label: 'Public Password (Optional, leave blank if unchanged)', type: 'text' },
-            { name: 'is_public', label: 'Is Public?', type: 'checkbox' },
-          ]}
-        />
+
       </div>
 
     </div>

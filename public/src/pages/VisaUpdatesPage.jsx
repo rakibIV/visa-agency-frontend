@@ -55,10 +55,31 @@ export default function VisaUpdatesPage() {
 
           {/* Grid */}
           {isLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-white rounded-2xl h-32 animate-pulse shadow-navy border border-navy-100" />
-              ))}
+            <div className="bg-white rounded-2xl shadow-sm border border-navy-50 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[800px]">
+                  <thead>
+                    <tr className="bg-navy-900 text-white text-xs uppercase tracking-widest">
+                      <th className="px-6 py-4 font-bold whitespace-nowrap">Date</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap">App ID</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap">Applicant</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap">Visa Details</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-navy-50">
+                    {[...Array(6)].map((_, i) => (
+                      <tr key={i}>
+                        <td className="px-6 py-4"><div className="w-20 h-4 bg-navy-50 rounded animate-pulse" /></td>
+                        <td className="px-6 py-4"><div className="w-16 h-4 bg-navy-50 rounded animate-pulse" /></td>
+                        <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-navy-50 animate-pulse" /><div className="w-24 h-4 bg-navy-50 rounded animate-pulse" /></div></td>
+                        <td className="px-6 py-4"><div className="w-32 h-4 bg-navy-50 rounded animate-pulse mb-1" /><div className="w-48 h-3 bg-navy-50 rounded animate-pulse" /></td>
+                        <td className="px-6 py-4"><div className="w-16 h-6 bg-navy-50 rounded-full animate-pulse" /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           ) : filteredUpdates.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-3xl border border-navy-100 border-dashed">
@@ -69,48 +90,51 @@ export default function VisaUpdatesPage() {
               <p className="text-navy-500 text-sm mt-1">There are no {filter !== 'ALL' ? filter.toLowerCase() : ''} results for this month yet.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {filteredUpdates.map((item, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 15 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                  className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-navy-lg border border-navy-100 transition-all duration-300 group"
-                >
-                  <div className="flex items-center justify-between mb-3 border-b border-navy-50 pb-3">
-                    <span className="text-xs font-mono text-navy-400 font-medium tracking-wide">#{item.application_id}</span>
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      item.status?.toLowerCase() === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {item.status}
-                    </span>
-                  </div>
-                  
-                  <div className="flex gap-3 items-center mb-3">
-                    <div className="w-10 h-10 rounded-full bg-navy-50 border border-navy-100 flex items-center justify-center shrink-0 text-navy-500 font-bold">
-                      {item.applicant_name.charAt(0)}
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-navy-900 leading-tight">{item.applicant_name}</h3>
-                      <p className="text-xs text-navy-500 mt-0.5">
-                        {new Date(item.result_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-navy-50 rounded-xl p-3 flex flex-col gap-1">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-navy-700">
-                      <svg className="w-3.5 h-3.5 text-navy-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13h8M3 13a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H13m-10 0v4a2 2 0 0 0 2 2h18a2 2 0 0 0 2-2v-4M13 13a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2" /></svg>
-                      {item.visa}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-navy-500 font-medium pl-[22px]">
-                      {item.country} • {item.job}
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+            <div className="bg-white rounded-2xl shadow-sm border border-navy-50 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[800px]">
+                  <thead>
+                    <tr className="bg-navy-900 text-white text-xs uppercase tracking-widest">
+                      <th className="px-6 py-4 font-bold whitespace-nowrap">Date</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap">App ID</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap">Applicant</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap">Visa Details</th>
+                      <th className="px-6 py-4 font-bold whitespace-nowrap">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-navy-50">
+                    {filteredUpdates.map((item, i) => (
+                      <tr key={i} className="hover:bg-navy-50/50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-navy-600 font-medium">
+                          {new Date(item.result_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-navy-400 font-bold tracking-wide">
+                          #{item.application_id}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-navy-50 border border-navy-100 flex items-center justify-center shrink-0 text-navy-500 font-bold text-sm">
+                              {item.applicant_name.charAt(0)}
+                            </div>
+                            <span className="font-bold text-navy-900">{item.applicant_name}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-bold text-navy-700">{item.visa}</div>
+                          <div className="text-xs text-navy-500">{item.country} • {item.job}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            item.status?.toLowerCase() === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          }`}>
+                            {item.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

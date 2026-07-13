@@ -12,7 +12,10 @@ export default function StaffFormPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [userId, setUserId] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [designationId, setDesignationId] = useState('');
   const [officeId, setOfficeId] = useState('');
   const [phone, setPhone] = useState('');
@@ -30,6 +33,9 @@ export default function StaffFormPage() {
 
   const [photoFile, setPhotoFile] = useState(null);
   const [signatureFile, setSignatureFile] = useState(null);
+
+  const [publicSlug, setPublicSlug] = useState('');
+  const [isPublic, setIsPublic] = useState(false);
   const [error, setError] = useState('');
 
   const { data: staff } = useQuery({
@@ -50,12 +56,6 @@ export default function StaffFormPage() {
     staleTime: 1000 * 60 * 10,
   });
 
-  const { data: users } = useQuery({
-    // Fetch users if available, or admin has to type user ID (assuming user list endpoint exists or users are managed elsewhere)
-    queryKey: ['users'],
-    queryFn: () => api.get('/users/').then(r => r.data.results ?? r.data).catch(() => []),
-    staleTime: 1000 * 60 * 10,
-  });
 
   const { data: allStaffs } = useQuery({
     queryKey: ['all-staffs'],
@@ -65,7 +65,10 @@ export default function StaffFormPage() {
 
   useEffect(() => {
     if (staff && isEdit) {
-      setUserId(staff.user?.id || staff.user || '');
+      const names = (staff.user?.full_name || staff.full_name || '').split(' ');
+      setFirstName(names[0] || '');
+      setLastName(names.slice(1).join(' ') || '');
+      setEmail(staff.user?.email || staff.email || '');
       
       let dId = staff.designation?.id || staff.designation;
       if (typeof dId === 'string' && designations?.length) {
@@ -92,6 +95,8 @@ export default function StaffFormPage() {
       setJoiningDate(staff.joining_date || '');
       setReferenceStaffId(staff.reference_staff?.id || staff.reference_staff || '');
       setIsActive(staff.is_active ?? true);
+      setPublicSlug(staff.public_slug || '');
+      setIsPublic(staff.is_public ?? false);
     }
   }, [staff, isEdit, designations, offices]);
 
@@ -117,12 +122,19 @@ export default function StaffFormPage() {
     setError('');
 
     // Check required fields
-    if (!userId || !designationId || !officeId || !phone || !dateOfBirth || !joiningDate || !gender || !fatherName || !motherName || !nationality) {
+    if (!firstName || !designationId || !officeId || !phone || !dateOfBirth || !joiningDate || !gender || !fatherName || !motherName || !nationality) {
       return setError('Please fill all required fields.');
     }
 
+    if (!isEdit && !password) {
+      return setError('Please provide a system login password for new staff.');
+    }
+
     const fd = new FormData();
-    fd.append('user', userId);
+    fd.append('first_name', firstName);
+    fd.append('last_name', lastName);
+    fd.append('email', email);
+    if (password) fd.append('password', password);
     fd.append('designation', designationId);
     fd.append('office', officeId);
     fd.append('phone', phone);
@@ -137,6 +149,8 @@ export default function StaffFormPage() {
     fd.append('joining_date', joiningDate);
     if (referenceStaffId) fd.append('reference_staff', referenceStaffId);
     fd.append('is_active', isActive);
+    if (publicSlug) fd.append('public_slug', publicSlug);
+    fd.append('is_public', isPublic);
 
     if (photoFile) fd.append('photo', photoFile);
     if (signatureFile) fd.append('signature', signatureFile);
@@ -160,12 +174,20 @@ export default function StaffFormPage() {
           
           <div className="col-span-1 md:col-span-2 text-sm font-bold text-slate-800 border-b pb-2 mb-2">Account & Organization</div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">User Account <span className="text-red-500">*</span></label>
-            <select value={userId} onChange={e => setUserId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white" required>
-              <option value="">Select User Account</option>
-              {users?.map(u => <option key={u.id} value={u.id}>{u.username} {u.email ? `(${u.email})` : ''}</option>)}
-            </select>
-            <p className="text-xs text-slate-400 mt-1">Select an existing User record to link with this staff profile.</p>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">First Name <span className="text-red-500">*</span></label>
+            <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl" required />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Last Name</label>
+            <input type="text" value={lastName} onChange={e => setLastName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Email</label>
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">System Login Password {isEdit ? '' : <span className="text-red-500">*</span>}</label>
+            <input type="text" value={password} onChange={e => setPassword(e.target.value)} placeholder={isEdit ? "Leave blank to keep unchanged" : "Password for system access"} className="w-full px-3 py-2 border border-slate-200 rounded-xl" required={!isEdit} />
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Designation <span className="text-red-500">*</span></label>
@@ -267,6 +289,19 @@ export default function StaffFormPage() {
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" checked={isActive} onChange={e => setIsActive(e.target.checked)} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600" />
               <span className="text-sm font-semibold text-slate-700">Is Active</span>
+            </label>
+          </div>
+
+          <div className="col-span-1 md:col-span-2 text-sm font-bold text-slate-800 border-b pb-2 mb-2 mt-4">Public Profile Configuration</div>
+          
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Public Slug (URL)</label>
+            <input type="text" value={publicSlug} onChange={e => setPublicSlug(e.target.value)} placeholder="e.g. john-doe" className="w-full px-3 py-2 border border-slate-200 rounded-xl" />
+          </div>
+          <div className="flex items-center gap-6 col-span-1 md:col-span-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-600" />
+              <span className="text-sm font-semibold text-slate-700">Is Public Profile Enabled</span>
             </label>
           </div>
         </div>

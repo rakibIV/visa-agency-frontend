@@ -9,7 +9,8 @@ import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import LanguageIcon from '@mui/icons-material/Language';
 
-export default function StaffProfileModal({ isOpen, onClose, staffSlug, staffName }) {
+export default function StaffProfileModal({ isOpen, onClose, staffName }) {
+  const [employeeId, setEmployeeId] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -18,6 +19,7 @@ export default function StaffProfileModal({ isOpen, onClose, staffSlug, staffNam
   // Reset state when modal opens/closes
   useEffect(() => {
     if (isOpen) {
+      setEmployeeId('');
       setPassword('');
       setError('');
       setProfile(null);
@@ -30,7 +32,7 @@ export default function StaffProfileModal({ isOpen, onClose, staffSlug, staffNam
     setError('');
 
     try {
-      const { data } = await api.post(`/public/staff-profiles/${staffSlug}/access/`, { password });
+      const { data } = await api.post(`/public/staff-profiles/access/`, { employee_id: employeeId, password });
       setProfile(data);
     } catch (err) {
       setError(err?.response?.data?.detail || 'Incorrect password.');
@@ -81,6 +83,14 @@ export default function StaffProfileModal({ isOpen, onClose, staffSlug, staffNam
 
               <form onSubmit={handleSubmit} className="max-w-xs mx-auto">
                 <div className="mb-4">
+                  <input
+                    type="text"
+                    value={employeeId}
+                    onChange={(e) => setEmployeeId(e.target.value)}
+                    placeholder="Employee ID"
+                    className="w-full px-5 py-4 mb-4 bg-navy-50 border border-navy-100 rounded-xl text-center text-navy-900 tracking-widest focus:outline-none focus:ring-2 focus:ring-accent-500/50 transition-all"
+                    required
+                  />
                   <input
                     type="password"
                     value={password}

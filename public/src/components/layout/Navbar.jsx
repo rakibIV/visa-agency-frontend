@@ -8,6 +8,7 @@ import logo from '../../assets/logo.png';
 const navLinks = [
   { to: '/', label: 'Home' },
   { to: '/countries', label: 'Destinations' },
+  { to: '/visas', label: 'Visas' },
   { to: '/visa-updates', label: 'Latest Results' },
   { to: '/monthly-slots', label: 'Slots' },
   { to: '/notices', label: 'Notices' },
