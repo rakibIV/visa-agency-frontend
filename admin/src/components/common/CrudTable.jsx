@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PlusIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
 import api from '../../api/client';
+import { parseApiError } from '../../utils/errorParser';
 import FormModal from './FormModal';
 
 export default function CrudTable({
@@ -28,23 +30,35 @@ export default function CrudTable({
   const mutationCreate = useMutation({
     mutationFn: ({ data, config }) => api.post(endpoint, data, config),
     onSuccess: () => {
+      toast.success('Item created successfully!');
       queryClient.invalidateQueries([queryKey]);
       setIsModalOpen(false);
+    },
+    onError: (err) => {
+      toast.error(parseApiError(err));
     },
   });
 
   const mutationUpdate = useMutation({
     mutationFn: ({ id, data, config }) => api.patch(`${endpoint}${id}/`, data, config),
     onSuccess: () => {
+      toast.success('Item updated successfully!');
       queryClient.invalidateQueries([queryKey]);
       setIsModalOpen(false);
+    },
+    onError: (err) => {
+      toast.error(parseApiError(err));
     },
   });
 
   const mutationDelete = useMutation({
     mutationFn: (id) => api.delete(`${endpoint}${id}/`),
     onSuccess: () => {
+      toast.success('Item deleted successfully!');
       queryClient.invalidateQueries([queryKey]);
+    },
+    onError: (err) => {
+      toast.error(parseApiError(err));
     },
   });
 
@@ -65,17 +79,35 @@ export default function CrudTable({
   };
 
   const handleSubmit = (formData) => {
-    const hasFile = Object.values(formData).some((v) => v instanceof File);
-    let payload = formData;
+    let payload = {};
+    
+    // Only extract fields defined in formFields to prevent sending read-only or unrelated data
+    formFields.forEach(field => {
+      const val = formData[field.name];
+      if (field.type === 'file') {
+        // For file fields, only include if a new File was selected
+        if (val instanceof File) {
+          payload[field.name] = val;
+        }
+      } else {
+        // Include other fields if they are defined
+        if (val !== undefined) {
+          payload[field.name] = val;
+        }
+      }
+    });
+
     let config = {};
+    const hasFile = Object.values(payload).some((v) => v instanceof File);
 
     if (hasFile) {
-      payload = new FormData();
-      Object.entries(formData).forEach(([key, val]) => {
+      const fd = new FormData();
+      Object.entries(payload).forEach(([key, val]) => {
         if (val !== undefined && val !== null) {
-          payload.append(key, val);
+          fd.append(key, val);
         }
       });
+      payload = fd;
       config = { headers: { 'Content-Type': 'multipart/form-data' } };
     }
 

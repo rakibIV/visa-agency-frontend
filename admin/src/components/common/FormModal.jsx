@@ -90,17 +90,43 @@ export default function FormModal({
                       ))}
                     </select>
                   ) : (
-                    <input
-                      type={field.type || 'text'}
-                      name={field.name}
-                      value={field.type === 'file' ? undefined : formData[field.name] || ''}
-                      onChange={handleChange}
-                      required={field.required}
-                      min={field.min}
-                      max={field.max}
-                      step={field.step}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors text-slate-800 font-medium text-sm"
-                    />
+                    <div className="space-y-2">
+                      <input
+                        type={field.type || 'text'}
+                        name={field.name}
+                        value={field.type === 'file' ? undefined : formData[field.name] || ''}
+                        onChange={handleChange}
+                        required={field.required}
+                        min={field.min}
+                        max={field.max}
+                        step={field.step}
+                        className={
+                          field.type === 'file'
+                            ? "w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                            : "w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors text-slate-800 font-medium text-sm"
+                        }
+                      />
+                      {field.type === 'file' && initialData && initialData[field.name] && typeof initialData[field.name] === 'string' && (
+                        <div className="mt-2 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between">
+                          <div className="flex items-center gap-2 overflow-hidden">
+                            <svg className="w-5 h-5 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span className="text-sm font-semibold text-blue-900 truncate">
+                              {initialData[field.name].split('/').pop()}
+                            </span>
+                          </div>
+                          <a 
+                            href={initialData[field.name]} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="text-xs font-bold bg-white px-3 py-1.5 rounded-lg text-blue-600 hover:bg-blue-600 hover:text-white transition-colors border border-blue-200 hover:border-blue-600 shadow-sm"
+                          >
+                            View File
+                          </a>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </>
               )}

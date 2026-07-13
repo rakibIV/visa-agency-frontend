@@ -1,22 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
 import CrudTable from '../../components/common/CrudTable';
-import api from '../../api/client';
 
 export default function SocialLinksPage() {
-  const { data: companies, isLoading } = useQuery({
-    queryKey: ['settings-companies-list'],
-    queryFn: () => api.get('/companies/').then(r => r.data.results ?? r.data),
-  });
-
-  if (isLoading) {
-    return <div className="p-6 text-slate-500">Loading companies...</div>;
-  }
-
-  const companyOptions = (companies || []).map((c) => ({
-    label: c.company_name,
-    value: c.id,
-  }));
-
   const platformOptions = [
     { label: 'Facebook', value: 'FACEBOOK' },
     { label: 'Twitter / X', value: 'TWITTER' },
@@ -46,13 +30,10 @@ export default function SocialLinksPage() {
             </a>
           )
         },
-        { header: 'Order', accessor: 'display_order' },
       ]}
       formFields={[
-        { name: 'company', label: 'Company', type: 'select', required: true, options: companyOptions },
         { name: 'platform', label: 'Platform', type: 'select', required: true, options: platformOptions },
         { name: 'url', label: 'URL Link', type: 'text', required: true },
-        { name: 'display_order', label: 'Display Order', type: 'number', step: "1" },
       ]}
     />
   );

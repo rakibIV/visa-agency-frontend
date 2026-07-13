@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeftIcon, PencilSquareIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import CrudTable from '../../components/common/CrudTable';
+import SeoSection from '../../components/common/SeoSection';
 
 export default function VisaDetailPage() {
   const { id } = useParams();
@@ -82,6 +83,13 @@ export default function VisaDetailPage() {
           </div>
         )}
       </div>
+
+      <SeoSection
+        title="Visa SEO"
+        endpoint={`/visas/${id}/seo/`}
+        initialData={visa.seo}
+        queryKey={['visa', id]}
+      />
 
       <div className="space-y-12 pt-8">
         <CrudTable

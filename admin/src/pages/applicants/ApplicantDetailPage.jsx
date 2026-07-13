@@ -9,12 +9,16 @@ import {
   ArrowPathRoundedSquareIcon,
   DocumentIcon,
   DocumentTextIcon,
+  MapPinIcon,
+  BanknotesIcon,
   PlusIcon,
   PrinterIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import AgreementPrintView from './AgreementPrintView';
 import ReceiptPrintView from './ReceiptPrintView';
+import CrudTable from '../../components/common/CrudTable';
+import FormModal from '../../components/common/FormModal';
 
 export default function ApplicantDetailPage() {
   const { id } = useParams();
@@ -78,6 +82,12 @@ export default function ApplicantDetailPage() {
       console.error('Profile update error:', err?.response?.data || err.message);
     },
   });
+
+  const { data: countriesData } = useQuery({
+    queryKey: ['countries-list'],
+    queryFn: () => api.get('/countries/?limit=100').then(r => r.data.results ?? r.data),
+  });
+  const countryOptions = (countriesData || []).map(c => ({ label: c.name, value: c.id }));
 
   // Mutation for adding payment
   const addPaymentMutation = useMutation({
@@ -299,6 +309,8 @@ export default function ApplicantDetailPage() {
         <nav className="flex gap-6">
           {[
             { id: 'general', label: 'General Info', icon: UserIcon },
+            { id: 'addresses', label: 'Addresses', icon: MapPinIcon },
+            { id: 'documents', label: 'Documents', icon: DocumentIcon },
             { id: 'payments', label: 'Payments & Receipts', icon: CreditCardIcon },
             { id: 'refunds', label: 'Refunds Info', icon: ArrowPathRoundedSquareIcon },
             { id: 'agreements', label: 'Legal Agreements', icon: DocumentTextIcon },
@@ -409,6 +421,54 @@ export default function ApplicantDetailPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'addresses' && (
+          <div className="space-y-6">
+            <CrudTable
+              isNested={true}
+              title="Addresses"
+              subtitle="Manage applicant's addresses."
+              endpoint={`/applicants/${id}/addresses/`}
+              queryKey={`applicant-addresses-${id}`}
+              columns={[
+                { header: 'Type', accessor: 'address_type' },
+                { header: 'Village', accessor: 'village' },
+                { header: 'Post Office', accessor: 'post_office' },
+                { header: 'District', accessor: 'district' },
+                { header: 'Country', accessor: 'country_name' },
+              ]}
+              formFields={[
+                { name: 'address_type', label: 'Address Type (e.g. Present, Permanent)', type: 'text', required: true },
+                { name: 'village', label: 'Village', type: 'text' },
+                { name: 'post_office', label: 'Post Office', type: 'text' },
+                { name: 'police_station', label: 'Police Station', type: 'text' },
+                { name: 'district', label: 'District', type: 'text' },
+                { name: 'country', label: 'Country', type: 'select', options: countryOptions, required: true },
+              ]}
+            />
+          </div>
+        )}
+
+        {activeTab === 'documents' && (
+          <div className="space-y-6">
+            <CrudTable
+              isNested={true}
+              title="Documents"
+              subtitle="Manage applicant's documents."
+              endpoint={`/applicants/${id}/documents/`}
+              queryKey={`applicant-documents-${id}`}
+              columns={[
+                { header: 'Type', accessor: 'document_type' },
+                { header: 'File', render: (item) => item.file ? <a href={item.file} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">View File</a> : 'N/A' },
+                { header: 'Verified', render: (item) => item.verified ? 'Yes' : 'No' },
+              ]}
+              formFields={[
+                { name: 'document_type', label: 'Document Type', type: 'text', required: true },
+                { name: 'file', label: 'File', type: 'file', required: true },
+              ]}
+            />
           </div>
         )}
 
@@ -630,6 +690,33 @@ export default function ApplicantDetailPage() {
 
         {activeTab === 'refunds' && (
           <div className="space-y-6">
+            <CrudTable
+              isNested={true}
+              disableDelete={true}
+              title="Refund Bank Details"
+              subtitle="Manage bank details for refunds. (Edit updates existing, Add creates new)"
+              endpoint={`/applicants/${id}/refund-bank-detail/`}
+              queryKey={`applicant-bank-detail-${id}`}
+              columns={[
+                { header: 'Account Name', accessor: 'account_holder_name' },
+                { header: 'Bank', accessor: 'bank_name' },
+                { header: 'Branch', accessor: 'branch_name' },
+                { header: 'Account/IBAN', accessor: 'account_number_or_iban' },
+              ]}
+              formFields={[
+                { name: 'account_holder_name', label: 'Account Holder Name', type: 'text', required: true },
+                { name: 'bank_name', label: 'Bank Name', type: 'text', required: true },
+                { name: 'branch_name', label: 'Branch Name', type: 'text', required: true },
+                { name: 'district_name', label: 'District Name', type: 'text', required: true },
+                { name: 'account_number_or_iban', label: 'Account Number / IBAN', type: 'text', required: true },
+                { name: 'routing_number', label: 'Routing Number', type: 'text' },
+                { name: 'mobile_number', label: 'Mobile Number', type: 'text' },
+                { name: 'country', label: 'Country', type: 'select', options: countryOptions, required: true },
+                { name: 'notes', label: 'Notes', type: 'textarea' },
+              ]}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
             {/* Warning Banner if not rejected */}
             {!(applicant.status?.slug?.includes('reject') || applicant.status?.name?.toLowerCase().includes('reject') || applicant.status_name?.toLowerCase().includes('reject')) && (
               <div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-xl text-sm mb-4">
@@ -805,6 +892,7 @@ export default function ApplicantDetailPage() {
               </div>
             )}
           </div>
+        </div>
         )}
 
         {activeTab === 'agreements' && (

@@ -1,31 +1,138 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 @import "tailwindcss";
 
 @theme {
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
-  --color-primary-200: #bfdbfe;
-  --color-primary-300: #93c5fd;
-  --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
-  --color-primary-700: #1d4ed8;
-  --color-primary-800: #1e40af;
-  --color-primary-900: #1e3a8a;
-  --color-primary-950: #172554;
-  --font-sans: 'Inter', sans-serif;
+  /* Navy Blue Brand Palette */
+  --color-navy-50: #F0F4FF;
+  --color-navy-100: #E0EAFF;
+  --color-navy-200: #C1D4FE;
+  --color-navy-300: #93B4FD;
+  --color-navy-400: #6090FA;
+  --color-navy-500: #3B6CF5;
+  --color-navy-600: #1E4FC0;
+  --color-navy-700: #163D7A;
+  --color-navy-800: #0F2B5B; /* Primary Brand Navy */
+  --color-navy-900: #0B1F42;
+  --color-navy-950: #071332;
+
+  /* Accent Red */
+  --color-accent-50: #FFF5F5;
+  --color-accent-100: #FEE5E8;
+  --color-accent-200: #FECDD3;
+  --color-accent-300: #FDA4AF;
+  --color-accent-400: #FB7185;
+  --color-accent-500: #F43F5E;
+  --color-accent-600: #E41E31; /* Primary Brand Red */
+  --color-accent-700: #C41929;
+  --color-accent-800: #9F1B27;
+  --color-accent-900: #881B25;
+
+  /* Premium Gold/Amber for Trust Badges/Stars */
+  --color-gold-400: #FBBF24;
+  --color-gold-500: #F59E0B;
+  --color-gold-600: #D97706;
+
+  /* Fonts */
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-heading: 'Outfit', system-ui, sans-serif;
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
-    color: var(--color-gray-900);
-    background-color: var(--color-gray-50);
+    -moz-osx-font-smoothing: grayscale;
+    color: #334155;
+    background-color: #F8FAFC; /* Slightly cooler light bg */
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+
+  ::selection {
+    background-color: var(--color-accent-600);
+    color: #ffffff;
+  }
+}
+
+@layer utilities {
+  .glass {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .glass-dark {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    background-color: rgba(11, 31, 66, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .gradient-navy {
+    background: linear-gradient(135deg, #0B1F42 0%, #0F2B5B 100%);
+  }
+
+  .gradient-hero {
+    background: linear-gradient(to right, rgba(7, 19, 50, 0.9) 0%, rgba(15, 43, 91, 0.7) 100%);
   }
   
-  img, svg, video, canvas, figure, picture, [style*="background-image"] {
-    image-rendering: auto;
+  .gradient-dark-overlay {
+    background: linear-gradient(to top, rgba(7, 19, 50, 0.95) 0%, rgba(15, 43, 91, 0.6) 50%, transparent 100%);
   }
+
+  .text-gradient {
+    background: linear-gradient(135deg, #E41E31 0%, #F59E0B 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 4s ease-in-out infinite;
+  }
+
+  .shadow-soft {
+    box-shadow: 0 10px 40px -10px rgba(15, 43, 91, 0.08);
+  }
+
+  .shadow-card {
+    box-shadow: 0 20px 40px -15px rgba(15, 43, 91, 0.1);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-navy-300);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-navy-500);
 }

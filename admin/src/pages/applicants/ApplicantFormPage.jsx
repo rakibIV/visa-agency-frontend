@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
 import api from '../../api/client';
+import { parseApiError } from '../../utils/errorParser';
 
 export default function ApplicantFormPage() {
   const navigate = useNavigate();
@@ -235,21 +237,15 @@ export default function ApplicantFormPage() {
         : api.post('/applicants/', formData, { headers });
     },
     onSuccess: () => {
+      toast.success(isEdit ? 'Applicant updated successfully!' : 'Applicant created successfully!');
       queryClient.invalidateQueries(['applicants']);
       navigate('/applicants');
     },
     onError: (err) => {
-      const data = err?.response?.data;
-      if (data) {
-        const messages = Object.entries(data).map(([k, v]) => {
-          const val = Array.isArray(v) ? v.join(', ') : v;
-          return `${k}: ${val}`;
-        });
-        setError(messages.join('\n'));
-      } else {
-        setError(`Failed to ${isEdit ? 'update' : 'create'} applicant. Please check your inputs.`);
-      }
-    },
+      const errMsg = parseApiError(err);
+      setError(errMsg);
+      toast.error(errMsg);
+    }
   });
 
   const handleSubmit = (e) => {
@@ -485,6 +481,12 @@ export default function ApplicantFormPage() {
             <div className="mt-4">
               <label className={labelCls}>Applicant Photo</label>
               <input type="file" onChange={e => setPhotoFile(e.target.files[0])} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+              {isEdit && applicant?.photo && (
+                <div className="mt-2 text-sm">
+                  <span className="text-slate-500">Current photo: </span>
+                  <a href={applicant.photo} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">View Image</a>
+                </div>
+              )}
             </div>
           </div>
         )}

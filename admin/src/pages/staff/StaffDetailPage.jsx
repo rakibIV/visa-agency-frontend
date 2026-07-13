@@ -139,6 +139,41 @@ export default function StaffDetailPage() {
             { name: 'address', label: 'Address', type: 'textarea' },
           ]}
         />
+
+        <CrudTable
+          isNested={true}
+          title="Staff Documents"
+          subtitle="Manage documents for this staff member."
+          endpoint={`/staffs/${id}/documents/`}
+          queryKey={`staff-documents-${id}`}
+          columns={[
+            { header: 'Type', accessor: 'document_type' },
+            { header: 'File', render: (item) => item.file ? <a href={item.file} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">View File</a> : 'N/A' },
+            { header: 'Verified', render: (item) => item.verified ? 'Yes' : 'No' },
+          ]}
+          formFields={[
+            { name: 'document_type', label: 'Document Type', type: 'text', required: true },
+            { name: 'file', label: 'File', type: 'file', required: true },
+          ]}
+        />
+
+        <CrudTable
+          isNested={true}
+          disableDelete={true}
+          title="Public Profile Configuration"
+          subtitle="Configure the public profile access for this staff member."
+          endpoint={`/staffs/${id}/public-profile/`}
+          queryKey={`staff-public-profile-${id}`}
+          columns={[
+            { header: 'Slug', accessor: 'slug' },
+            { header: 'Is Public', render: (item) => item.is_public ? 'Yes' : 'No' },
+          ]}
+          formFields={[
+            { name: 'slug', label: 'Public Slug (URL)', type: 'text' },
+            { name: 'public_password', label: 'Public Password (Optional, leave blank if unchanged)', type: 'text' },
+            { name: 'is_public', label: 'Is Public?', type: 'checkbox' },
+          ]}
+        />
       </div>
 
     </div>

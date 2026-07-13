@@ -28,7 +28,6 @@ export default function JobFormPage() {
   const [genderPreference, setGenderPreference] = useState('');
   const [ageRequirement, setAgeRequirement] = useState('');
   const [isActive, setIsActive] = useState(true);
-  const [displayOrder, setDisplayOrder] = useState(0);
 
   const [error, setError] = useState('');
 
@@ -58,7 +57,6 @@ export default function JobFormPage() {
       setGenderPreference(job.gender_preference || '');
       setAgeRequirement(job.age_requirement || '');
       setIsActive(job.is_active ?? true);
-      setDisplayOrder(job.display_order || 0);
     }
   }, [job, isEdit]);
 
@@ -100,8 +98,7 @@ export default function JobFormPage() {
       education_requirement: educationRequirement,
       gender_preference: genderPreference,
       age_requirement: ageRequirement,
-      is_active: isActive,
-      display_order: displayOrder,
+      is_active: isActive
     };
 
     saveMutation.mutate(data);
@@ -164,11 +161,6 @@ export default function JobFormPage() {
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Contract Duration (Months)</label>
             <input type="number" value={contractDurationMonths} onChange={e => setContractDurationMonths(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl" />
           </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Display Order</label>
-            <input type="number" value={displayOrder} onChange={e => setDisplayOrder(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl" />
-          </div>
-
           <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Experience Required</label>

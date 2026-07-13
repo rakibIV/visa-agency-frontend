@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
 import api from '../../api/client';
+import { parseApiError } from '../../utils/errorParser';
 
 export default function VisaFormPage() {
   const { id } = useParams();
@@ -24,7 +26,6 @@ export default function VisaFormPage() {
   const [fromAnyCountry, setFromAnyCountry] = useState(true);
   const [isFeatured, setIsFeatured] = useState(false);
   const [isActive, setIsActive] = useState(true);
-  const [displayOrder, setDisplayOrder] = useState(0);
   const [selectedServices, setSelectedServices] = useState([]);
 
   const [error, setError] = useState('');
@@ -69,7 +70,6 @@ export default function VisaFormPage() {
       setFromAnyCountry(visa.from_any_country ?? true);
       setIsFeatured(visa.is_featured || false);
       setIsActive(visa.is_active ?? true);
-      setDisplayOrder(visa.display_order || 0);
       setSelectedServices(visa.services?.map(s => s.id) || []);
     }
   }, [visa, isEdit]);
@@ -79,16 +79,14 @@ export default function VisaFormPage() {
       ? api.patch(`/visas/${id}/`, payload) 
       : api.post('/visas/', payload),
     onSuccess: () => {
+      toast.success(isEdit ? 'Visa updated successfully!' : 'Visa created successfully!');
       queryClient.invalidateQueries(['config-visas']);
       navigate('/config/visas');
     },
     onError: (err) => {
-      const data = err?.response?.data;
-      if (typeof data === 'object') {
-         setError(Object.entries(data).map(([k, v]) => `${k}: ${v}`).join(' | '));
-      } else {
-         setError(err?.response?.data?.detail || 'An error occurred while saving.');
-      }
+      const errMsg = parseApiError(err);
+      setError(errMsg);
+      toast.error(errMsg);
     }
   });
 
@@ -97,7 +95,9 @@ export default function VisaFormPage() {
     setError('');
     
     if (!name || !countryId || !categoryId) {
-      return setError('Name, Country, and Category are required.');
+      const msg = 'Name, Country, and Category are required.';
+      toast.error(msg);
+      return setError(msg);
     }
 
     const payload = {
@@ -116,7 +116,6 @@ export default function VisaFormPage() {
       from_any_country: fromAnyCountry,
       is_featured: isFeatured,
       is_active: isActive,
-      display_order: displayOrder,
       services: selectedServices,
     };
 
@@ -160,9 +159,9 @@ export default function VisaFormPage() {
               {categories?.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Display Order</label>
-            <input type="number" value={displayOrder} onChange={e => setDisplayOrder(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl" />
+          <div className="flex items-center gap-2 mt-4">
+            <input type="checkbox" checked={isFeatured} onChange={e => setIsFeatured(e.target.checked)} id="featured" className="w-4 h-4 text-blue-600 rounded" />
+            <label htmlFor="featured" className="text-sm font-semibold text-slate-700">Featured Visa Scheme</label>
           </div>
           <div className="col-span-1 md:col-span-2">
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Description</label>

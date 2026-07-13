@@ -8,8 +8,7 @@ export default function AgencyServicesPage() {
       endpoint="/agency-services/"
       queryKey="website-agency-services"
       columns={[
-        { header: 'Title', accessor: 'title' },
-        { header: 'Order', accessor: 'display_order' },
+        { header: 'Service Title', accessor: 'title', sortable: true },
         { 
           header: 'Featured', 
           accessor: 'is_featured', 
@@ -25,7 +24,7 @@ export default function AgencyServicesPage() {
         { name: 'description', label: 'Description', type: 'textarea', required: true },
         { name: 'icon', label: 'Icon (URL or Class)', type: 'text' },
         { name: 'is_featured', label: 'Featured', type: 'checkbox' },
-        { name: 'display_order', label: 'Display Order', type: 'number', step: "1" },
+        { name: 'is_active', label: 'Active', type: 'checkbox', default: true },
       ]}
     />
   );

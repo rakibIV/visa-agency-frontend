@@ -102,8 +102,12 @@ export default function ApplicantsPage() {
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
-                          <UserIcon className="w-4 h-4 text-blue-600" />
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
+                          {applicant.photo ? (
+                            <img src={applicant.photo} alt={applicant.full_name} className="w-full h-full object-cover" />
+                          ) : (
+                            <UserIcon className="w-4 h-4 text-blue-600" />
+                          )}
                         </div>
                         {/* Applicant name is a direct anchor to their profile */}
                         <Link

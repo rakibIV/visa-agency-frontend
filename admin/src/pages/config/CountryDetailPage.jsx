@@ -3,7 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeftIcon, PencilSquareIcon, CheckBadgeIcon, TrashIcon, PhotoIcon, PlusIcon } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import CrudTable from '../../components/common/CrudTable';
+import SeoSection from '../../components/common/SeoSection';
+import { parseApiError } from '../../utils/errorParser';
 
 export default function CountryDetailPage() {
   const { slug } = useParams();
@@ -29,12 +32,17 @@ export default function CountryDetailPage() {
       headers: { 'Content-Type': 'multipart/form-data' }
     }),
     onSuccess: () => {
+      toast.success('Gallery image added successfully!');
       queryClient.invalidateQueries(['country-gallery', slug]);
       setShowGalleryModal(false);
       setGalleryFile(null);
       setUploadError('');
     },
-    onError: (err) => setUploadError(err?.response?.data?.detail || 'Failed to upload image.')
+    onError: (err) => {
+      const errMsg = parseApiError(err);
+      setUploadError(errMsg);
+      toast.error(errMsg);
+    }
   });
 
   const deleteGalleryMutation = useMutation({
@@ -57,6 +65,16 @@ export default function CountryDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Cover Image Header */}
+      {country.image && (
+        <div className="w-full h-64 sm:h-80 bg-slate-100 rounded-2xl overflow-hidden shadow-inner relative">
+          <img src={country.image} alt={`${country.name} Cover`} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent" />
+          <div className="absolute bottom-6 left-6 right-6 flex items-end justify-between">
+            <h2 className="text-3xl sm:text-4xl font-black text-white">{country.name}</h2>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/config/countries')} className="p-2 hover:bg-slate-100 rounded-full">
@@ -126,12 +144,6 @@ export default function CountryDetailPage() {
         )}
       </div>
 
-      {country.image && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Cover Image</p>
-          <img src={country.image} alt={`${country.name} Cover`} className="w-full h-64 object-cover rounded-xl" />
-        </div>
-      )}
 
       {/* Country Gallery Section */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
@@ -212,6 +224,13 @@ export default function CountryDetailPage() {
           </div>
         </div>
       )}
+
+      <SeoSection
+        title="Country SEO"
+        endpoint={`/countries/${slug}/seo/`}
+        initialData={country.seo}
+        queryKey={['country', slug]}
+      />
 
       <div className="space-y-12 pt-8 border-t border-slate-100">
         <CrudTable

@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
 import api from '../../api/client';
+import { parseApiError } from '../../utils/errorParser';
 
 export default function StaffFormPage() {
   const { id } = useParams();
@@ -96,21 +98,17 @@ export default function StaffFormPage() {
   const saveMutation = useMutation({
     mutationFn: (formData) => {
       const headers = { 'Content-Type': 'multipart/form-data' };
-      return isEdit 
-        ? api.patch(`/staffs/${staff.id}/`, formData, { headers }) 
-        : api.post('/staffs/', formData, { headers });
+      return isEdit ? api.patch(`/staffs/${staff.id}/`, formData, { headers }) : api.post('/staffs/', formData, { headers });
     },
     onSuccess: () => {
+      toast.success(isEdit ? 'Staff updated successfully!' : 'Staff created successfully!');
       queryClient.invalidateQueries(['staffs']);
-      navigate('/staff');
+      navigate('/staffs');
     },
     onError: (err) => {
-      const data = err?.response?.data;
-      if (typeof data === 'object') {
-         setError(Object.entries(data).map(([k, v]) => `${k}: ${v}`).join(' | '));
-      } else {
-         setError(err?.response?.data?.detail || 'An error occurred while saving.');
-      }
+      const errMsg = parseApiError(err);
+      setError(errMsg);
+      toast.error(errMsg);
     }
   });
 
@@ -162,9 +160,12 @@ export default function StaffFormPage() {
           
           <div className="col-span-1 md:col-span-2 text-sm font-bold text-slate-800 border-b pb-2 mb-2">Account & Organization</div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">User Account ID <span className="text-red-500">*</span></label>
-            <input type="number" value={userId} onChange={e => setUserId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl" placeholder="e.g. 1" required />
-            <p className="text-xs text-slate-400 mt-1">Must map to an existing User record in the system.</p>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">User Account <span className="text-red-500">*</span></label>
+            <select value={userId} onChange={e => setUserId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white" required>
+              <option value="">Select User Account</option>
+              {users?.map(u => <option key={u.id} value={u.id}>{u.username} {u.email ? `(${u.email})` : ''}</option>)}
+            </select>
+            <p className="text-xs text-slate-400 mt-1">Select an existing User record to link with this staff profile.</p>
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Designation <span className="text-red-500">*</span></label>
@@ -242,11 +243,23 @@ export default function StaffFormPage() {
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Photo</label>
             <input type="file" onChange={e => setPhotoFile(e.target.files[0])} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+            {isEdit && staff?.photo && (
+              <div className="mt-2 text-sm">
+                <span className="text-slate-500">Current photo: </span>
+                <a href={staff.photo} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">View Image</a>
+              </div>
+            )}
             <p className="text-xs text-slate-400 mt-1">Required size: exactly 300x300 pixels.</p>
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Signature</label>
             <input type="file" onChange={e => setSignatureFile(e.target.files[0])} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+            {isEdit && staff?.signature && (
+              <div className="mt-2 text-sm">
+                <span className="text-slate-500">Current signature: </span>
+                <a href={staff.signature} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">View Image</a>
+              </div>
+            )}
             <p className="text-xs text-slate-400 mt-1">Required size: exactly 300x80 pixels.</p>
           </div>
 

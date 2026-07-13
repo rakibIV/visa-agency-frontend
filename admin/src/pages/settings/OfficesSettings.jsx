@@ -12,7 +12,6 @@ export default function OfficesSettings() {
         { header: 'Head Office', render: (item) => item.is_head_office ? 'Yes' : 'No' },
         { header: 'Phone', accessor: 'phone' },
         { header: 'Email', accessor: 'email' },
-        { header: 'Order', accessor: 'display_order' },
       ]}
       formFields={[
         { name: 'branch_name', label: 'Branch Name', type: 'text', required: true },
@@ -21,11 +20,6 @@ export default function OfficesSettings() {
         { name: 'address', label: 'Physical Address', type: 'textarea', required: true },
         { name: 'office_hours', label: 'Office Hours', type: 'text' },
         { name: 'is_head_office', label: 'Is Head Office?', type: 'checkbox' },
-        { name: 'display_order', label: 'Display Order', type: 'number', required: true, min: 0 },
-        // Ideally we would fetch companies for a dropdown, but assuming there's only 1 company for now, 
-        // we can either hardcode it or the backend handles it via default. We'll add company ID if needed, 
-        // but backend might require it if it's not a NestedRouter.
-        { name: 'company', label: 'Company ID', type: 'number', required: true },
       ]}
     />
   );
