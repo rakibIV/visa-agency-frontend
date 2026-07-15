@@ -22,7 +22,7 @@ export default function StaffFormPage() {
   const [whatsapp, setWhatsapp] = useState('');
   const [fatherName, setFatherName] = useState('');
   const [motherName, setMotherName] = useState('');
-  const [gender, setGender] = useState('Male');
+  const [gender, setGender] = useState('MALE');
   const [dateOfBirth, setDateOfBirth] = useState('');
   const [nationality, setNationality] = useState('');
   const [nidNumber, setNidNumber] = useState('');
@@ -79,7 +79,7 @@ export default function StaffFormPage() {
       
       let oId = staff.office?.id || staff.office;
       if (typeof oId === 'string' && offices?.length) {
-        const found = offices.find(o => o.name === oId || String(o.id) === oId);
+        const found = offices.find(o => o.branch_name === oId || o.name === oId || String(o.id) === oId);
         if (found) oId = found.id;
       }
       setOfficeId(oId || '');
@@ -87,7 +87,7 @@ export default function StaffFormPage() {
       setWhatsapp(staff.whatsapp || '');
       setFatherName(staff.father_name || '');
       setMotherName(staff.mother_name || '');
-      setGender(staff.gender || 'Male');
+      setGender(staff.gender?.toUpperCase() || 'MALE');
       setDateOfBirth(staff.date_of_birth || '');
       setNationality(staff.nationality || '');
       setNidNumber(staff.nid_number || '');
@@ -103,7 +103,7 @@ export default function StaffFormPage() {
   const saveMutation = useMutation({
     mutationFn: (formData) => {
       const headers = { 'Content-Type': 'multipart/form-data' };
-      return isEdit ? api.patch(`/staffs/${staff.id}/`, formData, { headers }) : api.post('/staffs/', formData, { headers });
+      return isEdit ? api.patch(`/staffs/${id}/`, formData, { headers }) : api.post('/staffs/', formData, { headers });
     },
     onSuccess: () => {
       toast.success(isEdit ? 'Staff updated successfully!' : 'Staff created successfully!');
@@ -200,7 +200,7 @@ export default function StaffFormPage() {
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Office / Branch <span className="text-red-500">*</span></label>
             <select value={officeId} onChange={e => setOfficeId(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white" required>
               <option value="">Select Office</option>
-              {offices?.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+              {offices?.map(o => <option key={o.id} value={o.id}>{o.branch_name || o.name}</option>)}
             </select>
           </div>
           <div>
@@ -238,9 +238,9 @@ export default function StaffFormPage() {
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Gender <span className="text-red-500">*</span></label>
             <select value={gender} onChange={e => setGender(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white" required>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
             </select>
           </div>
           <div>

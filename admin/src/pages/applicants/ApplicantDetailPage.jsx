@@ -465,7 +465,25 @@ export default function ApplicantDetailPage() {
                 { header: 'Verified', render: (item) => item.verified ? 'Yes' : 'No' },
               ]}
               formFields={[
-                { name: 'document_type', label: 'Document Type', type: 'text', required: true },
+                { 
+                  name: 'document_type', 
+                  label: 'Document Type', 
+                  type: 'select', 
+                  required: true,
+                  options: [
+                    { value: 'PASSPORT', label: 'Passport' },
+                    { value: 'BIRTH_CERTIFICATE', label: 'Birth Certificate' },
+                    { value: 'NID', label: 'National ID' },
+                    { value: 'PHOTO', label: 'Photograph' },
+                    { value: 'IELTS', label: 'IELTS Certificate' },
+                    { value: 'BANK_STATEMENT', label: 'Bank Statement' },
+                    { value: 'MEDICAL', label: 'Medical Report' },
+                    { value: 'POLICE_CLEARANCE', label: 'Police Clearance' },
+                    { value: 'EDUCATIONAL', label: 'Educational Certificate' },
+                    { value: 'OTHER', label: 'Other' },
+                  ]
+                },
+                { name: 'title', label: 'Title (if Other)', type: 'text', required: false },
                 { name: 'file', label: 'File', type: 'file', required: true },
               ]}
             />

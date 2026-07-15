@@ -3,10 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import api from '../api/client';
+import ApplicationRequestModal from '../components/ui/ApplicationRequestModal';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 
 export default function VisaDetailPage() {
   const { slug } = useParams();
   const [openFaq, setOpenFaq] = useState(null);
+  const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
 
   const { data: visa, isLoading } = useQuery({
     queryKey: ['visa', slug],
@@ -93,6 +96,20 @@ export default function VisaDetailPage() {
                 )}
               </motion.div>
             </div>
+
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }} 
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2 }}
+              className="shrink-0"
+            >
+              <button 
+                onClick={() => setIsApplyModalOpen(true)}
+                className="w-full sm:w-auto px-8 py-4 bg-accent-600 hover:bg-accent-700 text-white font-black rounded-2xl transition-all shadow-xl hover:shadow-accent-600/30 flex items-center justify-center gap-3 group border border-accent-500/50"
+              >
+                Start Application <ArrowForwardIcon fontSize="small" className="group-hover:translate-x-1 transition-transform" />
+              </button>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -285,10 +302,10 @@ export default function VisaDetailPage() {
               <p className="text-accent-100 mb-8 text-sm font-medium relative z-10">
                 Begin your journey today. Our experts will guide you through every step of the process.
               </p>
-              <Link to="/contact" className="inline-flex items-center justify-center gap-2 w-full px-6 py-4 bg-white text-accent-700 hover:bg-navy-50 font-black rounded-xl transition-all hover:scale-105 relative z-10">
+              <button onClick={() => setIsApplyModalOpen(true)} className="inline-flex items-center justify-center gap-2 w-full px-6 py-4 bg-white text-accent-700 hover:bg-navy-50 font-black rounded-xl transition-all hover:scale-105 relative z-10">
                 Start Application
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
-              </Link>
+              </button>
             </div>
 
             {/* Static Guarantee Card */}
@@ -383,6 +400,14 @@ export default function VisaDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <ApplicationRequestModal 
+        isOpen={isApplyModalOpen} 
+        onClose={() => setIsApplyModalOpen(false)} 
+        targetVisaId={visa.id}
+        targetVisaName={visa.name}
+      />
     </div>
   );
 }

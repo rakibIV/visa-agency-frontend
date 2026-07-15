@@ -1,8 +1,12 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import api from '../api/client';
 
 export default function ContactPage() {
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
+  const [formStatus, setFormStatus] = useState('idle'); // idle, loading, success, error
+
   const { data: company, isLoading } = useQuery({
     queryKey: ['company-info'],
     queryFn: () => api.get('/companies/').then(r => {
@@ -10,6 +14,20 @@ export default function ContactPage() {
       return Array.isArray(results) ? results[0] : results;
     }),
   });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setFormStatus('loading');
+    try {
+      await api.post('/public/messages/', formData);
+      setFormStatus('success');
+      setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+      setTimeout(() => setFormStatus('idle'), 4000);
+    } catch (error) {
+      setFormStatus('error');
+      setTimeout(() => setFormStatus('idle'), 4000);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -84,22 +102,96 @@ export default function ContactPage() {
                 </div>
               </div>
 
-              {/* Contact Form Placeholder */}
-              <div className="bg-navy-50 rounded-2xl p-6 border border-navy-100 flex flex-col justify-center text-center">
-                 <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
-                   <svg className="w-8 h-8 text-accent-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 20.25c4.97 0 9-3.694 9-8.25s-4.03-8.25-9-8.25S3 7.43 3 11.996c0 2.29.98 4.346 2.553 5.823l.11.103.01.009.009.011c.14.148.243.344.298.544.137.5.337 1.488.75 2.923A.75.75 0 0 0 7.42 22c1.684 0 2.95-.5 3.753-1.077l.115-.084c.15-.113.333-.166.516-.145a9.664 9.664 0 0 0 1.254.12h.024Z" />
-                   </svg>
-                 </div>
-                 <h3 className="text-lg font-bold text-navy-900 mb-2">Send us a message</h3>
-                 <p className="text-sm text-navy-600 mb-6">
-                   Reach out to us via email or phone for any inquiries regarding visa processing, status updates, or general information.
+              {/* Contact Form */}
+              <div className="bg-navy-50 rounded-3xl p-8 border border-navy-100 flex flex-col">
+                 <h3 className="text-2xl font-black text-navy-900 mb-2">Send us a message</h3>
+                 <p className="text-sm text-navy-600 mb-8">
+                   Fill out the form below and we will get back to you as soon as possible.
                  </p>
-                 {company?.email && (
-                   <a href={`mailto:${company.email}`} className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-accent-600 hover:bg-accent-700 text-white font-bold rounded-xl shadow-md transition-all">
-                     Email Us Now
-                   </a>
-                 )}
+                 
+                 <form onSubmit={handleSubmit} className="space-y-5 flex-1">
+                   <div>
+                     <label className="block text-xs font-bold text-navy-500 uppercase tracking-wider mb-2">Full Name <span className="text-red-500">*</span></label>
+                     <input
+                       type="text"
+                       required
+                       value={formData.name}
+                       onChange={e => setFormData({ ...formData, name: e.target.value })}
+                       className="w-full px-4 py-3 rounded-xl bg-white border border-navy-200 text-navy-900 focus:outline-none focus:border-accent-500 transition-all font-medium"
+                       placeholder="e.g. John Doe"
+                     />
+                   </div>
+                   
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                     <div>
+                       <label className="block text-xs font-bold text-navy-500 uppercase tracking-wider mb-2">Email <span className="text-red-500">*</span></label>
+                       <input
+                         type="email"
+                         required
+                         value={formData.email}
+                         onChange={e => setFormData({ ...formData, email: e.target.value })}
+                         className="w-full px-4 py-3 rounded-xl bg-white border border-navy-200 text-navy-900 focus:outline-none focus:border-accent-500 transition-all font-medium"
+                         placeholder="you@example.com"
+                       />
+                     </div>
+                     <div>
+                       <label className="block text-xs font-bold text-navy-500 uppercase tracking-wider mb-2">Phone <span className="text-red-500">*</span></label>
+                       <input
+                         type="tel"
+                         required
+                         value={formData.phone}
+                         onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                         className="w-full px-4 py-3 rounded-xl bg-white border border-navy-200 text-navy-900 focus:outline-none focus:border-accent-500 transition-all font-medium"
+                         placeholder="+1 234 567 890"
+                       />
+                     </div>
+                   </div>
+
+                   <div>
+                     <label className="block text-xs font-bold text-navy-500 uppercase tracking-wider mb-2">Subject <span className="text-red-500">*</span></label>
+                     <input
+                       type="text"
+                       required
+                       value={formData.subject}
+                       onChange={e => setFormData({ ...formData, subject: e.target.value })}
+                       className="w-full px-4 py-3 rounded-xl bg-white border border-navy-200 text-navy-900 focus:outline-none focus:border-accent-500 transition-all font-medium"
+                       placeholder="How can we help you?"
+                     />
+                   </div>
+
+                   <div>
+                     <label className="block text-xs font-bold text-navy-500 uppercase tracking-wider mb-2">Message <span className="text-red-500">*</span></label>
+                     <textarea
+                       required
+                       value={formData.message}
+                       onChange={e => setFormData({ ...formData, message: e.target.value })}
+                       className="w-full px-4 py-3 rounded-xl bg-white border border-navy-200 text-navy-900 focus:outline-none focus:border-accent-500 transition-all font-medium min-h-[120px] resize-y"
+                       placeholder="Tell us more about your inquiry..."
+                     />
+                   </div>
+
+                   <button 
+                     type="submit" 
+                     disabled={formStatus === 'loading' || formStatus === 'success'}
+                     className={`w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-bold shadow-md transition-all ${
+                       formStatus === 'success' 
+                         ? 'bg-green-500 text-white cursor-default' 
+                         : formStatus === 'error'
+                           ? 'bg-red-500 text-white'
+                           : 'bg-accent-600 hover:bg-accent-700 text-white hover:shadow-lg hover:-translate-y-0.5'
+                     }`}
+                   >
+                     {formStatus === 'loading' ? (
+                       <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                     ) : formStatus === 'success' ? (
+                       'Message Sent Successfully!'
+                     ) : formStatus === 'error' ? (
+                       'Error. Please try again.'
+                     ) : (
+                       'Send Message'
+                     )}
+                   </button>
+                 </form>
               </div>
             </div>
           </motion.div>

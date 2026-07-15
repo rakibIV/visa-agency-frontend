@@ -98,6 +98,13 @@ export default function DashboardPage() {
     staleTime: 1000 * 60 * 3,
   });
 
+  // Pending Soft Applications (Leads)
+  const { data: pendingRequests } = useQuery({
+    queryKey: ['dash-pending-requests'],
+    queryFn: () => api.get('/application-requests/', { params: { status: 'PENDING', page_size: 5 } }).then(r => r.data.results ?? r.data),
+    staleTime: 1000 * 60 * 3,
+  });
+
   // Current Month Data
   const { data: currentMonthResults } = useQuery({
     queryKey: ['dash-current-month-results'],
@@ -228,6 +235,57 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <Link to={`/applicants/${app.id}`} className="shrink-0 text-xs font-bold text-slate-600 bg-white border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 hover:text-slate-900 shadow-sm transition-all">
+                      Review
+                    </Link>
+                  </motion.div>
+                ))
+              )}
+            </div>
+          </motion.div>
+
+          {/* Pending Soft Applications */}
+          <motion.div variants={container} initial="hidden" animate="show" className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-sm border border-slate-100 mt-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-slate-800">Pending Soft Applications</h3>
+                <p className="text-sm text-slate-500 font-medium mt-0.5">Leads awaiting your review</p>
+              </div>
+              <Link to="/website/application-requests" className="inline-flex items-center gap-2 text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-2 rounded-xl hover:bg-indigo-100 transition-colors">
+                View All <ChevronRightIcon className="w-4 h-4" />
+              </Link>
+            </div>
+            
+            <div className="space-y-3">
+              {pendingRequests?.length === 0 ? (
+                <div className="text-center py-10 bg-slate-50 rounded-2xl border border-slate-100">
+                  <DocumentTextIcon className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                  <p className="text-sm font-bold text-slate-500">No pending leads right now.</p>
+                </div>
+              ) : (
+                pendingRequests?.map((req, i) => (
+                  <motion.div 
+                    variants={fadeUp}
+                    key={req.id} 
+                    className="group flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/50 hover:shadow-sm transition-all"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-indigo-500 font-black text-base shrink-0 group-hover:from-indigo-200 group-hover:to-indigo-300 group-hover:text-indigo-800 transition-colors">
+                        {req.name?.charAt(0)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-slate-800 group-hover:text-indigo-900 transition-colors truncate">{req.name}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="inline-block px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase rounded-md tracking-wide truncate max-w-[120px] sm:max-w-none">
+                            {req.target_visa_name ? `${req.target_country_name} - ${req.target_visa_name}` : 'General Inquiry'}
+                          </span>
+                          <span className="w-1 h-1 rounded-full bg-slate-300 shrink-0"></span>
+                          <span className="text-[12px] text-slate-500 font-medium truncate">
+                            {req.phone}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <Link to="/website/application-requests" className="shrink-0 text-xs font-bold text-slate-600 bg-white border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 hover:text-slate-900 shadow-sm transition-all">
                       Review
                     </Link>
                   </motion.div>

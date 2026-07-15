@@ -50,7 +50,7 @@ export default function StaffDetailPage() {
                 </span>
                 <h3 className="text-lg font-bold text-slate-800">{staff.user?.full_name || staff.full_name || 'No Name'}</h3>
                 <p className="text-slate-500 text-sm font-medium">
-                  {staff.designation?.name || staff.designation || 'Representative'} &nbsp;|&nbsp; {staff.office?.name || staff.office || 'Main Branch'}
+                  {staff.designation?.name || staff.designation || 'Representative'} &nbsp;|&nbsp; {staff.office?.branch_name || staff.office?.name || staff.office || 'Main Branch'}
                 </p>
                 <p className="text-slate-500 text-sm mt-1">Joined: {staff.joining_date}</p>
               </div>
@@ -147,12 +147,12 @@ export default function StaffDetailPage() {
           endpoint={`/staffs/${id}/documents/`}
           queryKey={`staff-documents-${id}`}
           columns={[
-            { header: 'Type', accessor: 'document_type' },
+            { header: 'Title', accessor: 'title' },
             { header: 'File', render: (item) => item.file ? <a href={item.file} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">View File</a> : 'N/A' },
             { header: 'Verified', render: (item) => item.verified ? 'Yes' : 'No' },
           ]}
           formFields={[
-            { name: 'document_type', label: 'Document Type', type: 'text', required: true },
+            { name: 'title', label: 'Document Title', type: 'text', required: true },
             { name: 'file', label: 'File', type: 'file', required: true },
           ]}
         />

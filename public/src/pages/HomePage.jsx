@@ -6,7 +6,6 @@ import api from '../api/client';
 import SectionHeading from '../components/ui/SectionHeading';
 import CountryCard from '../components/ui/CountryCard';
 import StaffProfileModal from '../components/ui/StaffProfileModal';
-import StatusCheckModal from '../components/ui/StatusCheckModal';
 
 // MUI Icons
 import PublicIcon from '@mui/icons-material/Public';
@@ -61,7 +60,23 @@ export default function HomePage() {
   });
 
   const [selectedStaff, setSelectedStaff] = useState(null);
-  const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  
+  const [requestData, setRequestData] = useState({ name: '', email: '', phone: '', message: '' });
+  const [requestStatus, setRequestStatus] = useState('idle');
+
+  const handleRequestSubmit = async (e) => {
+    e.preventDefault();
+    setRequestStatus('loading');
+    try {
+      await api.post('/public/application-requests/', requestData);
+      setRequestStatus('success');
+      setRequestData({ name: '', email: '', phone: '', message: '' });
+      setTimeout(() => setRequestStatus('idle'), 5000);
+    } catch (error) {
+      setRequestStatus('error');
+      setTimeout(() => setRequestStatus('idle'), 5000);
+    }
+  };
 
   const { data: visaCategories, isLoading: isLoadingVisaCategories } = useQuery({
     queryKey: ['visa-categories'],
@@ -127,12 +142,12 @@ export default function HomePage() {
                 >
                   Start Your Journey <ArrowForwardIcon fontSize="small" />
                 </Link>
-                <button
-                  onClick={() => setIsStatusModalOpen(true)}
+                <Link
+                  to="/status-check"
                   className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-navy-50 text-navy-900 border border-navy-100 text-base font-bold rounded-2xl transition-all flex items-center justify-center gap-2"
                 >
                   <AssignmentTurnedInIcon fontSize="small" className="text-accent-600" /> Track Application
-                </button>
+                </Link>
               </div>
             </motion.div>
 
@@ -165,6 +180,174 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ─── PREMIUM SERVICES ─── */}
+      {activeServices.length > 0 && (
+        <section className="py-24 bg-white relative overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-16 gap-6">
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-0.5 bg-accent-600" />
+                  <span className="text-accent-600 font-bold uppercase tracking-widest text-sm">Services</span>
+                </div>
+                <h2 className="text-4xl md:text-5xl font-black text-navy-900 font-heading">Immigration Solutions</h2>
+              </div>
+              <Link to="/services" className="inline-flex items-center gap-2 text-navy-900 font-bold hover:text-accent-600 transition-colors">
+                View All Services <ArrowForwardIcon fontSize="small" />
+              </Link>
+            </div>
+
+            {isLoadingServices ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="animate-pulse bg-navy-50 rounded-[2rem] aspect-[3/4] w-full"></div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {activeServices.map((service, i) => (
+                  <motion.div
+                    key={service.id || i}
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="group relative rounded-[2rem] overflow-hidden shadow-soft"
+                  >
+                    <div className="aspect-[3/4] w-full relative">
+                      <img src={serviceImages[i % 3]} alt={service.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-900/40 to-transparent" />
+                    </div>
+                    <div className="absolute inset-0 p-8 flex flex-col justify-between pointer-events-none">
+                      <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white border border-white/20 self-end">
+                        {serviceIcons[i % 3]}
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-bold text-white mb-2 font-heading">{service.title}</h3>
+                        <p className="text-navy-100 text-sm line-clamp-2 mb-4 opacity-90">
+                          {service.description || 'Comprehensive support for your visa application process tailored to your needs.'}
+                        </p>
+                        <div className="inline-flex items-center gap-2 text-white text-sm font-bold opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 pointer-events-auto cursor-pointer">
+                          Learn More <ArrowForwardIcon fontSize="small" />
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ─── VISA CATEGORIES (New Section) ─── */}
+      <section className="py-20 bg-white border-b border-navy-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-black text-navy-900 font-heading mb-4">Visa Categories</h2>
+            <p className="text-navy-500 font-medium max-w-2xl mx-auto">Explore our specialized visa pathways tailored for your unique global aspirations.</p>
+          </div>
+
+          {isLoadingVisaCategories ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="animate-pulse bg-navy-50 rounded-3xl h-48 w-full"></div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {visaCategories?.filter(vc => vc.is_active).map((category, i) => (
+                <Link
+                  key={category.id || i}
+                  to={`/countries?category=${category.slug}`}
+                  className="bg-navy-50 hover:bg-accent-600 group rounded-3xl p-8 transition-all duration-300 transform hover:-translate-y-2 border border-navy-100 hover:shadow-xl hover:shadow-accent-600/20 flex flex-col items-center text-center"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-white text-accent-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-black text-navy-900 group-hover:text-white mb-3 transition-colors">{category.name}</h3>
+                  <p className="text-sm text-navy-500 group-hover:text-accent-100 transition-colors line-clamp-2">
+                    {category.description || `Explore pathways for ${category.name} and apply today.`}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ─── FEATURED DESTINATIONS ─── */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-16 gap-4">
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-0.5 bg-accent-600" />
+                <span className="text-accent-600 font-bold uppercase tracking-widest text-sm">Destinations</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-black text-navy-900 font-heading">Popular Destinations</h2>
+            </div>
+            <Link to="/countries" className="inline-flex items-center gap-2 text-navy-900 font-bold hover:text-accent-600 transition-colors">
+              Explore All <ArrowForwardIcon fontSize="small" />
+            </Link>
+          </div>
+
+          {isLoadingCountries ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <div key={i} className="animate-pulse bg-navy-50 rounded-3xl h-[400px] w-full"></div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {featuredCountries.map((country, i) => (
+                <CountryCard key={country.slug || i} country={country} index={i} />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ─── LIVE UPDATES TICKER (Minimal) ─── */}
+      {(isLoadingUpdates || recentUpdates.length > 0) && (
+        <section className="py-8 bg-[#F8FAFC] border-y border-navy-100/50 overflow-hidden relative">
+          <div className="flex items-center absolute left-0 z-10 h-full px-6 bg-gradient-to-r from-[#F8FAFC] via-[#F8FAFC] to-transparent w-48">
+            <span className="text-xs font-bold uppercase tracking-widest text-navy-900 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-accent-600 animate-pulse" /> Live Feed
+            </span>
+          </div>
+
+          {isLoadingUpdates ? (
+            <div className="flex gap-8 whitespace-nowrap overflow-hidden relative pl-48 opacity-50">
+              <div className="flex gap-4">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="animate-pulse bg-navy-100 h-10 w-48 rounded-full"></div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-8 whitespace-nowrap overflow-x-hidden relative pl-48">
+              <motion.div
+                animate={{ x: ["0%", "-50%"] }}
+                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+                className="flex gap-8 min-w-max"
+              >
+                {[...recentUpdates, ...recentUpdates].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 bg-white px-5 py-2 rounded-full shadow-sm border border-navy-50">
+                    <div className={`w-2 h-2 rounded-full ${item.status?.toLowerCase() === 'approved' ? 'bg-green-500' : 'bg-red-500'}`} />
+                    <span className="text-sm font-bold text-navy-900">{item.applicant_name}</span>
+                    <span className="text-sm text-navy-400 border-l border-navy-100 pl-3">{item.country}</span>
+                    <span className="text-xs text-navy-500 bg-navy-50 px-2 py-0.5 rounded-md">{item.visa}</span>
+                  </div>
+                ))}
+              </motion.div>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* ─── MINIMAL STATS GRID ─── */}
       <section className="py-12 border-y border-navy-50 bg-white">
@@ -291,66 +474,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── PREMIUM SERVICES ─── */}
-      {activeServices.length > 0 && (
-        <section className="py-24 bg-white relative overflow-hidden">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-16 gap-6">
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-0.5 bg-accent-600" />
-                  <span className="text-accent-600 font-bold uppercase tracking-widest text-sm">Services</span>
-                </div>
-                <h2 className="text-4xl md:text-5xl font-black text-navy-900 font-heading">Immigration Solutions</h2>
-              </div>
-              <Link to="/services" className="inline-flex items-center gap-2 text-navy-900 font-bold hover:text-accent-600 transition-colors">
-                View All Services <ArrowForwardIcon fontSize="small" />
-              </Link>
-            </div>
-
-            {isLoadingServices ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="animate-pulse bg-navy-50 rounded-[2rem] aspect-[3/4] w-full"></div>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {activeServices.map((service, i) => (
-                  <motion.div
-                    key={service.id || i}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    className="group relative rounded-[2rem] overflow-hidden shadow-soft"
-                  >
-                    <div className="aspect-[3/4] w-full relative">
-                      <img src={serviceImages[i % 3]} alt={service.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-900/40 to-transparent" />
-                    </div>
-                    <div className="absolute inset-0 p-8 flex flex-col justify-between pointer-events-none">
-                      <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white border border-white/20 self-end">
-                        {serviceIcons[i % 3]}
-                      </div>
-                      <div>
-                        <h3 className="text-2xl font-bold text-white mb-2 font-heading">{service.title}</h3>
-                        <p className="text-navy-100 text-sm line-clamp-2 mb-4 opacity-90">
-                          {service.description || 'Comprehensive support for your visa application process tailored to your needs.'}
-                        </p>
-                        <div className="inline-flex items-center gap-2 text-white text-sm font-bold opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 pointer-events-auto cursor-pointer">
-                          Learn More <ArrowForwardIcon fontSize="small" />
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
       {/* ─── GLOBAL PARTNERSHIPS ─── */}
       <section className="py-24 bg-navy-900 text-white relative overflow-hidden">
         <div className="absolute inset-0 z-0">
@@ -382,106 +505,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* ─── FEATURED DESTINATIONS ─── */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-16 gap-4">
-            <div className="max-w-2xl">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-0.5 bg-accent-600" />
-                <span className="text-accent-600 font-bold uppercase tracking-widest text-sm">Destinations</span>
-              </div>
-              <h2 className="text-4xl md:text-5xl font-black text-navy-900 font-heading">Popular Destinations</h2>
-            </div>
-            <Link to="/countries" className="inline-flex items-center gap-2 text-navy-900 font-bold hover:text-accent-600 transition-colors">
-              Explore All <ArrowForwardIcon fontSize="small" />
-            </Link>
-          </div>
-
-          {isLoadingCountries ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="animate-pulse bg-navy-50 rounded-3xl h-[400px] w-full"></div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {featuredCountries.map((country, i) => (
-                <CountryCard key={country.slug || i} country={country} index={i} />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ─── VISA CATEGORIES (New Section) ─── */}
-      <section className="py-20 bg-white border-b border-navy-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-black text-navy-900 font-heading mb-4">Visa Categories</h2>
-            <p className="text-navy-500 font-medium max-w-2xl mx-auto">Explore our specialized visa pathways tailored for your unique global aspirations.</p>
-          </div>
-
-          {isLoadingVisaCategories ? (
-            <div className="flex flex-wrap justify-center gap-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="animate-pulse bg-navy-50 rounded-full h-14 w-40"></div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-wrap justify-center gap-4">
-              {visaCategories?.filter(vc => vc.is_active).map((category, i) => (
-                <Link
-                  key={category.id || i}
-                  to={`/countries?category=${category.slug}`}
-                  className="px-8 py-4 bg-navy-50 hover:bg-accent-600 text-navy-900 hover:text-white rounded-full font-bold transition-all duration-300 shadow-sm hover:shadow-lg hover:-translate-y-1 group"
-                >
-                  {category.name} <ArrowForwardIcon fontSize="small" className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all ml-1" />
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ─── LIVE UPDATES TICKER (Minimal) ─── */}
-      {(isLoadingUpdates || recentUpdates.length > 0) && (
-        <section className="py-8 bg-[#F8FAFC] border-y border-navy-100/50 overflow-hidden relative">
-          <div className="flex items-center absolute left-0 z-10 h-full px-6 bg-gradient-to-r from-[#F8FAFC] via-[#F8FAFC] to-transparent w-48">
-            <span className="text-xs font-bold uppercase tracking-widest text-navy-900 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-accent-600 animate-pulse" /> Live Feed
-            </span>
-          </div>
-
-          {isLoadingUpdates ? (
-            <div className="flex gap-8 whitespace-nowrap overflow-hidden relative pl-48 opacity-50">
-              <div className="flex gap-4">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="animate-pulse bg-navy-100 h-10 w-48 rounded-full"></div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="flex gap-8 whitespace-nowrap overflow-x-hidden relative pl-48">
-              <motion.div
-                animate={{ x: ["0%", "-50%"] }}
-                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-                className="flex gap-8 min-w-max"
-              >
-                {[...recentUpdates, ...recentUpdates].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 bg-white px-5 py-2 rounded-full shadow-sm border border-navy-50">
-                    <div className={`w-2 h-2 rounded-full ${item.status?.toLowerCase() === 'approved' ? 'bg-green-500' : 'bg-red-500'}`} />
-                    <span className="text-sm font-bold text-navy-900">{item.applicant_name}</span>
-                    <span className="text-sm text-navy-400 border-l border-navy-100 pl-3">{item.country}</span>
-                    <span className="text-xs text-navy-500 bg-navy-50 px-2 py-0.5 rounded-md">{item.visa}</span>
-                  </div>
-                ))}
-              </motion.div>
-            </div>
-          )}
-        </section>
-      )}
 
       {/* ─── TESTIMONIALS & CONTACT ─── */}
       <section className="py-24 relative overflow-hidden bg-white">
@@ -555,18 +578,33 @@ export default function HomePage() {
                   <h3 className="text-3xl font-black text-white mb-3 font-heading">Free Consultation</h3>
                   <p className="text-navy-200 text-sm mb-10">Drop your details below. Our experts typically respond within 2 hours.</p>
 
-                  <form className="space-y-5" onSubmit={e => e.preventDefault()}>
+                  <form className="space-y-5" onSubmit={handleRequestSubmit}>
                     <div>
-                      <input type="text" placeholder="Your Full Name" className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-navy-300 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all font-medium" />
+                      <input type="text" required value={requestData.name} onChange={e => setRequestData({...requestData, name: e.target.value})} placeholder="Your Full Name" className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-navy-300 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all font-medium" />
                     </div>
                     <div>
-                      <input type="email" placeholder="Email Address" className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-navy-300 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all font-medium" />
+                      <input type="email" value={requestData.email} onChange={e => setRequestData({...requestData, email: e.target.value})} placeholder="Email Address (Optional)" className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-navy-300 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all font-medium" />
                     </div>
                     <div>
-                      <input type="tel" placeholder="Phone Number" className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-navy-300 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all font-medium" />
+                      <input type="tel" required value={requestData.phone} onChange={e => setRequestData({...requestData, phone: e.target.value})} placeholder="Phone Number" className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-navy-300 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all font-medium" />
                     </div>
-                    <button type="submit" className="w-full py-4 mt-4 bg-accent-600 hover:bg-accent-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-accent-600/20 flex items-center justify-center gap-2">
-                      Request Callback <ArrowForwardIcon fontSize="small" />
+                    <div>
+                      <textarea rows={3} value={requestData.message} onChange={e => setRequestData({...requestData, message: e.target.value})} placeholder="How can we help you?" className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-navy-300 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all font-medium resize-none"></textarea>
+                    </div>
+                    
+                    {requestStatus === 'success' && (
+                      <div className="p-3 bg-green-500/20 border border-green-500/50 rounded-xl text-green-400 text-sm font-medium text-center">
+                        Request submitted successfully! We'll contact you soon.
+                      </div>
+                    )}
+                    {requestStatus === 'error' && (
+                      <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400 text-sm font-medium text-center">
+                        Something went wrong. Please try again later.
+                      </div>
+                    )}
+
+                    <button type="submit" disabled={requestStatus === 'loading'} className="w-full py-4 mt-4 bg-accent-600 hover:bg-accent-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-accent-600/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
+                      {requestStatus === 'loading' ? 'Submitting...' : 'Request Callback'} <ArrowForwardIcon fontSize="small" />
                     </button>
                   </form>
                 </div>
@@ -583,10 +621,6 @@ export default function HomePage() {
         onClose={() => setSelectedStaff(null)}
         staffSlug={selectedStaff?.slug}
         staffName={selectedStaff?.name}
-      />
-      <StatusCheckModal
-        isOpen={isStatusModalOpen}
-        onClose={() => setIsStatusModalOpen(false)}
       />
     </div>
   );

@@ -43,6 +43,7 @@ const NAV_ITEMS = [
       { label: 'Notices', icon: MegaphoneIcon, to: '/website/notices' },
       { label: 'Reviews', icon: StarIcon, to: '/website/reviews' },
       { label: 'Messages', icon: ChatBubbleLeftEllipsisIcon, to: '/website/messages' },
+      { label: 'App Requests', icon: ClipboardDocumentListIcon, to: '/website/application-requests' },
       { label: 'Social Links', icon: LinkIcon, to: '/website/social-links' },
     ],
   },

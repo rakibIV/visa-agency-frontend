@@ -193,7 +193,7 @@ export default function CountryDetailPage() {
                         className="block bg-white rounded-3xl p-6 shadow-sm hover:shadow-hover border border-navy-100 hover:border-accent-200 transition-all duration-300 transform group-hover:-translate-y-1 relative overflow-hidden"
                       >
                         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 group-hover:text-accent-500 transition-all duration-300 transform group-hover:scale-110 group-hover:rotate-12">
-                          <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+                          <svg className="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" /></svg>
                         </div>
                         <h3 className="text-xl font-bold text-navy-900 mb-3 group-hover:text-accent-600 transition-colors pr-12">{visa.name}</h3>
                         

@@ -33,7 +33,28 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
 
     try {
       const { data } = await api.post(`/public/staff-profiles/access/`, { employee_id: employeeId, password });
-      setProfile(data);
+      
+      setProfile({
+        photo: data.profile?.photo,
+        name: data.profile?.full_name || '',
+        designation: data.profile?.designation,
+        public_bio: data.profile?.public_bio,
+        languages: data.profile?.languages,
+        public_email: data.profile?.email,
+        public_phone: data.profile?.phone,
+        public_whatsapp: data.profile?.whatsapp,
+        office_name: data.profile?.office,
+        current_month_slot: data.slot_summary ? {
+          used_slot: data.slot_summary.current_month_used_slot || 0,
+          total_slot: data.slot_summary.current_month_total_slot || 0,
+        } : null,
+        lifetime_stats: data.slot_summary ? {
+          total_used_slots: data.slot_summary.lifetime_used_slot || 0,
+          approved_visas: data.slot_summary.approved_visas || 0,
+          rejected_visas: data.slot_summary.rejected_visas || 0,
+          processing_visas: data.slot_summary.processing_visas || 0,
+        } : null
+      });
     } catch (err) {
       setError(err?.response?.data?.detail || 'Incorrect password.');
     } finally {
@@ -184,7 +205,7 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
                       </div>
                       <div>
                         <div className="text-[10px] font-bold text-navy-400 uppercase tracking-wider">WhatsApp</div>
-                        <a href={`https://wa.me/${profile.public_whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-navy-900 hover:text-accent-600 transition-colors">{profile.public_whatsapp}</a>
+                        <a href={`https://wa.me/${profile.public_whatsapp?.replace?.(/\D/g, '') || ''}`} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-navy-900 hover:text-accent-600 transition-colors">{profile.public_whatsapp}</a>
                       </div>
                     </div>
                   )}
@@ -230,7 +251,23 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
                       <div className="text-[10px] font-bold text-navy-300 uppercase tracking-widest mb-2">Lifetime Achieved</div>
                       <div className="flex items-baseline gap-2">
                         <div className="text-3xl font-black leading-none">{profile.lifetime_stats.total_used_slots}</div>
-                        <div className="text-xs font-bold text-accent-400 uppercase tracking-widest">Successful Visas</div>
+                        <div className="text-xs font-bold text-accent-400 uppercase tracking-widest">Total Slots Used</div>
+                      </div>
+                      
+                      {/* Detailed Visa Breakdown */}
+                      <div className="grid grid-cols-3 gap-2 mt-4">
+                        <div className="bg-green-50 rounded-xl p-3 border border-green-100 flex flex-col items-center justify-center text-center">
+                          <div className="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-1">Approved</div>
+                          <div className="text-xl font-black text-green-700 leading-none">{profile.lifetime_stats.approved_visas}</div>
+                        </div>
+                        <div className="bg-amber-50 rounded-xl p-3 border border-amber-100 flex flex-col items-center justify-center text-center">
+                          <div className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">Process</div>
+                          <div className="text-xl font-black text-amber-700 leading-none">{profile.lifetime_stats.processing_visas}</div>
+                        </div>
+                        <div className="bg-red-50 rounded-xl p-3 border border-red-100 flex flex-col items-center justify-center text-center">
+                          <div className="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-1">Rejected</div>
+                          <div className="text-xl font-black text-red-700 leading-none">{profile.lifetime_stats.rejected_visas}</div>
+                        </div>
                       </div>
                     </div>
                   )}

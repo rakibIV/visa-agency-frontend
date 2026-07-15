@@ -39,6 +39,7 @@ import AgencyServicesPage from './pages/website/AgencyServicesPage';
 import NoticesPage from './pages/website/NoticesPage';
 import ReviewsPage from './pages/website/ReviewsPage';
 import ContactMessagesPage from './pages/website/ContactMessagesPage';
+import ApplicationRequestsPage from './pages/website/ApplicationRequestsPage';
 import SocialLinksPage from './pages/website/SocialLinksPage';
 
 const queryClient = new QueryClient({
@@ -182,6 +183,10 @@ function App() {
               <Route
                 path="/website/messages"
                 element={<AdminLayout><ContactMessagesPage /></AdminLayout>}
+              />
+              <Route
+                path="/website/application-requests"
+                element={<AdminLayout><ApplicationRequestsPage /></AdminLayout>}
               />
               <Route
                 path="/website/social-links"
