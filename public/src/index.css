@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 @import "tailwindcss";
 
@@ -12,7 +12,7 @@
   --color-navy-500: #3B6CF5;
   --color-navy-600: #1E4FC0;
   --color-navy-700: #163D7A;
-  --color-navy-800: #0F2B5B; /* Primary Brand Navy */
+  --color-navy-800: #0F2B5B;
   --color-navy-900: #0B1F42;
   --color-navy-950: #071332;
 
@@ -23,24 +23,35 @@
   --color-accent-300: #FDA4AF;
   --color-accent-400: #FB7185;
   --color-accent-500: #F43F5E;
-  --color-accent-600: #E41E31; /* Primary Brand Red */
+  --color-accent-600: #E41E31;
   --color-accent-700: #C41929;
   --color-accent-800: #9F1B27;
   --color-accent-900: #881B25;
 
-  /* Premium Gold/Amber for Trust Badges/Stars */
+  /* Premium Gold */
   --color-gold-400: #FBBF24;
   --color-gold-500: #F59E0B;
   --color-gold-600: #D97706;
 
+  /* Semantic Surfaces */
+  --color-surface: #FFFFFF;
+  --color-surface-dim: #F8FAFC;
+  --color-surface-elevated: #FFFFFF;
+
   /* Fonts */
   --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-heading: 'Outfit', system-ui, sans-serif;
+
+  /* Breakpoints */
+  --breakpoint-xs: 480px;
 }
 
 @layer base {
   html {
     scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+    width: 100%;
   }
 
   body {
@@ -48,11 +59,19 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     color: #334155;
-    background-color: #F8FAFC; /* Slightly cooler light bg */
+    background-color: var(--color-surface);
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
   }
 
   ::selection {
@@ -62,30 +81,125 @@
 }
 
 @layer utilities {
+  /* ── Fluid Typography ── */
+  .display-hero {
+    font-size: clamp(2.5rem, 5vw + 1rem, 5rem);
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    font-weight: 900;
+  }
+
+  .display-lg {
+    font-size: clamp(2rem, 4vw + 0.5rem, 3.75rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+  }
+
+  .display-md {
+    font-size: clamp(1.5rem, 3vw + 0.25rem, 2.5rem);
+    line-height: 1.15;
+    letter-spacing: -0.015em;
+    font-weight: 700;
+  }
+
+  .heading-lg {
+    font-size: clamp(1.25rem, 2vw + 0.25rem, 1.875rem);
+    line-height: 1.25;
+    font-weight: 700;
+  }
+
+  .heading-md {
+    font-size: clamp(1.125rem, 1.5vw + 0.25rem, 1.5rem);
+    line-height: 1.3;
+    font-weight: 600;
+  }
+
+  .body-lg {
+    font-size: clamp(1rem, 0.5vw + 0.875rem, 1.25rem);
+    line-height: 1.7;
+  }
+
+  .body-sm {
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+
+  .eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+
+  /* ── Section Spacing ── */
+  .section-py {
+    padding-top: clamp(4rem, 8vw, 8rem);
+    padding-bottom: clamp(4rem, 8vw, 8rem);
+  }
+
+  .section-py-sm {
+    padding-top: clamp(2.5rem, 5vw, 5rem);
+    padding-bottom: clamp(2.5rem, 5vw, 5rem);
+  }
+
+  /* ── Containers ── */
+  .container-narrow {
+    max-width: 48rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .container-wide {
+    max-width: 80rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-narrow,
+    .container-wide {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-narrow,
+    .container-wide {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  /* ── Glass Effects ── */
   .glass {
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    background-color: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background-color: rgba(255, 255, 255, 0.85);
   }
 
   .glass-dark {
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    background-color: rgba(11, 31, 66, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background-color: rgba(11, 31, 66, 0.75);
   }
 
-  .gradient-navy {
-    background: linear-gradient(135deg, #0B1F42 0%, #0F2B5B 100%);
-  }
-
+  /* ── Gradients ── */
   .gradient-hero {
-    background: linear-gradient(to right, rgba(7, 19, 50, 0.9) 0%, rgba(15, 43, 91, 0.7) 100%);
+    background: linear-gradient(135deg, #071332 0%, #0F2B5B 50%, #0B1F42 100%);
   }
-  
+
   .gradient-dark-overlay {
-    background: linear-gradient(to top, rgba(7, 19, 50, 0.95) 0%, rgba(15, 43, 91, 0.6) 50%, transparent 100%);
+    background: linear-gradient(to top, rgba(7, 19, 50, 0.95) 0%, rgba(7, 19, 50, 0.6) 40%, transparent 100%);
+  }
+
+  .gradient-subtle {
+    background: linear-gradient(180deg, var(--color-surface-dim) 0%, var(--color-surface) 100%);
   }
 
   .text-gradient {
@@ -95,44 +209,130 @@
     background-clip: text;
   }
 
+  /* ── Noise / Grain Texture Overlay ── */
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+  }
+
+  /* ── Shadows ── */
+  .shadow-soft {
+    box-shadow: 0 4px 24px -4px rgba(15, 43, 91, 0.06);
+  }
+
+  .shadow-card {
+    box-shadow: 0 8px 32px -8px rgba(15, 43, 91, 0.1);
+  }
+
+  .shadow-elevated {
+    box-shadow: 0 20px 60px -12px rgba(15, 43, 91, 0.15);
+  }
+
+  /* ── Animations ── */
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
 
-  .animate-pulse-slow {
-    animation: pulse-slow 4s ease-in-out infinite;
+  .animate-fade-up {
+    animation: fade-up 0.6s ease-out both;
   }
 
-  .shadow-soft {
-    box-shadow: 0 10px 40px -10px rgba(15, 43, 91, 0.08);
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out both;
   }
 
-  .shadow-card {
-    box-shadow: 0 20px 40px -15px rgba(15, 43, 91, 0.1);
+  .animate-scale-in {
+    animation: scale-in 0.5s ease-out both;
+  }
+
+  .animate-slide-left {
+    animation: slide-left 0.6s ease-out both;
+  }
+
+  .animate-slide-right {
+    animation: slide-right 0.6s ease-out both;
   }
 }
 
+/* ── Keyframes ── */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-15px); }
 }
 
-@keyframes pulse-slow {
-  0%, 100% { opacity: 0.8; }
-  50% { opacity: 1; }
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Custom scrollbar */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ── Custom Scrollbar ── */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F1F5F9;
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-navy-300);
-  border-radius: 4px;
+  background: var(--color-navy-200);
+  border-radius: 100px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-navy-500);
+  background: var(--color-navy-400);
+}
+
+/* ── Focus visible for accessibility ── */
+*:focus-visible {
+  outline: 2px solid var(--color-accent-500);
+  outline-offset: 2px;
+  border-radius: 4px;
 }

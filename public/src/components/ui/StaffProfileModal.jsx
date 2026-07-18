@@ -81,19 +81,20 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="relative w-full max-w-2xl bg-white rounded-[2rem] shadow-2xl overflow-hidden z-10"
+          className="relative w-full max-w-2xl bg-white rounded-[2rem] shadow-2xl z-10 max-h-[90vh] flex flex-col"
         >
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 w-10 h-10 bg-navy-50 text-navy-500 rounded-full flex items-center justify-center hover:bg-navy-100 hover:text-navy-900 transition-colors z-20"
+            className="absolute top-4 right-4 w-10 h-10 bg-white/20 text-white rounded-full flex items-center justify-center hover:bg-white/30 transition-colors z-20 backdrop-blur-md"
+            style={{ mixBlendMode: 'difference' }}
           >
             <CloseIcon fontSize="small" />
           </button>
 
           {!profile ? (
             /* PASSWORD PROMPT */
-            <div className="p-10 sm:p-12 text-center">
+            <div className="p-8 sm:p-12 text-center overflow-y-auto">
               <div className="w-20 h-20 bg-navy-50 text-accent-600 rounded-full flex items-center justify-center mx-auto mb-6">
                 <LockIcon fontSize="large" />
               </div>
@@ -134,11 +135,11 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
             </div>
           ) : (
             /* PROFILE VIEW */
-            <div>
+            <div className="overflow-y-auto flex-1">
               {/* Header */}
-              <div className="bg-navy-900 text-white p-10 flex flex-col sm:flex-row items-center sm:items-start gap-8 relative overflow-hidden">
+              <div className="bg-navy-900 text-white p-8 sm:p-10 flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8 relative overflow-hidden shrink-0">
                 <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(#fff 1px, transparent 1px)", backgroundSize: "20px 20px" }}></div>
-                <div className="relative z-10 w-32 h-32 rounded-[1.5rem] bg-navy-800 border-4 border-white/10 overflow-hidden shrink-0 shadow-xl">
+                <div className="relative z-10 w-28 h-28 sm:w-32 sm:h-32 rounded-[1.5rem] bg-navy-800 border-4 border-white/10 overflow-hidden shrink-0 shadow-xl">
                   {profile.photo ? (
                     <img src={profile.photo} alt={profile.name} className="w-full h-full object-cover" />
                   ) : (
@@ -147,9 +148,9 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
                     </div>
                   )}
                 </div>
-                <div className="relative z-10 text-center sm:text-left flex-1">
-                  <h2 className="text-3xl font-black mb-1 font-heading">{profile.name}</h2>
-                  <p className="text-accent-400 font-bold mb-3">{profile.designation}</p>
+                <div className="relative z-10 text-center sm:text-left flex-1 min-w-0">
+                  <h2 className="text-2xl sm:text-3xl font-black mb-1 font-heading truncate">{profile.name}</h2>
+                  <p className="text-accent-400 font-bold mb-3 truncate">{profile.designation}</p>
                   
                   {/* Bio */}
                   {profile.public_bio && (
@@ -158,7 +159,7 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
                     </p>
                   )}
                   
-                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 sm:gap-3">
                     {profile.languages?.map((lang, idx) => (
                       <span key={idx} className="px-3 py-1 bg-white/10 rounded-full text-xs font-bold text-white tracking-wide">
                         {lang.trim()}
@@ -169,7 +170,7 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
               </div>
 
               {/* Body */}
-              <div className="p-8 grid sm:grid-cols-2 gap-8">
+              <div className="p-6 sm:p-8 grid sm:grid-cols-2 gap-8">
                 {/* Contact Info */}
                 <div className="space-y-4">
                   <h3 className="text-xs font-bold text-navy-400 uppercase tracking-widest mb-2 border-b border-navy-50 pb-2">Contact Details</h3>
@@ -179,9 +180,9 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
                       <div className="w-8 h-8 rounded-lg bg-navy-50 text-navy-500 flex items-center justify-center shrink-0">
                         <EmailIcon fontSize="small" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-[10px] font-bold text-navy-400 uppercase tracking-wider">Email</div>
-                        <a href={`mailto:${profile.public_email}`} className="text-sm font-semibold text-navy-900 hover:text-accent-600 transition-colors">{profile.public_email}</a>
+                        <a href={`mailto:${profile.public_email}`} className="text-sm font-semibold text-navy-900 hover:text-accent-600 transition-colors break-all">{profile.public_email}</a>
                       </div>
                     </div>
                   )}
@@ -191,9 +192,9 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
                       <div className="w-8 h-8 rounded-lg bg-navy-50 text-navy-500 flex items-center justify-center shrink-0">
                         <PhoneIcon fontSize="small" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-[10px] font-bold text-navy-400 uppercase tracking-wider">Phone</div>
-                        <a href={`tel:${profile.public_phone}`} className="text-sm font-semibold text-navy-900 hover:text-accent-600 transition-colors">{profile.public_phone}</a>
+                        <a href={`tel:${profile.public_phone}`} className="text-sm font-semibold text-navy-900 hover:text-accent-600 transition-colors truncate block">{profile.public_phone}</a>
                       </div>
                     </div>
                   )}
@@ -203,9 +204,9 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
                       <div className="w-8 h-8 rounded-lg bg-green-50 text-green-600 flex items-center justify-center shrink-0">
                         <WhatsAppIcon fontSize="small" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-[10px] font-bold text-navy-400 uppercase tracking-wider">WhatsApp</div>
-                        <a href={`https://wa.me/${profile.public_whatsapp?.replace?.(/\D/g, '') || ''}`} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-navy-900 hover:text-accent-600 transition-colors">{profile.public_whatsapp}</a>
+                        <a href={`https://wa.me/${profile.public_whatsapp?.replace?.(/\D/g, '') || ''}`} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-navy-900 hover:text-accent-600 transition-colors truncate block">{profile.public_whatsapp}</a>
                       </div>
                     </div>
                   )}
@@ -215,7 +216,7 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
                       <div className="w-8 h-8 rounded-lg bg-navy-50 text-navy-500 flex items-center justify-center shrink-0">
                         <LocationOnIcon fontSize="small" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="text-[10px] font-bold text-navy-400 uppercase tracking-wider">Branch</div>
                         <div className="text-sm font-semibold text-navy-900">{profile.office_name}</div>
                       </div>
@@ -255,18 +256,18 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
                       </div>
                       
                       {/* Detailed Visa Breakdown */}
-                      <div className="grid grid-cols-3 gap-2 mt-4">
-                        <div className="bg-green-50 rounded-xl p-3 border border-green-100 flex flex-col items-center justify-center text-center">
-                          <div className="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-1">Approved</div>
-                          <div className="text-xl font-black text-green-700 leading-none">{profile.lifetime_stats.approved_visas}</div>
+                      <div className="grid grid-cols-3 gap-1 sm:gap-2 mt-4">
+                        <div className="bg-green-50 rounded-xl p-2 sm:p-3 border border-green-100 flex flex-col items-center justify-center text-center">
+                          <div className="text-[9px] sm:text-[10px] font-bold text-green-600 uppercase tracking-widest mb-1">Approved</div>
+                          <div className="text-lg sm:text-xl font-black text-green-700 leading-none">{profile.lifetime_stats.approved_visas}</div>
                         </div>
-                        <div className="bg-amber-50 rounded-xl p-3 border border-amber-100 flex flex-col items-center justify-center text-center">
-                          <div className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">Process</div>
-                          <div className="text-xl font-black text-amber-700 leading-none">{profile.lifetime_stats.processing_visas}</div>
+                        <div className="bg-amber-50 rounded-xl p-2 sm:p-3 border border-amber-100 flex flex-col items-center justify-center text-center">
+                          <div className="text-[9px] sm:text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">Process</div>
+                          <div className="text-lg sm:text-xl font-black text-amber-700 leading-none">{profile.lifetime_stats.processing_visas}</div>
                         </div>
-                        <div className="bg-red-50 rounded-xl p-3 border border-red-100 flex flex-col items-center justify-center text-center">
-                          <div className="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-1">Rejected</div>
-                          <div className="text-xl font-black text-red-700 leading-none">{profile.lifetime_stats.rejected_visas}</div>
+                        <div className="bg-red-50 rounded-xl p-2 sm:p-3 border border-red-100 flex flex-col items-center justify-center text-center">
+                          <div className="text-[9px] sm:text-[10px] font-bold text-red-600 uppercase tracking-widest mb-1">Rejected</div>
+                          <div className="text-lg sm:text-xl font-black text-red-700 leading-none">{profile.lifetime_stats.rejected_visas}</div>
                         </div>
                       </div>
                     </div>

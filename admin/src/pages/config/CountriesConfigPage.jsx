@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { PlusIcon, TrashIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, GlobeAltIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/client';
 
@@ -7,10 +8,13 @@ export default function CountriesConfigPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
+  const [search, setSearch] = useState('');
+
   const { data: countries, isLoading } = useQuery({
-    queryKey: ['config-countries'],
-    queryFn: () => api.get('/countries/').then((r) => r.data.results ?? r.data),
+    queryKey: ['config-countries', search],
+    queryFn: () => api.get('/countries/', { params: search ? { search } : {} }).then((r) => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 10,
+    keepPreviousData: true,
   });
 
   const deleteMutation = useMutation({
@@ -32,6 +36,19 @@ export default function CountriesConfigPage() {
           <PlusIcon className="w-4 h-4" />
           Add Country
         </button>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex items-center gap-3 mb-6">
+        <div className="relative flex-1">
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search countries..."
+            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
+          />
+        </div>
       </div>
 
       {isLoading ? (

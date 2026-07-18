@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 
-export default function SectionHeading({ title, subtitle, light = false, center = true }) {
+export default function SectionHeading({ title, subtitle, light = false, center = true, eyebrow = '' }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -9,16 +9,16 @@ export default function SectionHeading({ title, subtitle, light = false, center 
       transition={{ duration: 0.5 }}
       className={`${center ? 'text-center' : ''} mb-12`}
     >
-      <h2 className={`text-3xl sm:text-4xl font-extrabold tracking-tight ${light ? 'text-white' : 'text-navy-900'}`}>
+      {eyebrow && (
+        <span className={`eyebrow mb-3 block ${light ? 'text-accent-400' : 'text-accent-600'}`}>
+          {eyebrow}
+        </span>
+      )}
+      <h2 className={`display-lg font-heading ${light ? 'text-white' : 'text-navy-900'} mb-4`}>
         {title}
       </h2>
-      <div className="flex items-center gap-2 mt-3 mb-4 justify-center">
-        <div className="w-8 h-1 rounded-full bg-accent-600" />
-        <div className="w-3 h-1 rounded-full bg-accent-400" />
-        <div className="w-1.5 h-1 rounded-full bg-accent-300" />
-      </div>
       {subtitle && (
-        <p className={`text-base sm:text-lg max-w-2xl ${center ? 'mx-auto' : ''} ${light ? 'text-navy-200' : 'text-navy-600'}`}>
+        <p className={`body-lg max-w-2xl ${center ? 'mx-auto' : ''} ${light ? 'text-navy-200' : 'text-navy-600'}`}>
           {subtitle}
         </p>
       )}

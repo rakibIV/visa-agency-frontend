@@ -21,6 +21,7 @@ export default function CountryFormPage() {
   const [processingTime, setProcessingTime] = useState('');
   const [shortDescription, setShortDescription] = useState('');
   const [description, setDescription] = useState('');
+  const [displayOrder, setDisplayOrder] = useState(0);
   const [isFeatured, setIsFeatured] = useState(false);
   const [isActive, setIsActive] = useState(true);
 
@@ -45,6 +46,7 @@ export default function CountryFormPage() {
       setProcessingTime(country.processing_time || '');
       setShortDescription(country.short_description || '');
       setDescription(country.description || '');
+      setDisplayOrder(country.display_order ?? 0);
       setIsFeatured(country.is_featured || false);
       setIsActive(country.is_active ?? true);
     }
@@ -88,6 +90,7 @@ export default function CountryFormPage() {
     fd.append('processing_time', processingTime);
     fd.append('short_description', shortDescription);
     fd.append('description', description);
+    fd.append('display_order', displayOrder);
     fd.append('is_featured', isFeatured);
     fd.append('is_active', isActive);
 

@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import api from '../api/client';
-import SectionHeading from '../components/ui/SectionHeading';
 import CountryCard from '../components/ui/CountryCard';
 import StaffProfileModal from '../components/ui/StaffProfileModal';
 
@@ -17,17 +16,11 @@ import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import DomainVerificationIcon from '@mui/icons-material/DomainVerification';
-import HandshakeIcon from '@mui/icons-material/Handshake';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import StarIcon from '@mui/icons-material/Star';
 import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
-import PriceCheckIcon from '@mui/icons-material/PriceCheck';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import CampaignIcon from '@mui/icons-material/Campaign';
-import ManageSearchIcon from '@mui/icons-material/ManageSearch';
-import CloseIcon from '@mui/icons-material/Close';
-import LockIcon from '@mui/icons-material/Lock';
 
 // Local Assets
 import heroImg from '../assets/hero.jpg';
@@ -36,17 +29,11 @@ import workServiceImg from '../assets/job man.jpg';
 import studyServiceImg from '../assets/master yourself.jpg';
 import designServiceImg from '../assets/residency.jpg';
 import handshakeImg from '../assets/Handshake.jpg';
-import testBg from '../assets/Advice to New Grads.jpg';
 
 export default function HomePage() {
   const { data: countries, isLoading: isLoadingCountries } = useQuery({
     queryKey: ['countries'],
     queryFn: () => api.get('/countries/').then(r => r.data.results ?? r.data),
-  });
-
-  const { data: services, isLoading: isLoadingServices } = useQuery({
-    queryKey: ['services'],
-    queryFn: () => api.get('/agency-services/').then(r => r.data.results ?? r.data),
   });
 
   const { data: reviews, isLoading: isLoadingReviews } = useQuery({
@@ -59,8 +46,14 @@ export default function HomePage() {
     queryFn: () => api.get('/public/applicant-results/current-month/').then(r => r.data),
   });
 
+  const { data: visaCategories, isLoading: isLoadingVisaCategories } = useQuery({
+    queryKey: ['visa-categories'],
+    queryFn: () => api.get('/visa-categories/').then(r => r.data.results ?? r.data),
+  });
+
   const [selectedStaff, setSelectedStaff] = useState(null);
-  
+  const [activeReview, setActiveReview] = useState(0);
+
   const [requestData, setRequestData] = useState({ name: '', email: '', phone: '', message: '' });
   const [requestStatus, setRequestStatus] = useState('idle');
 
@@ -78,231 +71,227 @@ export default function HomePage() {
     }
   };
 
-  const { data: visaCategories, isLoading: isLoadingVisaCategories } = useQuery({
-    queryKey: ['visa-categories'],
-    queryFn: () => api.get('/visa-categories/').then(r => r.data.results ?? r.data),
-  });
-
-  const { data: notices } = useQuery({
-    queryKey: ['public-notices'],
-    queryFn: () => api.get('/notices/').then(r => r.data.results ?? r.data),
-  });
-
-  const { data: staffSlots } = useQuery({
-    queryKey: ['public-staff-slots'],
-    queryFn: () => api.get('/public/staff-slots/current-month/').then(r => r.data),
-  });
-
   const featuredCountries = countries?.filter(c => c.is_active)?.slice(0, 6) || [];
+  const activeReviews = reviews?.filter(r => r.is_active)?.slice(0, 5) || [];
+  const recentUpdates = updates?.slice(0, 8) || [];
 
-  const defaultServices = [
-    { id: 1, title: 'Work Visa Programs', description: 'Secure your global career with our comprehensive work permit assistance.', is_active: true },
-    { id: 2, title: 'Study Abroad Visas', description: 'Achieve your academic dreams with placement in top-tier universities.', is_active: true },
-    { id: 3, title: 'Permanent Residency', description: 'Start a new life with our expert PR and immigration pathway services.', is_active: true }
+  const services = [
+    { title: 'Work Visa Programs', description: 'Secure your global career with comprehensive work permit assistance for top destinations.', image: workServiceImg, icon: <WorkIcon /> },
+    { title: 'Study Abroad Visas', description: 'Achieve your academic dreams with placement in top-tier universities worldwide.', image: studyServiceImg, icon: <SchoolIcon /> },
+    { title: 'Permanent Residency', description: 'Start a new life with our expert PR and immigration pathway services.', image: designServiceImg, icon: <FlightTakeoffIcon /> },
   ];
-  const activeServices = defaultServices.filter(s => s.is_active).slice(0, 3);
 
-  const activeReviews = reviews?.filter(r => r.is_active)?.slice(0, 3) || [];
-  const recentUpdates = updates?.slice(0, 6) || [];
-
-  const serviceImages = [workServiceImg, studyServiceImg, designServiceImg];
-  const serviceIcons = [<WorkIcon fontSize="large" />, <SchoolIcon fontSize="large" />, <FlightTakeoffIcon fontSize="large" />];
+  const steps = [
+    { num: '01', title: 'Consultation', desc: 'Free initial assessment of your profile and goals.' },
+    { num: '02', title: 'Documentation', desc: 'We help gather and perfect all required paperwork.' },
+    { num: '03', title: 'Submission', desc: 'Flawless application filing by our certified experts.' },
+    { num: '04', title: 'Approval', desc: 'Track your status live until you get the green light.' },
+  ];
 
   return (
     <div className="bg-white selection:bg-accent-600 selection:text-white">
-      {/* ─── HERO SECTION (Minimal Split) ─── */}
-      <section className="relative min-h-[90vh] pt-28 pb-16 flex items-center bg-[#FDFDFD] overflow-hidden">
-        {/* Subtle Background Pattern */}
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: "radial-gradient(#000 1px, transparent 1px)", backgroundSize: "32px 32px" }}></div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+      {/* ═══════════════════════════════════════════
+          HERO — Full-bleed cinematic
+      ═══════════════════════════════════════════ */}
+      <section className="relative min-h-[100svh] flex items-center justify-center overflow-hidden">
+        {/* Background Image */}
+        <div className="absolute inset-0 z-0">
+          <img src={heroImg} alt="" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-b from-navy-950/70 via-navy-950/50 to-navy-950/80" />
+        </div>
 
-            <motion.div
-              initial={{ opacity: 0, x: -40 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-navy-50 rounded-full text-xs font-bold text-navy-600 mb-6 uppercase tracking-widest border border-navy-100">
-                <PublicIcon fontSize="small" className="text-accent-600" />
-                World Class Immigration
-              </div>
-              <h1 className="text-5xl sm:text-6xl md:text-7xl font-black text-navy-900 leading-[1.05] mb-6 font-heading tracking-tight">
-                Secure Your <br />
-                Future <span className="text-accent-600">Beyond</span><br />
-                <span className="text-accent-600">Borders.</span>
-              </h1>
-              <p className="text-lg text-navy-600 leading-relaxed mb-10 max-w-lg font-medium">
-                Expert guidance and seamless processing for work, study, and immigration visas to the world's most desired destinations. Minimal stress, maximum success.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center gap-4">
-                <Link
-                  to="/contact"
-                  className="w-full sm:w-auto px-8 py-4 bg-navy-900 hover:bg-navy-800 text-white text-base font-bold rounded-2xl shadow-xl shadow-navy-900/20 transition-all hover:-translate-y-1 flex items-center justify-center gap-2"
-                >
-                  Start Your Journey <ArrowForwardIcon fontSize="small" />
-                </Link>
-                <Link
-                  to="/status-check"
-                  className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-navy-50 text-navy-900 border border-navy-100 text-base font-bold rounded-2xl transition-all flex items-center justify-center gap-2"
-                >
-                  <AssignmentTurnedInIcon fontSize="small" className="text-accent-600" /> Track Application
-                </Link>
-              </div>
-            </motion.div>
+        {/* Content */}
+        <div className="relative z-10 container-wide text-center pt-24 pb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white/90 text-xs font-bold uppercase tracking-widest mb-8">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-400 animate-pulse" />
+              World Class Immigration
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1 }}
-              className="relative hidden lg:block"
-            >
-              {/* Minimal geometric background for image */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-navy-50 rounded-full blur-3xl opacity-50 -z-10"></div>
+            <h1 className="display-hero font-heading text-white mb-6 max-w-4xl mx-auto">
+              Your Future Beyond{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-400 to-accent-300">Borders</span>{' '}
+              Starts Here
+            </h1>
 
-              <img src={heroImg} alt="Visa Consultancy" className="w-full h-auto object-contain drop-shadow-2xl relative z-10 max-h-[700px]" />
+            <p className="body-lg text-white/70 max-w-2xl mx-auto mb-10">
+              Expert guidance and seamless processing for work, study, and immigration visas to the world's most desired destinations.
+            </p>
 
-              {/* Floating Stat Widget */}
-              <motion.div
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute bottom-10 -left-10 bg-white/90 backdrop-blur-md p-6 rounded-2xl shadow-card border border-navy-50 z-20 flex items-center gap-4"
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                to="/contact"
+                className="w-full sm:w-auto px-8 py-4 bg-accent-600 hover:bg-accent-700 text-white text-base font-bold rounded-full shadow-lg shadow-accent-600/30 transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2"
               >
-                <div className="w-12 h-12 bg-accent-50 rounded-full flex items-center justify-center text-accent-600">
-                  <VerifiedUserIcon />
+                Start Your Journey <ArrowForwardIcon fontSize="small" />
+              </Link>
+              <Link
+                to="/status-check"
+                className="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-base font-semibold rounded-full transition-all flex items-center justify-center gap-2 backdrop-blur-md"
+              >
+                <AssignmentTurnedInIcon fontSize="small" /> Track Application
+              </Link>
+            </div>
+          </motion.div>
+
+          {/* Trust Row */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.6 }}
+            className="mt-16 flex flex-wrap items-center justify-center gap-6 sm:gap-10"
+          >
+            {[
+              { value: '15k+', label: 'Applicants Served' },
+              { value: '98%', label: 'Success Rate' },
+              { value: '50+', label: 'Countries' },
+              { value: '10+', label: 'Years Experience' },
+            ].map((stat, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <span className="text-2xl sm:text-3xl font-black text-white font-heading">{stat.value}</span>
+                <span className="text-xs text-white/50 uppercase tracking-wide font-semibold leading-tight">{stat.label}</span>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Scroll indicator */}
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
+        >
+          <div className="w-6 h-10 rounded-full border-2 border-white/30 flex justify-center pt-2">
+            <div className="w-1 h-2.5 rounded-full bg-white/50" />
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ═══════════════════════════════════════════
+          SERVICES — Asymmetric editorial grid
+      ═══════════════════════════════════════════ */}
+      <section className="section-py bg-white">
+        <div className="container-wide">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4">
+            <div>
+              <span className="eyebrow text-accent-600 mb-3 block">What We Do</span>
+              <h2 className="display-lg font-heading text-navy-900">Immigration Solutions</h2>
+            </div>
+            <Link to="/visas" className="inline-flex items-center gap-2 text-navy-900 font-bold hover:text-accent-600 transition-colors text-sm">
+              All Services <ArrowForwardIcon fontSize="small" />
+            </Link>
+          </div>
+
+          {/* Asymmetric: 1 large + 2 stacked on desktop */}
+          <div className="grid lg:grid-cols-5 gap-6">
+            {/* Featured large card */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="lg:col-span-3 group relative rounded-3xl overflow-hidden"
+            >
+              <div className="aspect-[4/3] lg:aspect-auto lg:h-full w-full relative min-h-[300px]">
+                <img src={services[0].image} alt={services[0].title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/30 to-transparent" />
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
+                <div className="w-12 h-12 bg-white/15 backdrop-blur-md rounded-xl flex items-center justify-center text-white mb-4 border border-white/20">
+                  {services[0].icon}
                 </div>
-                <div>
-                  <div className="text-2xl font-black text-navy-900">98%</div>
-                  <div className="text-xs font-bold text-navy-500 uppercase tracking-wide">Success Rate</div>
-                </div>
-              </motion.div>
+                <h3 className="heading-lg text-white mb-2 font-heading">{services[0].title}</h3>
+                <p className="text-white/70 text-sm max-w-md mb-4">{services[0].description}</p>
+                <Link to="/visas" className="inline-flex items-center gap-2 text-white text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  Learn More <ArrowForwardIcon fontSize="small" />
+                </Link>
+              </div>
             </motion.div>
+
+            {/* 2 stacked smaller cards */}
+            <div className="lg:col-span-2 flex flex-col gap-6">
+              {services.slice(1).map((service, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: (i + 1) * 0.1 }}
+                  className="group relative rounded-3xl overflow-hidden flex-1"
+                >
+                  <div className="aspect-[16/10] lg:aspect-auto lg:h-full w-full relative min-h-[200px]">
+                    <img src={service.image} alt={service.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/30 to-transparent" />
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 p-6">
+                    <div className="w-10 h-10 bg-white/15 backdrop-blur-md rounded-lg flex items-center justify-center text-white mb-3 border border-white/20">
+                      {service.icon}
+                    </div>
+                    <h3 className="heading-md text-white font-heading mb-1">{service.title}</h3>
+                    <p className="text-white/60 text-xs line-clamp-2">{service.description}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ─── PREMIUM SERVICES ─── */}
-      {activeServices.length > 0 && (
-        <section className="py-24 bg-white relative overflow-hidden">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-16 gap-6">
-              <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-0.5 bg-accent-600" />
-                  <span className="text-accent-600 font-bold uppercase tracking-widest text-sm">Services</span>
-                </div>
-                <h2 className="text-4xl md:text-5xl font-black text-navy-900 font-heading">Immigration Solutions</h2>
-              </div>
-              <Link to="/services" className="inline-flex items-center gap-2 text-navy-900 font-bold hover:text-accent-600 transition-colors">
-                View All Services <ArrowForwardIcon fontSize="small" />
-              </Link>
+      {/* ═══════════════════════════════════════════
+          VISA CATEGORIES — Horizontal pills
+      ═══════════════════════════════════════════ */}
+      {!isLoadingVisaCategories && visaCategories?.filter(vc => vc.is_active).length > 0 && (
+        <section className="section-py-sm bg-surface-dim border-y border-navy-50">
+          <div className="container-wide">
+            <div className="text-center mb-10">
+              <span className="eyebrow text-accent-600 mb-3 block">Explore Pathways</span>
+              <h2 className="display-md font-heading text-navy-900">Visa Categories</h2>
             </div>
 
-            {isLoadingServices ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="animate-pulse bg-navy-50 rounded-[2rem] aspect-[3/4] w-full"></div>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {activeServices.map((service, i) => (
-                  <motion.div
-                    key={service.id || i}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    className="group relative rounded-[2rem] overflow-hidden shadow-soft"
-                  >
-                    <div className="aspect-[3/4] w-full relative">
-                      <img src={serviceImages[i % 3]} alt={service.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-900/40 to-transparent" />
-                    </div>
-                    <div className="absolute inset-0 p-8 flex flex-col justify-between pointer-events-none">
-                      <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-white border border-white/20 self-end">
-                        {serviceIcons[i % 3]}
-                      </div>
-                      <div>
-                        <h3 className="text-2xl font-bold text-white mb-2 font-heading">{service.title}</h3>
-                        <p className="text-navy-100 text-sm line-clamp-2 mb-4 opacity-90">
-                          {service.description || 'Comprehensive support for your visa application process tailored to your needs.'}
-                        </p>
-                        <div className="inline-flex items-center gap-2 text-white text-sm font-bold opacity-0 -translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 pointer-events-auto cursor-pointer">
-                          Learn More <ArrowForwardIcon fontSize="small" />
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* ─── VISA CATEGORIES (New Section) ─── */}
-      <section className="py-20 bg-white border-b border-navy-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-black text-navy-900 font-heading mb-4">Visa Categories</h2>
-            <p className="text-navy-500 font-medium max-w-2xl mx-auto">Explore our specialized visa pathways tailored for your unique global aspirations.</p>
-          </div>
-
-          {isLoadingVisaCategories ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="animate-pulse bg-navy-50 rounded-3xl h-48 w-full"></div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="flex flex-wrap justify-center gap-3">
               {visaCategories?.filter(vc => vc.is_active).map((category, i) => (
                 <Link
                   key={category.id || i}
                   to={`/countries?category=${category.slug}`}
-                  className="bg-navy-50 hover:bg-accent-600 group rounded-3xl p-8 transition-all duration-300 transform hover:-translate-y-2 border border-navy-100 hover:shadow-xl hover:shadow-accent-600/20 flex flex-col items-center text-center"
+                  className="group px-6 py-3.5 rounded-full bg-white border border-navy-100 hover:border-accent-200 hover:bg-accent-50 transition-all duration-300 shadow-soft hover:shadow-card hover:-translate-y-0.5"
                 >
-                  <div className="w-16 h-16 rounded-2xl bg-white text-accent-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-sm">
-                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 0 1-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 0 0 6.16-12.12A14.98 14.98 0 0 0 9.631 8.41m5.96 5.96a14.926 14.926 0 0 1-5.841 2.58m-.119-8.54a6 6 0 0 0-7.381 5.84h4.8m2.581-5.84a14.927 14.927 0 0 0-2.58 5.84m2.699 2.7c-.103.021-.207.041-.311.06a15.09 15.09 0 0 1-2.448-2.448 14.9 14.9 0 0 1 .06-.312m-2.24 2.39a4.493 4.493 0 0 0-1.757 4.306 4.493 4.493 0 0 0 4.306-1.758M16.5 9a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-xl font-black text-navy-900 group-hover:text-white mb-3 transition-colors">{category.name}</h3>
-                  <p className="text-sm text-navy-500 group-hover:text-accent-100 transition-colors line-clamp-2">
-                    {category.description || `Explore pathways for ${category.name} and apply today.`}
-                  </p>
+                  <span className="font-semibold text-navy-900 group-hover:text-accent-600 transition-colors text-sm">
+                    {category.name}
+                  </span>
                 </Link>
               ))}
             </div>
-          )}
-        </div>
-      </section>
+          </div>
+        </section>
+      )}
 
-      {/* ─── FEATURED DESTINATIONS ─── */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-16 gap-4">
-            <div className="max-w-2xl">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-0.5 bg-accent-600" />
-                <span className="text-accent-600 font-bold uppercase tracking-widest text-sm">Destinations</span>
-              </div>
-              <h2 className="text-4xl md:text-5xl font-black text-navy-900 font-heading">Popular Destinations</h2>
+      {/* ═══════════════════════════════════════════
+          FEATURED DESTINATIONS
+      ═══════════════════════════════════════════ */}
+      <section className="section-py bg-white">
+        <div className="container-wide">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4">
+            <div>
+              <span className="eyebrow text-accent-600 mb-3 block">Destinations</span>
+              <h2 className="display-lg font-heading text-navy-900">Popular Countries</h2>
             </div>
-            <Link to="/countries" className="inline-flex items-center gap-2 text-navy-900 font-bold hover:text-accent-600 transition-colors">
+            <Link to="/countries" className="inline-flex items-center gap-2 text-navy-900 font-bold hover:text-accent-600 transition-colors text-sm">
               Explore All <ArrowForwardIcon fontSize="small" />
             </Link>
           </div>
 
           {isLoadingCountries ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="animate-pulse bg-navy-50 rounded-3xl h-[400px] w-full"></div>
+                <div key={i} className="animate-pulse bg-navy-50 rounded-2xl h-72" />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {featuredCountries.map((country, i) => (
                 <CountryCard key={country.slug || i} country={country} index={i} />
               ))}
@@ -311,36 +300,36 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── LIVE UPDATES TICKER (Minimal) ─── */}
+      {/* ═══════════════════════════════════════════
+          LIVE TICKER
+      ═══════════════════════════════════════════ */}
       {(isLoadingUpdates || recentUpdates.length > 0) && (
-        <section className="py-8 bg-[#F8FAFC] border-y border-navy-100/50 overflow-hidden relative">
-          <div className="flex items-center absolute left-0 z-10 h-full px-6 bg-gradient-to-r from-[#F8FAFC] via-[#F8FAFC] to-transparent w-48">
-            <span className="text-xs font-bold uppercase tracking-widest text-navy-900 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-accent-600 animate-pulse" /> Live Feed
+        <section className="py-5 bg-navy-950 overflow-hidden relative">
+          <div className="flex items-center absolute left-0 z-10 h-full px-6 bg-gradient-to-r from-navy-950 via-navy-950 to-transparent w-40">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-white flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-500 animate-pulse" /> Live
             </span>
           </div>
 
           {isLoadingUpdates ? (
-            <div className="flex gap-8 whitespace-nowrap overflow-hidden relative pl-48 opacity-50">
-              <div className="flex gap-4">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="animate-pulse bg-navy-100 h-10 w-48 rounded-full"></div>
-                ))}
-              </div>
+            <div className="flex gap-6 pl-40 opacity-50">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="animate-pulse bg-white/10 h-8 w-40 rounded-full" />
+              ))}
             </div>
           ) : (
-            <div className="flex gap-8 whitespace-nowrap overflow-x-hidden relative pl-48">
+            <div className="flex gap-6 overflow-x-hidden relative pl-40">
               <motion.div
-                animate={{ x: ["0%", "-50%"] }}
-                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-                className="flex gap-8 min-w-max"
+                animate={{ x: ['0%', '-50%'] }}
+                transition={{ duration: 35, repeat: Infinity, ease: 'linear' }}
+                className="flex gap-6 min-w-max"
               >
                 {[...recentUpdates, ...recentUpdates].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 bg-white px-5 py-2 rounded-full shadow-sm border border-navy-50">
-                    <div className={`w-2 h-2 rounded-full ${item.status?.toLowerCase() === 'approved' ? 'bg-green-500' : 'bg-red-500'}`} />
-                    <span className="text-sm font-bold text-navy-900">{item.applicant_name}</span>
-                    <span className="text-sm text-navy-400 border-l border-navy-100 pl-3">{item.country}</span>
-                    <span className="text-xs text-navy-500 bg-navy-50 px-2 py-0.5 rounded-md">{item.visa}</span>
+                  <div key={i} className="flex items-center gap-2.5 bg-white/5 px-4 py-1.5 rounded-full border border-white/10">
+                    <div className={`w-1.5 h-1.5 rounded-full ${item.status?.toLowerCase() === 'approved' ? 'bg-green-400' : 'bg-red-400'}`} />
+                    <span className="text-xs font-semibold text-white">{item.applicant_name}</span>
+                    <span className="text-xs text-white/40">•</span>
+                    <span className="text-xs text-white/50">{item.country}</span>
                   </div>
                 ))}
               </motion.div>
@@ -349,124 +338,60 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ─── MINIMAL STATS GRID ─── */}
-      <section className="py-12 border-y border-navy-50 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 divide-x divide-navy-50">
-            {[
-              { icon: <PublicIcon />, label: 'Countries', value: '50+' },
-              { icon: <DomainVerificationIcon />, label: 'Visas Approved', value: '15k+' },
-              { icon: <TimelineIcon />, label: 'Years Exp.', value: '10+' },
-              { icon: <SupportAgentIcon />, label: 'Expert Staff', value: '24/7' },
-            ].map((stat, i) => (
-              <div key={i} className={`px-4 sm:px-8 text-center ${i === 0 ? 'pl-0' : ''} ${i === 3 ? 'pr-0 border-r-0' : ''} group`}>
-                <div className="text-navy-300 flex justify-center mb-3 group-hover:text-accent-600 transition-colors transform group-hover:scale-110 duration-300">
-                  {stat.icon}
-                </div>
-                <div className="text-3xl sm:text-4xl font-black text-navy-900 mb-1 font-heading">{stat.value}</div>
-                <div className="text-xs font-bold text-navy-500 uppercase tracking-widest">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── ABOUT / WHY CHOOSE US (Icon Grid) ─── */}
-      <section className="py-24 bg-white relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-0.5 bg-accent-600" />
-                <span className="text-accent-600 font-bold uppercase tracking-widest text-sm">Why Us</span>
-              </div>
-              <h2 className="text-4xl md:text-5xl font-black text-navy-900 mb-6 leading-tight font-heading">
-                Clarity in Complexity.
-              </h2>
-              <p className="text-navy-600 text-lg leading-relaxed mb-10">
-                Immigration is complicated. We keep it simple. Our world-class team provides transparent, streamlined pathways tailored to your unique goals.
-              </p>
-
-              <div className="grid sm:grid-cols-2 gap-8 mb-10">
-                {[
-                  { title: 'Certified Experts', desc: 'Licensed professionals handling your case.', icon: <VerifiedUserIcon className="text-accent-600" fontSize="large" /> },
-                  { title: 'Transparent Pricing', desc: 'No hidden fees or surprise charges.', icon: <PriceCheckIcon className="text-accent-600" fontSize="large" /> },
-                  { title: 'Dedicated Support', desc: 'A dedicated manager from start to finish.', icon: <SupportAgentIcon className="text-accent-600" fontSize="large" /> },
-                  { title: 'Streamlined Process', desc: 'Digital tracking and quick turnarounds.', icon: <TimelineIcon className="text-accent-600" fontSize="large" /> },
-                ].map((item, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className="shrink-0 p-3 bg-accent-50 rounded-2xl h-fit">
-                      {item.icon}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-navy-900 mb-1">{item.title}</h4>
-                      <p className="text-sm text-navy-500 leading-relaxed">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <Link to="/about" className="inline-flex items-center gap-2 text-navy-900 font-bold hover:text-accent-600 transition-colors group border-b-2 border-navy-900 hover:border-accent-600 pb-1">
-                More About Us <ArrowForwardIcon fontSize="small" className="group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="relative"
-            >
-              <div className="relative rounded-[2.5rem] overflow-hidden shadow-2xl">
-                <img src={aboutImg} alt="Our Team" className="w-full h-[600px] object-cover" />
-                <div className="absolute inset-0 bg-navy-900/10" />
-              </div>
-            </motion.div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ─── OUR PROCESS (4 Steps Minimal) ─── */}
-      <section className="py-24 bg-[#F8FAFC]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* ═══════════════════════════════════════════
+          HOW IT WORKS — Timeline
+      ═══════════════════════════════════════════ */}
+      <section className="section-py bg-surface-dim relative grain">
+        <div className="container-wide relative z-10">
           <div className="text-center max-w-2xl mx-auto mb-16">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <span className="text-accent-600 font-bold uppercase tracking-widest text-sm">How It Works</span>
-            </div>
-            <h2 className="text-4xl md:text-5xl font-black text-navy-900 font-heading mb-4">Your Path to Global Access</h2>
-            <p className="text-navy-600 text-lg">Four simple steps to secure your visa with our expert guidance.</p>
+            <span className="eyebrow text-accent-600 mb-3 block">How It Works</span>
+            <h2 className="display-lg font-heading text-navy-900 mb-4">Your Path to Global Access</h2>
+            <p className="body-lg text-navy-500">Four simple steps to secure your visa with expert guidance.</p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { num: '01', title: 'Consultation', desc: 'Free initial assessment of your profile and goals.', icon: <SupportAgentIcon fontSize="large" /> },
-              { num: '02', title: 'Documentation', desc: 'We help gather and perfect all required paperwork.', icon: <DescriptionIcon fontSize="large" /> },
-              { num: '03', title: 'Submission', desc: 'Flawless application filing by our certified experts.', icon: <AssignmentTurnedInIcon fontSize="large" /> },
-              { num: '04', title: 'Approval', desc: 'Track your status live until you get the green light.', icon: <CheckCircleIcon fontSize="large" /> },
-            ].map((step, i) => (
+          {/* Desktop: Horizontal timeline */}
+          <div className="hidden md:grid md:grid-cols-4 gap-0 relative">
+            {/* Connecting line */}
+            <div className="absolute top-8 left-[12.5%] right-[12.5%] h-px bg-navy-200 z-0" />
+
+            {steps.map((step, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="bg-white p-8 rounded-3xl shadow-sm border border-navy-50 hover:shadow-card hover:border-accent-100 transition-all group relative overflow-hidden"
+                transition={{ delay: i * 0.12 }}
+                className="flex flex-col items-center text-center relative z-10 px-4"
               >
-                <div className="text-8xl font-black text-navy-50/50 absolute -top-4 -right-4 font-heading group-hover:text-accent-50/50 transition-colors z-0">
-                  {step.num}
+                <div className="w-16 h-16 rounded-full bg-white border-2 border-navy-200 flex items-center justify-center mb-6 shadow-soft group-hover:border-accent-500 transition-colors">
+                  <span className="text-lg font-black text-accent-600 font-heading">{step.num}</span>
                 </div>
-                <div className="relative z-10">
-                  <div className="w-14 h-14 bg-navy-50 text-navy-600 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-accent-600 group-hover:text-white transition-colors duration-300">
-                    {step.icon}
-                  </div>
-                  <h3 className="text-xl font-bold text-navy-900 mb-3">{step.title}</h3>
-                  <p className="text-navy-500 text-sm leading-relaxed">{step.desc}</p>
+                <h3 className="heading-md text-navy-900 font-heading mb-2">{step.title}</h3>
+                <p className="text-sm text-navy-500 leading-relaxed max-w-[200px]">{step.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Mobile: Vertical timeline */}
+          <div className="md:hidden relative pl-10">
+            {/* Vertical line */}
+            <div className="absolute left-[18px] top-0 bottom-0 w-px bg-navy-200" />
+
+            {steps.map((step, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="relative mb-10 last:mb-0"
+              >
+                <div className="absolute -left-10 top-0 w-9 h-9 rounded-full bg-white border-2 border-navy-200 flex items-center justify-center shadow-soft">
+                  <span className="text-xs font-black text-accent-600 font-heading">{step.num}</span>
+                </div>
+                <div className="pl-4">
+                  <h3 className="heading-md text-navy-900 font-heading mb-1">{step.title}</h3>
+                  <p className="text-sm text-navy-500">{step.desc}</p>
                 </div>
               </motion.div>
             ))}
@@ -474,148 +399,202 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── GLOBAL PARTNERSHIPS ─── */}
-      <section className="py-24 bg-navy-900 text-white relative overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <img src={handshakeImg} alt="Partnerships" className="w-full h-full object-cover opacity-20 mix-blend-luminosity" />
-          <div className="absolute inset-0 bg-navy-900/80" />
-        </div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <HandshakeIcon className="text-accent-500" fontSize="large" />
-                <span className="text-accent-400 font-bold uppercase tracking-widest text-sm">Trusted Network</span>
-              </div>
-              <h2 className="text-4xl md:text-5xl font-black mb-6 font-heading text-white">Global Partnerships, <br />Local Expertise.</h2>
-              <p className="text-navy-200 text-lg mb-8 leading-relaxed">
-                We work directly with authorized immigration bodies, top-tier universities, and global employers to ensure your application gets priority treatment.
+      {/* ═══════════════════════════════════════════
+          WHY CHOOSE US — Clean split with checklist
+      ═══════════════════════════════════════════ */}
+      <section className="section-py bg-white">
+        <div className="container-wide">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <span className="eyebrow text-accent-600 mb-3 block">Why Us</span>
+              <h2 className="display-lg font-heading text-navy-900 mb-6">
+                Clarity in Complexity.
+              </h2>
+              <p className="body-lg text-navy-600 mb-10">
+                Immigration is complicated. We keep it simple. Our world-class team provides transparent, streamlined pathways tailored to your unique goals.
               </p>
-              <div className="flex gap-8">
-                <div>
-                  <div className="text-3xl font-black text-white font-heading mb-1">100+</div>
-                  <div className="text-xs text-navy-300 uppercase tracking-wide font-bold">Partner Universities</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-black text-white font-heading mb-1">500+</div>
-                  <div className="text-xs text-navy-300 uppercase tracking-wide font-bold">Employer Network</div>
-                </div>
+
+              <div className="space-y-5 mb-10">
+                {[
+                  'Licensed & certified immigration professionals',
+                  'Transparent pricing with no hidden fees',
+                  'Dedicated case manager from start to finish',
+                  'Digital tracking with real-time status updates',
+                  '100+ partner universities & 500+ employer network',
+                ].map((item, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <CheckCircleIcon className="text-accent-600 shrink-0 mt-0.5" fontSize="small" />
+                    <span className="text-navy-700 font-medium">{item}</span>
+                  </div>
+                ))}
               </div>
-            </div>
+
+              <Link
+                to="/about"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-navy-900 text-white font-bold rounded-full hover:bg-navy-800 transition-all hover:-translate-y-0.5 shadow-lg shadow-navy-900/10 text-sm"
+              >
+                Learn More About Us <ArrowForwardIcon fontSize="small" />
+              </Link>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="relative rounded-3xl overflow-hidden shadow-elevated">
+                <img src={aboutImg} alt="Our Team" className="w-full h-[350px] sm:h-[450px] lg:h-[550px] object-cover" />
+              </div>
+              {/* Floating stat */}
+              <motion.div
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute -bottom-6 -left-4 sm:-left-8 bg-white p-5 rounded-2xl shadow-elevated border border-navy-50 flex items-center gap-4 z-10"
+              >
+                <div className="w-12 h-12 bg-accent-50 rounded-xl flex items-center justify-center text-accent-600">
+                  <VerifiedUserIcon />
+                </div>
+                <div>
+                  <div className="text-2xl font-black text-navy-900 font-heading">98%</div>
+                  <div className="text-[11px] font-bold text-navy-500 uppercase tracking-wide">Success Rate</div>
+                </div>
+              </motion.div>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* ─── TESTIMONIALS & CONTACT ─── */}
-      <section className="py-24 relative overflow-hidden bg-white">
-        <div className="absolute top-0 right-0 w-1/2 h-full hidden lg:block z-0">
-          <img src={testBg} alt="Graduates" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 to-transparent" />
-        </div>
+      {/* ═══════════════════════════════════════════
+          TESTIMONIALS — Single large quote
+      ═══════════════════════════════════════════ */}
+      {activeReviews.length > 0 && (
+        <section className="section-py bg-navy-950 relative grain overflow-hidden">
+          <div className="container-wide relative z-10">
+            <div className="max-w-3xl mx-auto text-center">
+              <span className="eyebrow text-accent-400 mb-3 block">Testimonials</span>
+              <h2 className="display-md font-heading text-white mb-12">What Our Clients Say</h2>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-16 lg:gap-24">
+              {/* Large quote */}
+              <div className="relative min-h-[200px]">
+                <FormatQuoteIcon className="text-white/5 absolute -top-6 left-1/2 -translate-x-1/2" style={{ fontSize: 120 }} />
 
-            {/* Reviews */}
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-0.5 bg-accent-600" />
-                <span className="text-accent-600 font-bold uppercase tracking-widest text-sm">Success Stories</span>
-              </div>
-              <h2 className="text-4xl md:text-5xl font-black text-navy-900 mb-12 font-heading">Voices of Success</h2>
+                <div className="relative z-10">
+                  <div className="flex justify-center text-gold-400 mb-6 gap-0.5">
+                    {[1, 2, 3, 4, 5].map(star => <StarIcon key={star} fontSize="small" />)}
+                  </div>
 
-              {isLoadingReviews ? (
-                <div className="space-y-6">
-                  {[1, 2, 3].map(i => (
-                    <div key={i} className="animate-pulse bg-navy-50 p-8 rounded-3xl h-56 w-full border border-navy-100/50"></div>
-                  ))}
+                  <p className="text-xl sm:text-2xl text-white/90 leading-relaxed font-medium mb-8 max-w-2xl mx-auto">
+                    "{activeReviews[activeReview]?.comment}"
+                  </p>
+
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-12 h-12 rounded-full bg-accent-600 text-white flex items-center justify-center font-bold text-lg font-heading">
+                      {activeReviews[activeReview]?.name?.charAt(0)}
+                    </div>
+                    <div>
+                      <div className="font-bold text-white">{activeReviews[activeReview]?.name}</div>
+                      <div className="text-xs text-white/40 uppercase tracking-wide">Verified Client</div>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-6">
-                  {activeReviews.map((review, i) => (
-                    <motion.div
+              </div>
+
+              {/* Navigation Dots */}
+              {activeReviews.length > 1 && (
+                <div className="flex justify-center gap-2 mt-10">
+                  {activeReviews.map((_, i) => (
+                    <button
                       key={i}
-                      initial={{ opacity: 0, x: -20 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: i * 0.1 }}
-                      className="bg-white p-8 rounded-3xl shadow-soft border border-navy-50 relative"
-                    >
-                      <FormatQuoteIcon className="absolute top-6 right-6 text-navy-50 transform rotate-180" style={{ fontSize: 60 }} />
-                      <div className="flex text-gold-500 mb-4">
-                        {[1, 2, 3, 4, 5].map(star => <StarIcon key={star} fontSize="small" />)}
-                      </div>
-                      <p className="text-navy-700 leading-relaxed mb-6 relative z-10 font-medium">
-                        "{review.comment}"
-                      </p>
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-navy-50 text-navy-900 flex items-center justify-center font-bold text-lg font-heading">
-                          {review.name?.charAt(0)}
-                        </div>
-                        <div>
-                          <div className="font-bold text-navy-900">{review.name}</div>
-                          <div className="text-xs text-navy-400 uppercase tracking-wide">Verified Client</div>
-                        </div>
-                      </div>
-                    </motion.div>
+                      onClick={() => setActiveReview(i)}
+                      className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                        i === activeReview ? 'bg-accent-500 w-8' : 'bg-white/20 hover:bg-white/40'
+                      }`}
+                      aria-label={`View review ${i + 1}`}
+                    />
                   ))}
                 </div>
               )}
             </div>
+          </div>
+        </section>
+      )}
 
-            {/* Quick Contact Form */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="lg:pt-12"
-            >
-              <div className="bg-navy-900 rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 opacity-10">
-                  <SupportAgentIcon style={{ fontSize: 120 }} />
-                </div>
-                <div className="relative z-10">
-                  <h3 className="text-3xl font-black text-white mb-3 font-heading">Free Consultation</h3>
-                  <p className="text-navy-200 text-sm mb-10">Drop your details below. Our experts typically respond within 2 hours.</p>
+      {/* ═══════════════════════════════════════════
+          CONTACT / CTA FORM
+      ═══════════════════════════════════════════ */}
+      <section className="section-py bg-white relative overflow-hidden">
+        <div className="container-wide">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            {/* Left: Copy */}
+            <div>
+              <span className="eyebrow text-accent-600 mb-3 block">Get Started</span>
+              <h2 className="display-lg font-heading text-navy-900 mb-6">
+                Free Consultation
+              </h2>
+              <p className="body-lg text-navy-600 mb-8">
+                Drop your details and our experts will get back to you within 2 hours. No obligation, no hidden fees.
+              </p>
 
-                  <form className="space-y-5" onSubmit={handleRequestSubmit}>
-                    <div>
-                      <input type="text" required value={requestData.name} onChange={e => setRequestData({...requestData, name: e.target.value})} placeholder="Your Full Name" className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-navy-300 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all font-medium" />
+              <div className="space-y-4">
+                {[
+                  { icon: <SupportAgentIcon className="text-accent-600" />, text: 'Expert immigration consultants' },
+                  { icon: <TimelineIcon className="text-accent-600" />, text: 'Response within 2 hours' },
+                  { icon: <DomainVerificationIcon className="text-accent-600" />, text: 'Free initial assessment' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 text-navy-700">
+                    <div className="w-10 h-10 rounded-xl bg-accent-50 flex items-center justify-center shrink-0">
+                      {item.icon}
                     </div>
-                    <div>
-                      <input type="email" value={requestData.email} onChange={e => setRequestData({...requestData, email: e.target.value})} placeholder="Email Address (Optional)" className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-navy-300 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all font-medium" />
-                    </div>
-                    <div>
-                      <input type="tel" required value={requestData.phone} onChange={e => setRequestData({...requestData, phone: e.target.value})} placeholder="Phone Number" className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-navy-300 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all font-medium" />
-                    </div>
-                    <div>
-                      <textarea rows={3} value={requestData.message} onChange={e => setRequestData({...requestData, message: e.target.value})} placeholder="How can we help you?" className="w-full px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-navy-300 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all font-medium resize-none"></textarea>
-                    </div>
-                    
-                    {requestStatus === 'success' && (
-                      <div className="p-3 bg-green-500/20 border border-green-500/50 rounded-xl text-green-400 text-sm font-medium text-center">
-                        Request submitted successfully! We'll contact you soon.
-                      </div>
-                    )}
-                    {requestStatus === 'error' && (
-                      <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400 text-sm font-medium text-center">
-                        Something went wrong. Please try again later.
-                      </div>
-                    )}
-
-                    <button type="submit" disabled={requestStatus === 'loading'} className="w-full py-4 mt-4 bg-accent-600 hover:bg-accent-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-accent-600/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
-                      {requestStatus === 'loading' ? 'Submitting...' : 'Request Callback'} <ArrowForwardIcon fontSize="small" />
-                    </button>
-                  </form>
-                </div>
+                    <span className="font-medium text-sm">{item.text}</span>
+                  </div>
+                ))}
               </div>
-            </motion.div>
+            </div>
 
+            {/* Right: Form */}
+            <div className="bg-navy-950 rounded-3xl p-6 sm:p-10 shadow-elevated relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-accent-600/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+
+              <form className="space-y-4 relative z-10" onSubmit={handleRequestSubmit}>
+                <div>
+                  <input type="text" required value={requestData.name} onChange={e => setRequestData({...requestData, name: e.target.value})} placeholder="Your Full Name" className="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-navy-400 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all text-sm font-medium" />
+                </div>
+                <div>
+                  <input type="email" value={requestData.email} onChange={e => setRequestData({...requestData, email: e.target.value})} placeholder="Email Address (Optional)" className="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-navy-400 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all text-sm font-medium" />
+                </div>
+                <div>
+                  <input type="tel" required value={requestData.phone} onChange={e => setRequestData({...requestData, phone: e.target.value})} placeholder="Phone Number" className="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-navy-400 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all text-sm font-medium" />
+                </div>
+                <div>
+                  <textarea rows={3} value={requestData.message} onChange={e => setRequestData({...requestData, message: e.target.value})} placeholder="How can we help you?" className="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-navy-400 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all text-sm font-medium resize-none" />
+                </div>
+
+                {requestStatus === 'success' && (
+                  <div className="p-3 bg-green-500/20 border border-green-500/30 rounded-xl text-green-400 text-sm font-medium text-center">
+                    ✓ Request submitted! We'll contact you soon.
+                  </div>
+                )}
+                {requestStatus === 'error' && (
+                  <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-red-400 text-sm font-medium text-center">
+                    Something went wrong. Please try again.
+                  </div>
+                )}
+
+                <button type="submit" disabled={requestStatus === 'loading'} className="w-full py-4 bg-accent-600 hover:bg-accent-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-accent-600/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed text-sm">
+                  {requestStatus === 'loading' ? 'Submitting...' : 'Request Free Callback'} <ArrowForwardIcon fontSize="small" />
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ─── MODALS ─── */}
+      {/* Modals */}
       <StaffProfileModal
         isOpen={!!selectedStaff}
         onClose={() => setSelectedStaff(null)}

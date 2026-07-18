@@ -11,6 +11,8 @@ import AgreementsPage from './pages/dashboard/AgreementsPage';
 import ApplicantsPage from './pages/applicants/ApplicantsPage';
 import ApplicantDetailPage from './pages/applicants/ApplicantDetailPage';
 import ApplicantFormPage from './pages/applicants/ApplicantFormPage';
+import ApplicantStatusUpdatePage from './pages/applicants/ApplicantStatusUpdatePage';
+import SoftDeletedApplicantsPage from './pages/applicants/SoftDeletedApplicantsPage';
 import StaffPage from './pages/staff/StaffPage';
 import StaffFormPage from './pages/staff/StaffFormPage';
 import StaffDetailPage from './pages/staff/StaffDetailPage';
@@ -41,6 +43,7 @@ import ReviewsPage from './pages/website/ReviewsPage';
 import ContactMessagesPage from './pages/website/ContactMessagesPage';
 import ApplicationRequestsPage from './pages/website/ApplicationRequestsPage';
 import SocialLinksPage from './pages/website/SocialLinksPage';
+import SendEmailPage from './pages/communication/SendEmailPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -79,6 +82,14 @@ function App() {
               <Route
                 path="/applicants"
                 element={<AdminLayout><ApplicantsPage /></AdminLayout>}
+              />
+              <Route
+                path="/applicants/statuses"
+                element={<AdminLayout><ApplicantStatusUpdatePage /></AdminLayout>}
+              />
+              <Route
+                path="/applicants/deleted"
+                element={<AdminLayout><SoftDeletedApplicantsPage /></AdminLayout>}
               />
               <Route
                 path="/applicants/new"
@@ -192,6 +203,14 @@ function App() {
                 path="/website/social-links"
                 element={<AdminLayout><SocialLinksPage /></AdminLayout>}
               />
+              <Route
+                path="/communication/send-email"
+                element={<AdminLayout><SendEmailPage /></AdminLayout>}
+              />
+              <Route
+                path="/communication/templates"
+                element={<AdminLayout><EmailTemplatesSettings /></AdminLayout>}
+              />
               <Route path="/settings" element={<AdminLayout><SettingsLayout /></AdminLayout>}>
                 <Route path="company" element={<CompanySettings />} />
                 <Route path="offices" element={<OfficesSettings />} />
@@ -199,7 +218,6 @@ function App() {
                 <Route path="statuses" element={<ApplicationStatusSettings />} />
                 <Route path="tags" element={<ApplicantTagsSettings />} />
                 <Route path="lawyers" element={<LawyersSettings />} />
-                <Route path="email-templates" element={<EmailTemplatesSettings />} />
               </Route>
             </Route>
 

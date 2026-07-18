@@ -2,6 +2,10 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import api from '../api/client';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import PlaceIcon from '@mui/icons-material/Place';
+import PhoneIcon from '@mui/icons-material/Phone';
+import EmailIcon from '@mui/icons-material/Email';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', subject: '', message: '' });
@@ -32,171 +36,216 @@ export default function ContactPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-navy-200 border-t-accent-600 rounded-full animate-spin" />
+        <div className="w-12 h-12 border-4 border-navy-100 border-t-accent-600 rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <>
-      <section className="gradient-hero pt-32 pb-24 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-4xl sm:text-5xl font-extrabold text-white mb-4">
-            Get in Touch
-          </motion.h1>
-          <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-navy-200 text-lg max-w-xl mx-auto">
-            We are here to help and answer any question you might have. We look forward to hearing from you.
-          </motion.p>
-        </div>
-      </section>
-
-      <section className="py-20 -mt-12 relative z-10">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            transition={{ delay: 0.2 }}
-            className="bg-white rounded-3xl p-8 sm:p-12 shadow-navy-lg border border-navy-100"
+    <div className="bg-surface-dim selection:bg-accent-600 selection:text-white min-h-screen">
+      {/* ═══════════════════════════════════════════
+          HERO — Minimal Text Hero
+      ═══════════════════════════════════════════ */}
+      <section className="pt-32 pb-16 lg:pt-48 lg:pb-24 relative overflow-hidden bg-white">
+        <div className="container-wide relative z-10 text-center max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <div className="grid md:grid-cols-2 gap-12">
-              {/* Contact Info */}
-              <div>
-                <h2 className="text-2xl font-bold text-navy-900 mb-6">Contact Information</h2>
-                <div className="space-y-6">
-                  {company?.phone && (
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-navy-50 text-accent-600 flex items-center justify-center shrink-0">
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" /></svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-navy-500 uppercase tracking-wider mb-1">Phone</p>
-                        <a href={`tel:${company.phone}`} className="text-lg font-bold text-navy-900 hover:text-accent-600 transition-colors">{company.phone}</a>
-                      </div>
-                    </div>
-                  )}
-
-                  {company?.email && (
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-navy-50 text-accent-600 flex items-center justify-center shrink-0">
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" /></svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-navy-500 uppercase tracking-wider mb-1">Email</p>
-                        <a href={`mailto:${company.email}`} className="text-lg font-bold text-navy-900 hover:text-accent-600 transition-colors break-all">{company.email}</a>
-                      </div>
-                    </div>
-                  )}
-
-                  {company?.address && (
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-navy-50 text-accent-600 flex items-center justify-center shrink-0">
-                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" /></svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-navy-500 uppercase tracking-wider mb-1">Head Office</p>
-                        <p className="text-base font-medium text-navy-800 leading-relaxed">{company.address}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Contact Form */}
-              <div className="bg-navy-50 rounded-3xl p-8 border border-navy-100 flex flex-col">
-                 <h3 className="text-2xl font-black text-navy-900 mb-2">Send us a message</h3>
-                 <p className="text-sm text-navy-600 mb-8">
-                   Fill out the form below and we will get back to you as soon as possible.
-                 </p>
-                 
-                 <form onSubmit={handleSubmit} className="space-y-5 flex-1">
-                   <div>
-                     <label className="block text-xs font-bold text-navy-500 uppercase tracking-wider mb-2">Full Name <span className="text-red-500">*</span></label>
-                     <input
-                       type="text"
-                       required
-                       value={formData.name}
-                       onChange={e => setFormData({ ...formData, name: e.target.value })}
-                       className="w-full px-4 py-3 rounded-xl bg-white border border-navy-200 text-navy-900 focus:outline-none focus:border-accent-500 transition-all font-medium"
-                       placeholder="e.g. John Doe"
-                     />
-                   </div>
-                   
-                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                     <div>
-                       <label className="block text-xs font-bold text-navy-500 uppercase tracking-wider mb-2">Email <span className="text-red-500">*</span></label>
-                       <input
-                         type="email"
-                         required
-                         value={formData.email}
-                         onChange={e => setFormData({ ...formData, email: e.target.value })}
-                         className="w-full px-4 py-3 rounded-xl bg-white border border-navy-200 text-navy-900 focus:outline-none focus:border-accent-500 transition-all font-medium"
-                         placeholder="you@example.com"
-                       />
-                     </div>
-                     <div>
-                       <label className="block text-xs font-bold text-navy-500 uppercase tracking-wider mb-2">Phone <span className="text-red-500">*</span></label>
-                       <input
-                         type="tel"
-                         required
-                         value={formData.phone}
-                         onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                         className="w-full px-4 py-3 rounded-xl bg-white border border-navy-200 text-navy-900 focus:outline-none focus:border-accent-500 transition-all font-medium"
-                         placeholder="+1 234 567 890"
-                       />
-                     </div>
-                   </div>
-
-                   <div>
-                     <label className="block text-xs font-bold text-navy-500 uppercase tracking-wider mb-2">Subject <span className="text-red-500">*</span></label>
-                     <input
-                       type="text"
-                       required
-                       value={formData.subject}
-                       onChange={e => setFormData({ ...formData, subject: e.target.value })}
-                       className="w-full px-4 py-3 rounded-xl bg-white border border-navy-200 text-navy-900 focus:outline-none focus:border-accent-500 transition-all font-medium"
-                       placeholder="How can we help you?"
-                     />
-                   </div>
-
-                   <div>
-                     <label className="block text-xs font-bold text-navy-500 uppercase tracking-wider mb-2">Message <span className="text-red-500">*</span></label>
-                     <textarea
-                       required
-                       value={formData.message}
-                       onChange={e => setFormData({ ...formData, message: e.target.value })}
-                       className="w-full px-4 py-3 rounded-xl bg-white border border-navy-200 text-navy-900 focus:outline-none focus:border-accent-500 transition-all font-medium min-h-[120px] resize-y"
-                       placeholder="Tell us more about your inquiry..."
-                     />
-                   </div>
-
-                   <button 
-                     type="submit" 
-                     disabled={formStatus === 'loading' || formStatus === 'success'}
-                     className={`w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-bold shadow-md transition-all ${
-                       formStatus === 'success' 
-                         ? 'bg-green-500 text-white cursor-default' 
-                         : formStatus === 'error'
-                           ? 'bg-red-500 text-white'
-                           : 'bg-accent-600 hover:bg-accent-700 text-white hover:shadow-lg hover:-translate-y-0.5'
-                     }`}
-                   >
-                     {formStatus === 'loading' ? (
-                       <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                     ) : formStatus === 'success' ? (
-                       'Message Sent Successfully!'
-                     ) : formStatus === 'error' ? (
-                       'Error. Please try again.'
-                     ) : (
-                       'Send Message'
-                     )}
-                   </button>
-                 </form>
-              </div>
-            </div>
+            <span className="eyebrow text-accent-600 mb-6 block">Support 24/7</span>
+            <h1 className="display-hero font-heading text-navy-900 mb-6">
+              Let's Start a <br className="hidden sm:block" />Conversation
+            </h1>
+            <p className="body-lg text-navy-600">
+              Whether you have a question about visa processing, pricing, or our services, our team is ready to answer all your questions.
+            </p>
           </motion.div>
         </div>
       </section>
-    </>
+
+      {/* ═══════════════════════════════════════════
+          CONTACT INFO & FORM — Split Layout
+      ═══════════════════════════════════════════ */}
+      <section className="section-py relative z-10">
+        <div className="container-wide">
+          <div className="bg-white rounded-[2.5rem] shadow-elevated border border-navy-50 overflow-hidden">
+            <div className="grid lg:grid-cols-5 h-full">
+              
+              {/* Left Column: Contact Details */}
+              <div className="lg:col-span-2 bg-navy-950 text-white p-6 sm:p-10 lg:p-14 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-accent-600/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl pointer-events-none" />
+                
+                <div className="relative z-10 h-full flex flex-col justify-between">
+                  <div>
+                    <h3 className="heading-lg font-heading text-white mb-3">Contact Information</h3>
+                    <p className="text-navy-300 mb-10 sm:mb-12">Fill up the form and our team will get back to you within 24 hours.</p>
+
+                    <div className="space-y-6 sm:space-y-8">
+                      {company?.phone && (
+                        <div className="flex items-center gap-4 sm:gap-5 group">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-accent-400 group-hover:bg-accent-600 group-hover:text-white transition-colors shrink-0">
+                            <PhoneIcon fontSize="small" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="eyebrow text-navy-400 mb-1">Phone</p>
+                            <a href={`tel:${company.phone}`} className="text-base sm:text-lg font-medium text-white hover:text-accent-400 transition-colors truncate block">
+                              {company.phone}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+
+                      {company?.email && (
+                        <div className="flex items-center gap-4 sm:gap-5 group">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-accent-400 group-hover:bg-accent-600 group-hover:text-white transition-colors shrink-0">
+                            <EmailIcon fontSize="small" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="eyebrow text-navy-400 mb-1">Email</p>
+                            <a href={`mailto:${company.email}`} className="text-base sm:text-lg font-medium text-white hover:text-accent-400 transition-colors truncate block">
+                              {company.email}
+                            </a>
+                          </div>
+                        </div>
+                      )}
+
+                      {company?.address && (
+                        <div className="flex items-center gap-4 sm:gap-5 group">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-accent-400 group-hover:bg-accent-600 group-hover:text-white transition-colors shrink-0">
+                            <PlaceIcon fontSize="small" />
+                          </div>
+                          <div>
+                            <p className="eyebrow text-navy-400 mb-1">Location</p>
+                            <p className="text-base sm:text-lg font-medium text-white">
+                              {company.address}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Optional social icons could go here at the bottom */}
+                  <div className="mt-12 sm:mt-16 pt-6 sm:pt-8 border-t border-white/10">
+                    <p className="text-sm text-navy-400">
+                      Office Hours: Monday - Friday <br />
+                      9:00 AM to 6:00 PM (AST)
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Contact Form */}
+              <div className="lg:col-span-3 p-6 sm:p-10 lg:p-14">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    {/* Name */}
+                    <div className="space-y-2">
+                      <label htmlFor="name" className="text-sm font-bold text-navy-900 ml-1">Full Name</label>
+                      <input 
+                        type="text" 
+                        id="name" 
+                        required 
+                        value={formData.name} 
+                        onChange={e => setFormData({...formData, name: e.target.value})} 
+                        className="w-full px-5 py-4 bg-surface-dim border border-navy-100 rounded-xl text-navy-900 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 focus:bg-white transition-all font-medium" 
+                        placeholder="John Doe" 
+                      />
+                    </div>
+                    {/* Email */}
+                    <div className="space-y-2">
+                      <label htmlFor="email" className="text-sm font-bold text-navy-900 ml-1">Email Address</label>
+                      <input 
+                        type="email" 
+                        id="email" 
+                        required 
+                        value={formData.email} 
+                        onChange={e => setFormData({...formData, email: e.target.value})} 
+                        className="w-full px-5 py-4 bg-surface-dim border border-navy-100 rounded-xl text-navy-900 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 focus:bg-white transition-all font-medium" 
+                        placeholder="john@example.com" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid sm:grid-cols-2 gap-6">
+                    {/* Phone */}
+                    <div className="space-y-2">
+                      <label htmlFor="phone" className="text-sm font-bold text-navy-900 ml-1">Phone Number</label>
+                      <input 
+                        type="tel" 
+                        id="phone" 
+                        required 
+                        value={formData.phone} 
+                        onChange={e => setFormData({...formData, phone: e.target.value})} 
+                        className="w-full px-5 py-4 bg-surface-dim border border-navy-100 rounded-xl text-navy-900 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 focus:bg-white transition-all font-medium" 
+                        placeholder="+966 XX XXX XXXX" 
+                      />
+                    </div>
+                    {/* Subject */}
+                    <div className="space-y-2">
+                      <label htmlFor="subject" className="text-sm font-bold text-navy-900 ml-1">Subject</label>
+                      <input 
+                        type="text" 
+                        id="subject" 
+                        required 
+                        value={formData.subject} 
+                        onChange={e => setFormData({...formData, subject: e.target.value})} 
+                        className="w-full px-5 py-4 bg-surface-dim border border-navy-100 rounded-xl text-navy-900 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 focus:bg-white transition-all font-medium" 
+                        placeholder="How can we help?" 
+                      />
+                    </div>
+                  </div>
+
+                  {/* Message */}
+                  <div className="space-y-2">
+                    <label htmlFor="message" className="text-sm font-bold text-navy-900 ml-1">Message</label>
+                    <textarea 
+                      id="message" 
+                      rows={5} 
+                      required 
+                      value={formData.message} 
+                      onChange={e => setFormData({...formData, message: e.target.value})} 
+                      className="w-full px-5 py-4 bg-surface-dim border border-navy-100 rounded-xl text-navy-900 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 focus:bg-white transition-all font-medium resize-none" 
+                      placeholder="Write your message here..." 
+                    />
+                  </div>
+
+                  {/* Status Messages */}
+                  {formStatus === 'success' && (
+                    <div className="p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm font-medium flex items-center gap-2">
+                      <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Message sent successfully! We'll be in touch shortly.
+                    </div>
+                  )}
+                  {formStatus === 'error' && (
+                    <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium flex items-center gap-2">
+                      <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      Failed to send message. Please try again or call us directly.
+                    </div>
+                  )}
+
+                  {/* Submit Button */}
+                  <div className="pt-2">
+                    <button 
+                      type="submit" 
+                      disabled={formStatus === 'loading'} 
+                      className="w-full sm:w-auto px-10 py-4 bg-accent-600 hover:bg-accent-700 text-white font-bold rounded-full transition-all shadow-lg shadow-accent-600/20 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 hover:-translate-y-0.5"
+                    >
+                      {formStatus === 'loading' ? 'Sending Message...' : 'Send Message'}
+                      <ArrowForwardIcon fontSize="small" />
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }

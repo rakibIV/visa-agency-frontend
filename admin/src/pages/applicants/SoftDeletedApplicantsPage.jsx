@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
-  PlusIcon,
   UserIcon,
-  PencilSquareIcon,
+  ArrowUturnLeftIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
+import toast from 'react-hot-toast';
 
 const STATUS_STYLES = {
   pending:    'bg-yellow-100 text-yellow-700 ring-1 ring-yellow-200',
@@ -19,74 +19,55 @@ const STATUS_STYLES = {
   cancelled:  'bg-slate-100 text-slate-500 ring-1 ring-slate-200',
 };
 
-export default function ApplicantsPage() {
+export default function SoftDeletedApplicantsPage() {
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const queryClient = useQueryClient();
 
-  const { data: statuses } = useQuery({
-    queryKey: ['application-statuses'],
-    queryFn: () => api.get('/application-statuses/').then(r => r.data.results ?? r.data),
-    staleTime: 1000 * 60 * 15,
+  const { data: applicantsResponse, isLoading, isError } = useQuery({
+    queryKey: ['deleted-applicants', search],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      // Backend action endpoint is /applicants/deleted/
+      return api.get(`/applicants/deleted/?${params.toString()}`).then(r => r.data);
+    },
   });
 
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ['applicants', search, statusFilter],
-    queryFn: () => api.get('/applicants/', { 
-      params: { 
-        ...(search ? { search } : {}),
-        ...(statusFilter ? { status: statusFilter } : {})
-      } 
-    }).then((r) => r.data),
-    staleTime: 1000 * 60 * 2,
-    keepPreviousData: true,
-  });
+  const applicants = applicantsResponse?.results || applicantsResponse || [];
 
-  const applicants = data?.results ?? data ?? [];
+  const restoreMutation = useMutation({
+    mutationFn: (id) => api.post(`/applicants/${id}/restore/`),
+    onSuccess: () => {
+      toast.success('Applicant restored successfully!');
+      queryClient.invalidateQueries(['deleted-applicants']);
+      queryClient.invalidateQueries(['applicants']);
+    },
+    onError: (err) => {
+      toast.error('Failed to restore applicant: ' + (err.response?.data?.detail || err.message));
+    }
+  });
 
   return (
-    <div className="space-y-5 max-w-screen-xl mx-auto">
+    <div className="max-w-screen-xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-800">Applicants</h2>
-          <p className="text-slate-400 text-sm mt-0.5">Manage all visa applicants</p>
+          <h1 className="text-2xl font-bold text-slate-800">Deleted Applicants</h1>
+          <p className="text-slate-500 text-sm mt-1">Review and restore soft-deleted applicants</p>
         </div>
-        <Link to="/applicants/new">
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-blue-700 text-white rounded-xl text-sm font-semibold shadow hover:bg-blue-800 transition-colors"
-          >
-            <PlusIcon className="w-4 h-4" />
-            New Applicant
-          </motion.button>
-        </Link>
       </div>
 
-      {/* Search + Filter bar */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex items-center gap-3">
+      {/* Filters & Search */}
+      <div className="flex flex-col md:flex-row gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
         <div className="relative flex-1">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <MagnifyingGlassIcon className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
+            placeholder="Search by name, ID, passport..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, passport, or application no..."
-            className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
+            className="w-full pl-10 pr-4 py-2 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-100 outline-none transition-all"
           />
-        </div>
-        <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
-          <FunnelIcon className="w-4 h-4 text-slate-400 mr-2" />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-transparent border-none text-sm font-semibold text-slate-600 focus:outline-none focus:ring-0 pr-4"
-          >
-            <option value="">All Statuses</option>
-            {statuses?.map(s => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
         </div>
       </div>
 
@@ -95,16 +76,16 @@ export default function ApplicantsPage() {
         {isLoading ? (
           <div className="py-20 text-center">
             <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-700 rounded-full animate-spin mx-auto" />
-            <p className="text-slate-400 text-sm mt-3">Loading applicants...</p>
+            <p className="text-slate-400 text-sm mt-3">Loading deleted applicants...</p>
           </div>
         ) : isError ? (
-          <div className="py-20 text-center text-red-400 text-sm">Failed to load applicants.</div>
+          <div className="py-20 text-center text-red-400 text-sm">Failed to load deleted applicants.</div>
         ) : (
           <div className="overflow-x-auto w-full">
             <table className="w-full text-sm whitespace-nowrap">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100">
-                  {['App ID', 'Applicant', 'Passport', 'Visa / Destination', 'Status', 'Assigned Staff'].map((h) => (
+                  {['App ID', 'Applicant', 'Passport', 'Visa / Destination', 'Status', 'Actions'].map((h) => (
                     <th key={h} className="px-5 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
@@ -123,20 +104,16 @@ export default function ApplicantsPage() {
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
+                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0 overflow-hidden opacity-75 grayscale">
                           {applicant.photo ? (
                             <img src={applicant.photo} alt={applicant.full_name} className="w-full h-full object-cover" />
                           ) : (
                             <UserIcon className="w-4 h-4 text-blue-600" />
                           )}
                         </div>
-                        {/* Applicant name is a direct anchor to their profile */}
-                        <Link
-                          to={`/applicants/${applicant.id}`}
-                          className="font-semibold text-blue-700 hover:text-blue-900 hover:underline transition-colors"
-                        >
+                        <span className="font-semibold text-slate-700">
                           {applicant.full_name}
-                        </Link>
+                        </span>
                       </div>
                     </td>
                     <td className="px-5 py-4 text-slate-500 font-mono text-xs font-semibold">
@@ -150,8 +127,18 @@ export default function ApplicantsPage() {
                         {applicant.status_name || 'Pending'}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-slate-600 text-xs font-medium">
-                      {applicant.assigned_staff_name || '—'}
+                    <td className="px-5 py-4">
+                      <button
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to restore this applicant?')) {
+                            restoreMutation.mutate(applicant.id);
+                          }
+                        }}
+                        disabled={restoreMutation.isPending && restoreMutation.variables === applicant.id}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-100 transition disabled:opacity-50"
+                      >
+                        <ArrowUturnLeftIcon className="w-4 h-4" /> Restore
+                      </button>
                     </td>
                   </motion.tr>
                 ))}
@@ -161,7 +148,7 @@ export default function ApplicantsPage() {
             {applicants.length === 0 && (
               <div className="py-20 text-center text-slate-400">
                 <UserIcon className="w-10 h-10 mx-auto mb-2 text-slate-300" />
-                <p className="text-sm">No applicants found</p>
+                <p className="text-sm">No deleted applicants found</p>
               </div>
             )}
           </div>

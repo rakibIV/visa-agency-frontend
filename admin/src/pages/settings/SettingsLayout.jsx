@@ -17,7 +17,6 @@ const SETTINGS_NAV = [
   { label: 'Application Statuses', to: '/settings/statuses', icon: QueueListIcon },
   { label: 'Applicant Tags', to: '/settings/tags', icon: TagIcon },
   { label: 'Lawyers', to: '/settings/lawyers', icon: ScaleIcon },
-  { label: 'Email Templates', to: '/settings/email-templates', icon: EnvelopeIcon },
 ];
 
 export default function SettingsLayout() {

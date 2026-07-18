@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeftIcon,
@@ -13,12 +13,16 @@ import {
   BanknotesIcon,
   PlusIcon,
   PrinterIcon,
+  PencilSquareIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import AgreementPrintView from './AgreementPrintView';
 import ReceiptPrintView from './ReceiptPrintView';
-import CrudTable from '../../components/common/CrudTable';
+import RefundPrintView from './RefundPrintView';
+
 import FormModal from '../../components/common/FormModal';
+import CrudTable from '../../components/common/CrudTable';
 
 export default function ApplicantDetailPage() {
   const { id } = useParams();
@@ -31,7 +35,9 @@ export default function ApplicantDetailPage() {
   const [showPrintView, setShowPrintView] = useState(false);
   const [showReceiptPrintView, setShowReceiptPrintView] = useState(false);
   const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState(null);
-  const [printType, setPrintType] = useState('all'); // 'all', 'form', 'tc', 'clauses', 'refund'
+  const [showRefundPrintView, setShowRefundPrintView] = useState(false);
+  const [selectedRefundForPrint, setSelectedRefundForPrint] = useState(null);
+  const [printType, setPrintType] = useState('all'); // 'all', 'form', 'tc', 'clauses'
   const [showBengali, setShowBengali] = useState(false);
 
   // Payment Form State
@@ -49,6 +55,15 @@ export default function ApplicantDetailPage() {
   const [refundAmount, setRefundAmount] = useState('');
   const [refundMethod, setRefundMethod] = useState('bank');
   const [refundRemarks, setRefundRemarks] = useState('');
+
+  // Refund Destination Form State
+  const [destMethod, setDestMethod] = useState('BANK');
+  const [destHolder, setDestHolder] = useState('');
+  const [destBank, setDestBank] = useState('');
+  const [destBranch, setDestBranch] = useState('');
+  const [destAccount, setDestAccount] = useState('');
+  const [destRouting, setDestRouting] = useState('');
+  const [destMobile, setDestMobile] = useState('');
 
   // Fetch applicant details
   const { data: applicant, isLoading, isError } = useQuery({
@@ -128,6 +143,23 @@ export default function ApplicantDetailPage() {
     },
   });
 
+  const markRefundPaidMutation = useMutation({
+    mutationFn: (refundId) => api.post(`/applicants/${id}/refunds/${refundId}/mark_as_paid/`),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['applicant', id]);
+    },
+  });
+
+  const deleteApplicantMutation = useMutation({
+    mutationFn: () => api.delete(`/applicants/${id}/`),
+    onSuccess: () => {
+      navigate('/applicants');
+    },
+    onError: (err) => {
+      alert('Failed to delete applicant: ' + (err.response?.data?.detail || err.message));
+    }
+  });
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-32">
@@ -184,6 +216,14 @@ export default function ApplicantDetailPage() {
   } else {
     isPaymentComplete = true;
   }
+
+  const rbd = applicant.refund_bank_detail || {};
+  const isRefundDataValid = !!(
+    (rbd.account_number_or_iban && rbd.account_holder_name && rbd.bank_name) ||
+    (rbd.mobile_number && rbd.account_holder_name && rbd.bank_name)
+  );
+
+  const isRejected = applicant.status?.slug?.includes('reject') || applicant.status?.name?.toLowerCase().includes('reject') || applicant.status_name?.toLowerCase().includes('reject');
 
   return (
     <div className="space-y-6 max-w-screen-xl mx-auto">
@@ -254,6 +294,41 @@ export default function ApplicantDetailPage() {
         document.body
       )}
 
+      {/* Refund Print Screen preview overlay */}
+      {showRefundPrintView && selectedRefundForPrint && (
+        <div className="fixed inset-0 bg-white z-[999] overflow-y-auto">
+          <div className="p-4 bg-slate-100 print:hidden flex items-center justify-between border-b sticky top-0 z-50">
+            <span className="font-semibold text-slate-700">🖨️ Refund Receipt Print Preview</span>
+            <div className="flex gap-3">
+              <button
+                onClick={() => window.print()}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition"
+              >
+                Print / Save as PDF
+              </button>
+              <button
+                onClick={() => {
+                  setShowRefundPrintView(false);
+                  setSelectedRefundForPrint(null);
+                }}
+                className="px-4 py-2 bg-slate-600 text-white rounded-lg text-sm font-semibold hover:bg-slate-700 transition"
+              >
+                ✕ Close
+              </button>
+            </div>
+          </div>
+          <RefundPrintView applicant={applicant} refund={selectedRefundForPrint} companyInfo={companyInfo} />
+        </div>
+      )}
+
+      {/* Refund Print portal */}
+      {showRefundPrintView && selectedRefundForPrint && createPortal(
+        <div className="print-portal">
+          <RefundPrintView applicant={applicant} refund={selectedRefundForPrint} companyInfo={companyInfo} />
+        </div>,
+        document.body
+      )}
+
 
       {/* Header / Back */}
       <div className="flex items-center justify-between">
@@ -265,9 +340,28 @@ export default function ApplicantDetailPage() {
           Back to list
         </button>
         <div className="flex items-center gap-2">
+          {applicant.tags?.map(tag => (
+            <span key={tag.id} className="px-3 py-1 rounded-full text-xs font-bold" style={{ backgroundColor: tag.color ? `${tag.color}20` : '#f1f5f9', color: tag.color || '#475569' }}>
+              {tag.name}
+            </span>
+          ))}
           <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getStatusColor(applicant.status?.slug)}`}>
             {applicant.status?.name || 'Unknown'}
           </span>
+          <Link to={`/applicants/${id}/edit`} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-colors ml-2 text-sm">
+            <PencilSquareIcon className="w-4 h-4" /> Edit Profile
+          </Link>
+          <button 
+            onClick={() => {
+              if(window.confirm('Are you sure you want to delete this applicant? This action can be undone from the deleted applicants page.')) {
+                deleteApplicantMutation.mutate();
+              }
+            }}
+            disabled={deleteApplicantMutation.isPending}
+            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-xl font-bold hover:bg-red-100 transition-colors ml-2 text-sm disabled:opacity-50"
+          >
+            <TrashIcon className="w-4 h-4" /> {deleteApplicantMutation.isPending ? 'Deleting...' : 'Delete'}
+          </button>
         </div>
       </div>
 
@@ -386,10 +480,16 @@ export default function ApplicantDetailPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 text-sm">
                 <span className="text-slate-400">Visa</span>
                 <span className="text-slate-700 font-semibold">{applicant.visa_name || '—'}</span>
+                <span className="text-slate-400">Target Job (Primary)</span>
+                <span className="text-slate-700 font-semibold">{applicant.job?.title || applicant.job_name || applicant.job || '—'}</span>
+                <span className="text-slate-400">Target Job (Secondary)</span>
+                <span className="text-slate-700 font-semibold">{applicant.secondary_job_name || '—'}</span>
                 <span className="text-slate-400">Status</span>
                 <span className="text-slate-700 font-semibold">{applicant.status?.name || '—'}</span>
                 <span className="text-slate-400">Assigned Staff</span>
                 <span className="text-slate-700 font-semibold">{applicant.assigned_staff_name || '—'}</span>
+                <span className="text-slate-400">Assigned Lawyer</span>
+                <span className="text-slate-700 font-semibold">{applicant.lawyer?.name || applicant.lawyer_name || applicant.lawyer || '—'}</span>
                 <span className="text-slate-400">Allocated Slot</span>
                 <span className="text-slate-700 font-semibold">{applicant.slot_month ? new Date(applicant.slot_month).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) : '—'}</span>
                 <span className="text-slate-400">Payment Plan</span>
@@ -465,10 +565,10 @@ export default function ApplicantDetailPage() {
                 { header: 'Verified', render: (item) => item.verified ? 'Yes' : 'No' },
               ]}
               formFields={[
-                { 
-                  name: 'document_type', 
-                  label: 'Document Type', 
-                  type: 'select', 
+                {
+                  name: 'document_type',
+                  label: 'Document Type',
+                  type: 'select',
                   required: true,
                   options: [
                     { value: 'PASSPORT', label: 'Passport' },
@@ -495,13 +595,15 @@ export default function ApplicantDetailPage() {
             {/* Header / Add Payment Button */}
             <div className="flex justify-between items-center">
               <h3 className="font-bold text-slate-800 text-base">Payment Logs</h3>
-              <button
-                onClick={() => setShowPaymentModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-xl text-sm font-semibold shadow hover:bg-blue-800 transition-colors"
-              >
-                <PlusIcon className="w-4 h-4" />
-                Add Payment Record
-              </button>
+              {!isPaymentComplete && (
+                <button
+                  onClick={() => setShowPaymentModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-xl text-sm font-semibold shadow hover:bg-blue-800 transition-colors"
+                >
+                  <PlusIcon className="w-4 h-4" />
+                  Add Payment Record
+                </button>
+              )}
             </div>
 
             {/* Payments Table */}
@@ -682,7 +784,7 @@ export default function ApplicantDetailPage() {
                         if (nextInstallmentType === 'SECOND') {
                           updateProfileMutation.mutate({ preferred_refund_method: preferredRefundMethod });
                         }
-                        
+
                         addPaymentMutation.mutate({
                           applicant: id,
                           amount: Number(paymentAmount),
@@ -708,131 +810,159 @@ export default function ApplicantDetailPage() {
 
         {activeTab === 'refunds' && (
           <div className="space-y-6">
-            <CrudTable
-              isNested={true}
-              disableDelete={true}
-              title="Refund Bank Details"
-              subtitle="Manage bank details for refunds. (Edit updates existing, Add creates new)"
-              endpoint={`/applicants/${id}/refund-bank-detail/`}
-              queryKey={`applicant-bank-detail-${id}`}
-              columns={[
-                { header: 'Account Name', accessor: 'account_holder_name' },
-                { header: 'Bank', accessor: 'bank_name' },
-                { header: 'Branch', accessor: 'branch_name' },
-                { header: 'Account/IBAN', accessor: 'account_number_or_iban' },
-              ]}
-              formFields={[
-                { name: 'account_holder_name', label: 'Account Holder Name', type: 'text', required: true },
-                { name: 'bank_name', label: 'Bank Name', type: 'text', required: true },
-                { name: 'branch_name', label: 'Branch Name', type: 'text', required: true },
-                { name: 'district_name', label: 'District Name', type: 'text', required: true },
-                { name: 'account_number_or_iban', label: 'Account Number / IBAN', type: 'text', required: true },
-                { name: 'routing_number', label: 'Routing Number', type: 'text' },
-                { name: 'mobile_number', label: 'Mobile Number', type: 'text' },
-                { name: 'country', label: 'Country', type: 'select', options: countryOptions, required: true },
-                { name: 'notes', label: 'Notes', type: 'textarea' },
-              ]}
-            />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
             {/* Warning Banner if not rejected */}
-            {!(applicant.status?.slug?.includes('reject') || applicant.status?.name?.toLowerCase().includes('reject') || applicant.status_name?.toLowerCase().includes('reject')) && (
-              <div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-xl text-sm mb-4">
+            {!isRejected && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-xl text-sm mb-4 font-semibold">
                 Notice: Refund records can only be auto-generated when an applicant's status indicates a rejection.
-                To generate a refund, first change their status to "Rejected" (or any status containing 'reject') in the configuration or applicant edit options.
               </div>
             )}
+
+            {/* Warning Banner if Refund Destination is missing */}
+            {isRejected && !isRefundDataValid && (
+              <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl text-sm mb-4 font-semibold">
+                ⚠️ Action Required: You must record the applicant's Refund Destination details before you can process this refund.
+              </div>
+            )}
+
             <div className="flex justify-between items-center">
               <h3 className="font-bold text-slate-800 text-base">Refund Logs</h3>
               <button
                 onClick={() => setShowRefundModal(true)}
-                disabled={!(applicant.status?.slug?.includes('reject') || applicant.status?.name?.toLowerCase().includes('reject') || applicant.status_name?.toLowerCase().includes('reject'))}
+                disabled={!isRejected || !isRefundDataValid}
                 className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-xl text-sm font-semibold shadow hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <PlusIcon className="w-4 h-4" />
-                Add Refund Record
+                Approve & Disburse Refund
               </button>
             </div>
 
-            {/* Bank Details Form (Upsert) */}
+            {/* Refund Destination Form */}
             <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200/60 space-y-4">
-              <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Refund Account Details / تفاصيل الحساب البنكي للتعويض</h4>
+              <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">Refund Destination Details</h4>
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  const formData = new FormData(e.target);
                   updateBankDetailsMutation.mutate({
-                    account_holder_name: formData.get('account_holder_name'),
-                    bank_name: formData.get('bank_name'),
-                    branch_name: formData.get('branch_name'),
-                    district_name: formData.get('district_name') || 'Default',
-                    account_number_or_iban: formData.get('account_number_or_iban'),
-                    routing_number: formData.get('routing_number'),
-                    mobile_number: formData.get('mobile_number'),
+                    account_holder_name: destHolder,
+                    bank_name: destMethod === 'MOBILE' ? destBank : (destMethod === 'BANK' ? destBank : ''),
+                    branch_name: destMethod === 'BANK' ? destBranch : '',
+                    district_name: 'Default',
+                    account_number_or_iban: destMethod === 'BANK' ? destAccount : '',
+                    routing_number: destMethod === 'BANK' ? destRouting : '',
+                    mobile_number: destMethod === 'MOBILE' ? destMobile : '',
+                    country: 'BD',
+                    notes: destMethod
                   });
                 }}
-                className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
               >
+                <div className="md:col-span-2 lg:col-span-3">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Refund Method</label>
+                  <select
+                    value={destMethod}
+                    onChange={e => setDestMethod(e.target.value)}
+                    className="w-full md:w-1/3 px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs"
+                  >
+                    <option value="BANK">Bank Transfer</option>
+                    <option value="MOBILE">Mobile Banking</option>
+                    <option value="CASH">Cash</option>
+                  </select>
+                </div>
+
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Holder Name</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    {destMethod === 'BANK' ? 'Account Holder Name *' : 'Receiver Name *'}
+                  </label>
                   <input
                     type="text"
-                    name="account_holder_name"
-                    defaultValue={applicant.refund_bank_detail?.account_holder_name || ''}
+                    value={destHolder}
+                    onChange={e => setDestHolder(e.target.value)}
                     className="w-full px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs"
                   />
                 </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Bank Name</label>
-                  <input
-                    type="text"
-                    name="bank_name"
-                    defaultValue={applicant.refund_bank_detail?.bank_name || ''}
-                    className="w-full px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Branch Name</label>
-                  <input
-                    type="text"
-                    name="branch_name"
-                    defaultValue={applicant.refund_bank_detail?.branch_name || ''}
-                    className="w-full px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Account Number / IBAN</label>
-                  <input
-                    type="text"
-                    name="account_number_or_iban"
-                    defaultValue={applicant.refund_bank_detail?.account_number_or_iban || ''}
-                    className="w-full px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Routing Number</label>
-                  <input
-                    type="text"
-                    name="routing_number"
-                    defaultValue={applicant.refund_bank_detail?.routing_number || ''}
-                    className="w-full px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Mobile Number</label>
-                  <input
-                    type="text"
-                    name="mobile_number"
-                    defaultValue={applicant.refund_bank_detail?.mobile_number || ''}
-                    className="w-full px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs"
-                  />
-                </div>
-                <div className="md:col-span-3 flex justify-end">
+
+                {destMethod === 'MOBILE' && (
+                  <>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Provider *</label>
+                      <select
+                        value={destBank}
+                        onChange={e => setDestBank(e.target.value)}
+                        className="w-full px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs"
+                      >
+                        <option value="">Select Provider</option>
+                        <option value="bKash">bKash</option>
+                        <option value="Nagad">Nagad</option>
+                        <option value="Rocket">Rocket</option>
+                        <option value="Upay">Upay</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Mobile Number *</label>
+                      <input
+                        type="text"
+                        value={destMobile}
+                        onChange={e => setDestMobile(e.target.value)}
+                        className="w-full px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {destMethod === 'BANK' && (
+                  <>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Bank Name *</label>
+                      <input
+                        type="text"
+                        value={destBank}
+                        onChange={e => setDestBank(e.target.value)}
+                        className="w-full px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Branch Name *</label>
+                      <input
+                        type="text"
+                        value={destBranch}
+                        onChange={e => setDestBranch(e.target.value)}
+                        className="w-full px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Account Number / IBAN *</label>
+                      <input
+                        type="text"
+                        value={destAccount}
+                        onChange={e => setDestAccount(e.target.value)}
+                        className="w-full px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Routing Number</label>
+                      <input
+                        type="text"
+                        value={destRouting}
+                        onChange={e => setDestRouting(e.target.value)}
+                        className="w-full px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="md:col-span-2 lg:col-span-3 flex justify-end mt-2">
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-semibold hover:bg-slate-900 transition-colors"
+                    disabled={
+                      (destMethod === 'BANK' && (!destHolder || !destBank || !destBranch || !destAccount)) ||
+                      (destMethod === 'MOBILE' && (!destHolder || !destBank || !destMobile)) ||
+                      (destMethod === 'CASH' && !destHolder) ||
+                      updateBankDetailsMutation.isPending
+                    }
+                    className="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-semibold hover:bg-slate-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Save Account Details
+                    {updateBankDetailsMutation.isPending ? 'Saving...' : 'Save Destination Details'}
                   </button>
                 </div>
               </form>
@@ -843,7 +973,7 @@ export default function ApplicantDetailPage() {
               <table className="w-full text-sm whitespace-nowrap min-w-[600px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100">
-                    {['Refund Receipt No.', 'Amount', 'Status', 'Method', 'Remarks'].map((h) => (
+                    {['Refund Receipt No.', 'Amount', 'Status', 'Method', 'Remarks', 'Actions'].map((h) => (
                       <th key={h} className="px-5 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
@@ -860,6 +990,33 @@ export default function ApplicantDetailPage() {
                       </td>
                       <td className="px-5 py-4 capitalize text-slate-600">{refund.refund_method || '—'}</td>
                       <td className="px-5 py-4 text-slate-500">{refund.refund_reason || '—'}</td>
+                      <td className="px-5 py-4">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedRefundForPrint(refund);
+                              setShowRefundPrintView(true);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors"
+                            title="Print Refund Details"
+                          >
+                            <PrinterIcon className="w-4 h-4" /> Print
+                          </button>
+                          {refund.refund_status !== 'paid' && refund.refund_status !== 'cancelled' && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm("Are you sure you want to mark this refund as Paid? This will send an email to the applicant.")) {
+                                  markRefundPaidMutation.mutate(refund.id);
+                                }
+                              }}
+                              disabled={markRefundPaidMutation.isPending}
+                              className="px-3 py-1 bg-green-50 text-green-700 font-semibold rounded-lg text-xs hover:bg-green-100 disabled:opacity-50"
+                            >
+                              Mark as Paid
+                            </button>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))}
                   {(!applicant.refunds || applicant.refunds.length === 0) && (
@@ -870,6 +1027,13 @@ export default function ApplicantDetailPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Hidden logic for validation */}
+            {(() => {
+              const r = applicant.refund_bank_detail;
+              const isRefundDataValid = r && r.account_holder_name && (r.notes === 'CASH' || r.bank_name);
+              return null;
+            })()}
 
             {/* Modal for Refund record creation */}
             {showRefundModal && (
@@ -910,7 +1074,6 @@ export default function ApplicantDetailPage() {
               </div>
             )}
           </div>
-        </div>
         )}
 
         {activeTab === 'agreements' && (
@@ -920,7 +1083,7 @@ export default function ApplicantDetailPage() {
                 <DocumentTextIcon className="w-16 h-16 text-slate-300 mb-4" />
                 <h3 className="font-bold text-slate-700 text-lg">Agreement Locked</h3>
                 <p className="text-slate-500 text-sm mt-2 max-w-md">
-                  Agreement generation is locked until full payment is completed. 
+                  Agreement generation is locked until full payment is completed.
                   Please collect the remaining payments to unlock the agreement documents.
                 </p>
               </div>
@@ -960,7 +1123,6 @@ export default function ApplicantDetailPage() {
                     { title: 'Page 2: Receipt & Agreement', desc: 'Payment receipt header with clauses 1-6 of Main Agreement.', type: 'tc' },
                     { title: 'Page 3: Agreement Clauses', desc: 'The dynamic legal clauses (7-15) of Main Agreement.', type: 'clauses' },
                     { title: 'Page 4: Terms & Conditions', desc: 'The 6 standard clauses of the General T&C Agreement.', type: 'tc2' },
-                    { title: 'Page 5: Refund Method', desc: 'Details of the preferred refund bank account and policy.', type: 'refund' },
                   ].map((printItem) => (
                     <div key={printItem.title} className="p-4 border border-slate-200/60 rounded-xl flex items-start justify-between gap-4 bg-slate-50/50 hover:bg-slate-50 transition-colors">
                       <div>
@@ -984,7 +1146,7 @@ export default function ApplicantDetailPage() {
                     className="flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-xl text-sm font-semibold shadow hover:bg-blue-800 transition-colors"
                   >
                     <PrinterIcon className="w-5 h-5" />
-                    Print Full Agreement Package ({showBengali ? '6' : '5'} Pages)
+                    Print Full Agreement Package ({showBengali ? '5' : '4'} Pages)
                   </button>
                 </div>
               </>

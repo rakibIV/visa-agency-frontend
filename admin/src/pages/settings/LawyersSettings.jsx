@@ -42,7 +42,7 @@ export default function LawyersSettings() {
         { name: 'email', label: 'Email', type: 'email', required: true },
         { name: 'phone', label: 'Phone', type: 'text' },
         { name: 'country', label: 'Country', type: 'select', required: false, options: countryOptions },
-        { name: 'env_key', label: 'Environment Key', type: 'text', required: true },
+        { name: 'smtp_password', label: 'SMTP App Password', type: 'password', required: false },
         { name: 'is_default', label: 'Is Default Lawyer', type: 'checkbox' },
         { name: 'is_active', label: 'Active', type: 'checkbox' },
       ]}

@@ -60,6 +60,16 @@ export default function CountryDetailPage() {
     addGalleryMutation.mutate(fd);
   };
 
+  const deleteCountryMutation = useMutation({
+    mutationFn: () => api.delete(`/countries/${slug}/`),
+    onSuccess: () => {
+      navigate('/config/countries');
+    },
+    onError: (err) => {
+      alert('Failed to delete country: ' + (err.response?.data?.detail || err.message));
+    }
+  });
+
   if (isLoading) return <div className="p-20 text-center animate-pulse">Loading...</div>;
   if (error || !country) return <div className="p-20 text-center text-red-500">Failed to load country details.</div>;
 
@@ -85,9 +95,22 @@ export default function CountryDetailPage() {
             {country.is_active && <CheckBadgeIcon className="w-6 h-6 text-green-500" title="Active" />}
           </h2>
         </div>
-        <Link to={`/config/countries/${slug}/edit`} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-colors">
-          <PencilSquareIcon className="w-4 h-4" /> Edit Country
-        </Link>
+        <div className="flex gap-2">
+          <Link to={`/config/countries/${slug}/edit`} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-colors">
+            <PencilSquareIcon className="w-4 h-4" /> Edit Country
+          </Link>
+          <button 
+            onClick={() => {
+              if(window.confirm('Are you sure you want to delete this country?')) {
+                deleteCountryMutation.mutate();
+              }
+            }}
+            disabled={deleteCountryMutation.isPending}
+            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-xl font-bold hover:bg-red-100 transition-colors disabled:opacity-50"
+          >
+            <TrashIcon className="w-4 h-4" /> {deleteCountryMutation.isPending ? 'Deleting...' : 'Delete'}
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-6">
@@ -245,7 +268,17 @@ export default function CountryDetailPage() {
             { header: 'Order', accessor: 'display_order' },
           ]}
           formFields={[
-            { name: 'requirement_type', label: 'Requirement Type', type: 'text', required: true },
+            { 
+              name: 'requirement_type', 
+              label: 'Requirement Type', 
+              type: 'select', 
+              required: true,
+              options: [
+                { value: 'VISA', label: 'Visa Requirement' },
+                { value: 'DOCUMENT', label: 'Document Requirement' },
+                { value: 'LANGUAGE_SKILL', label: 'Language Skills' },
+              ]
+            },
             { name: 'title', label: 'Title', type: 'text', required: true },
             { name: 'description', label: 'Description', type: 'textarea' },
             { name: 'display_order', label: 'Display Order', type: 'number', required: true, min: 0 },

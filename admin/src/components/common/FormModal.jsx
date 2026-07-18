@@ -128,6 +128,11 @@ export default function FormModal({
                       )}
                     </div>
                   )}
+                  {field.helpText && (
+                    <p className="mt-1.5 text-xs text-slate-500 font-medium leading-relaxed whitespace-pre-wrap">
+                      {field.helpText}
+                    </p>
+                  )}
                 </>
               )}
             </div>

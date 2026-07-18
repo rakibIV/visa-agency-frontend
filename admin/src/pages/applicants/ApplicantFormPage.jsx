@@ -13,7 +13,7 @@ export default function ApplicantFormPage() {
   const isEdit = Boolean(id);
 
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 3;
 
   // ── Step 1: Basic Info ──
   const [fullName, setFullName] = useState('');
@@ -51,15 +51,7 @@ export default function ApplicantFormPage() {
   const [defaultStatusId, setDefaultStatusId] = useState('');
   const [selectedStatusId, setSelectedStatusId] = useState('');
 
-  // ── Step 4: Refund Information ──
-  const [accountHolderName, setAccountHolderName] = useState('');
-  const [bankName, setBankName] = useState('');
-  const [branchName, setBranchName] = useState('');
-  const [districtName, setDistrictName] = useState('');
-  const [accountNumber, setAccountNumber] = useState('');
-  const [routingNumber, setRoutingNumber] = useState('');
-  const [mobileNumber, setMobileNumber] = useState('');
-  const [refundCountry, setRefundCountry] = useState('');
+
 
   const [error, setError] = useState('');
 
@@ -114,17 +106,7 @@ export default function ApplicantFormPage() {
       }
       if (applicant.lawyer) setSelectedLawyerId(applicant.lawyer?.id || applicant.lawyer);
       
-      if (applicant.refund_bank_detail) {
-        const rbd = applicant.refund_bank_detail;
-        setAccountHolderName(rbd.account_holder_name || '');
-        setBankName(rbd.bank_name || '');
-        setBranchName(rbd.branch_name || '');
-        setDistrictName(rbd.district_name || '');
-        setAccountNumber(rbd.account_number_or_iban || '');
-        setRoutingNumber(rbd.routing_number || '');
-        setMobileNumber(rbd.mobile_number || '');
-        setRefundCountry(rbd.country || '');
-      }
+
     }
   }, [applicant, isEdit]);
 
@@ -201,6 +183,12 @@ export default function ApplicantFormPage() {
   // ────────────────────────────────────────
   // Navigation & Submission
   // ────────────────────────────────────────
+
+  const existingPayments = applicant?.payments || [];
+  const hasInitial = existingPayments.some(p => p.installment_type === 'INITIAL');
+  const hasSecond = existingPayments.some(p => p.installment_type === 'SECOND');
+  const hasThird = existingPayments.some(p => p.installment_type === 'THIRD');
+  const isPaymentComplete = hasInitial && hasSecond && (applicant?.payment_plan_installments === 2 || hasThird);
 
   const validateStep = (step) => {
     setError('');
@@ -299,17 +287,7 @@ export default function ApplicantFormPage() {
     };
     fd.append('profile', JSON.stringify(profileData));
     
-    const refundData = {
-      account_holder_name: accountHolderName,
-      bank_name: bankName,
-      branch_name: branchName,
-      district_name: districtName,
-      account_number_or_iban: accountNumber,
-      routing_number: routingNumber,
-      mobile_number: mobileNumber,
-      country: refundCountry,
-    };
-    fd.append('refund_bank_detail', JSON.stringify(refundData));
+
 
     if (photoFile) fd.append('photo', photoFile);
 
@@ -346,7 +324,6 @@ export default function ApplicantFormPage() {
           { num: 1, label: 'Basic Info' },
           { num: 2, label: 'Profile' },
           { num: 3, label: 'Processing' },
-          { num: 4, label: 'Refund Details' },
         ].map((step, idx) => (
           <div key={idx} className="flex flex-col items-center gap-2 relative">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${currentStep >= step.num ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
@@ -526,7 +503,12 @@ export default function ApplicantFormPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={labelCls}>Payment Plan</label>
-                <select value={paymentPlan} onChange={e => setPaymentPlan(Number(e.target.value))} className={`${inputCls} bg-white`}>
+                <select 
+                  value={paymentPlan} 
+                  onChange={e => setPaymentPlan(Number(e.target.value))} 
+                  className={`${inputCls} ${isPaymentComplete ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'}`}
+                  disabled={isPaymentComplete}
+                >
                   <option value={2}>Two Installments</option>
                   <option value={3}>Three Installments</option>
                 </select>
@@ -578,51 +560,7 @@ export default function ApplicantFormPage() {
           </div>
         )}
 
-        {/* STEP 4 */}
-        {currentStep === 4 && (
-          <div className={sectionCls}>
-            <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider border-b border-slate-100 pb-2">
-              Refund Bank Information
-            </h3>
-            <p className="text-xs text-slate-500 mb-4">
-              If the applicant gets rejected, these details will be used to automatically process their refund.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>Account Holder Name</label>
-                <input type="text" value={accountHolderName} onChange={e => setAccountHolderName(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Bank Name</label>
-                <input type="text" value={bankName} onChange={e => setBankName(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Branch Name</label>
-                <input type="text" value={branchName} onChange={e => setBranchName(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>District</label>
-                <input type="text" value={districtName} onChange={e => setDistrictName(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Account Number / IBAN</label>
-                <input type="text" value={accountNumber} onChange={e => setAccountNumber(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Routing Number</label>
-                <input type="text" value={routingNumber} onChange={e => setRoutingNumber(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Mobile Number</label>
-                <input type="text" value={mobileNumber} onChange={e => setMobileNumber(e.target.value)} className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Country</label>
-                <input type="text" value={refundCountry} onChange={e => setRefundCountry(e.target.value)} className={inputCls} />
-              </div>
-            </div>
-          </div>
-        )}
+
 
         {/* Navigation Buttons */}
         <div className="flex justify-between pt-6 border-t border-slate-100 mt-8">

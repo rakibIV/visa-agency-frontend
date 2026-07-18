@@ -232,7 +232,7 @@ export default function AgreementTemplatesConfig() {
             </button>
           </div>
           <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-800 leading-relaxed">
-            <strong className="font-bold">💡 Dynamic Variables:</strong> Use <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200">{'{staff_name}'}</code> in the clause text to automatically insert the authorized representative's name when generating the PDF.
+            <strong className="font-bold">💡 Dynamic Variables:</strong> Use <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200">{'{application_id}'}</code>, <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200">{'{full_name}'}</code>, <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200">{'{passport_number}'}</code>, <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200">{'{visa}'}</code>, <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200">{'{job}'}</code>, <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200">{'{country}'}</code>, <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200">{'{staff}'}</code>, <code className="bg-white px-1.5 py-0.5 rounded border border-blue-200">{'{payment}'}</code> in the clause text to automatically insert applicant data when generating the PDF.
           </div>
         </div>
 
@@ -311,7 +311,7 @@ export default function AgreementTemplatesConfig() {
                   <div>
                     <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">Clause Body</label>
                     <textarea value={clauseForm.body_en || ''} onChange={e => setClauseForm({...clauseForm, body_en: e.target.value})} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl h-32 focus:ring-2 focus:ring-blue-500/20 transition-all" placeholder="Detailed clause content..." />
-                    <p className="text-[11px] text-slate-500 mt-2 bg-slate-50 p-2 rounded-lg border border-slate-100">💡 You can use <code className="bg-white px-1 border border-slate-200 rounded text-blue-600 font-bold">{"{staff_name}"}</code> to dynamically insert the representative's name.</p>
+                    <p className="text-[11px] text-slate-500 mt-2 bg-slate-50 p-2 rounded-lg border border-slate-100">💡 You can use <code className="bg-white px-1 border border-slate-200 rounded text-blue-600 font-bold">{"{application_id}"}</code>, <code className="bg-white px-1 border border-slate-200 rounded text-blue-600 font-bold">{"{full_name}"}</code>, <code className="bg-white px-1 border border-slate-200 rounded text-blue-600 font-bold">{"{passport_number}"}</code>, <code className="bg-white px-1 border border-slate-200 rounded text-blue-600 font-bold">{"{visa}"}</code>, <code className="bg-white px-1 border border-slate-200 rounded text-blue-600 font-bold">{"{job}"}</code>, <code className="bg-white px-1 border border-slate-200 rounded text-blue-600 font-bold">{"{country}"}</code>, <code className="bg-white px-1 border border-slate-200 rounded text-blue-600 font-bold">{"{staff}"}</code>, <code className="bg-white px-1 border border-slate-200 rounded text-blue-600 font-bold">{"{payment}"}</code> to dynamically insert applicant data.</p>
                   </div>
                 </div>
               )}

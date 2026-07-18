@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/client';
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
 
 export default function StatusCheckPage() {
   const [applicationId, setApplicationId] = useState('');
@@ -31,196 +34,197 @@ export default function StatusCheckPage() {
   };
 
   return (
-    <>
-      {/* Hero */}
-      <section className="gradient-hero pt-32 pb-24 relative overflow-hidden">
-        <div className="absolute inset-0 z-0 opacity-10">
-          <img src="/src/assets/hero.png" alt="" className="w-full h-full object-cover" />
-        </div>
-        <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-10" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-        <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <div className="bg-surface-dim min-h-screen pb-24">
+      {/* ═══════════════════════════════════════════
+          HERO — Minimal Context
+      ═══════════════════════════════════════════ */}
+      <section className="pt-32 pb-16 lg:pt-40 lg:pb-20 relative overflow-hidden bg-navy-950 text-white grain">
+        <div className="absolute inset-0 bg-gradient-to-b from-navy-950 to-navy-900" />
+        
+        <div className="container-narrow relative z-10 text-center">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 mb-6">
-              <svg className="w-8 h-8 text-accent-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-              </svg>
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/10 border border-white/20 backdrop-blur-md mb-6 shadow-soft">
+              <AssignmentTurnedInIcon fontSize="large" className="text-accent-400" />
             </div>
-            <h1 className="text-4xl sm:text-5xl font-black text-white mb-4 font-heading">Track Your Application</h1>
-            <p className="text-navy-200 text-lg max-w-xl mx-auto">
-              Enter your application details below to check your current visa processing status.
+            <h1 className="display-lg font-heading text-white mb-4">Track Application</h1>
+            <p className="body-lg text-navy-300 max-w-xl mx-auto">
+              Enter your secure application details below to check your real-time processing status.
             </p>
           </motion.div>
         </div>
       </section>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-10 pb-24">
-        {/* Search Form */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white rounded-2xl p-8 shadow-navy-lg border border-navy-100/50"
-        >
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="block text-xs font-bold text-navy-500 uppercase tracking-wider mb-1.5">Application ID</label>
-              <input
-                type="text"
-                value={applicationId}
-                onChange={e => setApplicationId(e.target.value)}
-                placeholder="e.g. ARG72Q9A"
-                required
-                className="w-full px-4 py-3 bg-navy-50 border border-navy-200 rounded-xl text-navy-900 font-mono uppercase placeholder-navy-400 focus:outline-none focus:ring-2 focus:ring-accent-500/30 focus:border-accent-500 transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-navy-500 uppercase tracking-wider mb-1.5">Email Address</label>
-              <input
-                type="email"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                required
-                className="w-full px-4 py-3 bg-navy-50 border border-navy-200 rounded-xl text-navy-900 placeholder-navy-400 focus:outline-none focus:ring-2 focus:ring-accent-500/30 focus:border-accent-500 transition-all"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-navy-500 uppercase tracking-wider mb-1.5">Phone Number</label>
-              <input
-                type="text"
-                value={phone}
-                onChange={e => setPhone(e.target.value)}
-                placeholder="01700000000"
-                required
-                className="w-full px-4 py-3 bg-navy-50 border border-navy-200 rounded-xl text-navy-900 placeholder-navy-400 focus:outline-none focus:ring-2 focus:ring-accent-500/30 focus:border-accent-500 transition-all"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 bg-accent-600 hover:bg-accent-700 disabled:bg-accent-400 text-white font-bold rounded-xl shadow-lg shadow-accent-600/25 transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Checking...
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
-                  Check Status
-                </>
-              )}
-            </button>
-          </form>
-
-          {error && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-5 p-4 bg-red-50 border border-red-200 rounded-xl">
-              <p className="text-sm text-red-700 font-semibold">{error}</p>
-            </motion.div>
-          )}
-        </motion.div>
-
-        {/* Result */}
-        <AnimatePresence>
-          {result && (
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5 }}
-              className="mt-8 space-y-6"
-            >
-              {/* Main Card */}
-              <div className="bg-white rounded-2xl p-8 shadow-navy-lg border border-navy-100/50">
-                <div className="flex items-start gap-5">
-                  {/* Photo */}
-                  <div className="w-20 h-20 rounded-2xl bg-navy-100 overflow-hidden shrink-0 ring-4 ring-navy-100">
-                    {result.photo ? (
-                      <img src={result.photo} alt={result.full_name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-navy-300">
-                        <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between flex-wrap gap-3">
-                      <div>
-                        <h2 className="text-xl font-extrabold text-navy-900">{result.full_name}</h2>
-                        <p className="text-sm text-navy-500 font-mono">{result.application_id}</p>
-                      </div>
-                      <span
-                        className="px-4 py-1.5 rounded-full text-sm font-bold"
-                        style={{
-                          backgroundColor: result.status_color ? `${result.status_color}20` : '#E0EAFF',
-                          color: result.status_color || '#0F2B5B',
-                        }}
-                      >
-                        {result.status}
-                      </span>
-                    </div>
-                  </div>
+      {/* ═══════════════════════════════════════════
+          FORM & RESULTS — Centered Focus
+      ═══════════════════════════════════════════ */}
+      <div className="container-narrow -mt-10 relative z-10">
+        <div className="max-w-xl mx-auto">
+          {/* Search Form */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white rounded-3xl p-8 sm:p-10 shadow-elevated border border-navy-50"
+          >
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block eyebrow text-navy-500 mb-2 ml-1">Application ID</label>
+                <input
+                  type="text"
+                  value={applicationId}
+                  onChange={e => setApplicationId(e.target.value)}
+                  placeholder="e.g. ARG72Q9A"
+                  required
+                  className="w-full px-5 py-4 bg-surface-dim border border-navy-100 rounded-xl text-navy-900 font-mono text-lg tracking-wider uppercase placeholder-navy-300 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-all font-bold"
+                />
+              </div>
+              
+              <div className="grid sm:grid-cols-2 gap-6">
+                <div>
+                  <label className="block eyebrow text-navy-500 mb-2 ml-1">Email Address</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="Enter email"
+                    required
+                    className="w-full px-5 py-3.5 bg-surface-dim border border-navy-100 rounded-xl text-navy-900 placeholder-navy-300 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-all font-medium text-sm"
+                  />
                 </div>
-
-                {/* Details Grid */}
-                <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-navy-100">
-                  <div>
-                    <span className="text-xs text-navy-500 font-semibold uppercase">Country</span>
-                    <p className="text-sm font-bold text-navy-900 mt-0.5">{result.country}</p>
-                  </div>
-                  <div>
-                    <span className="text-xs text-navy-500 font-semibold uppercase">Visa Type</span>
-                    <p className="text-sm font-bold text-navy-900 mt-0.5">{result.visa}</p>
-                  </div>
-                  <div>
-                    <span className="text-xs text-navy-500 font-semibold uppercase">Job Position</span>
-                    <p className="text-sm font-bold text-navy-900 mt-0.5">{result.job}</p>
-                  </div>
-                  {result.assigned_staff && (
-                    <div>
-                      <span className="text-xs text-navy-500 font-semibold uppercase">Assigned Agent</span>
-                      <p className="text-sm font-bold text-navy-900 mt-0.5">{result.assigned_staff.name}</p>
-                      {result.assigned_staff.designation && (
-                        <p className="text-xs text-navy-400">{result.assigned_staff.designation}</p>
-                      )}
-                    </div>
-                  )}
+                <div>
+                  <label className="block eyebrow text-navy-500 mb-2 ml-1">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    placeholder="Enter phone"
+                    required
+                    className="w-full px-5 py-3.5 bg-surface-dim border border-navy-100 rounded-xl text-navy-900 placeholder-navy-300 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-all font-medium text-sm"
+                  />
                 </div>
               </div>
 
-              {/* Status Timeline */}
-              {result.status_history?.length > 0 && (
-                <div className="bg-white rounded-2xl p-8 shadow-navy border border-navy-100/50">
-                  <h3 className="text-lg font-bold text-navy-900 mb-6">Status Timeline</h3>
-                  <div className="relative">
-                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-navy-100" />
-                    <div className="space-y-6">
-                      {result.status_history.map((entry, i) => (
-                        <div key={i} className="relative flex gap-4">
-                          <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center z-10 shrink-0"
-                            style={{ backgroundColor: entry.color ? `${entry.color}20` : '#E0EAFF' }}
-                          >
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color || '#0F2B5B' }} />
-                          </div>
-                          <div className="pt-1">
-                            <p className="text-sm font-bold text-navy-900">{entry.status}</p>
-                            <p className="text-xs text-navy-500 mt-0.5">
-                              {new Date(entry.changed_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+              {error && (
+                <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium">
+                  {error}
                 </div>
               )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 mt-2 bg-navy-900 hover:bg-navy-800 text-white font-bold rounded-xl transition-all shadow-lg shadow-navy-900/10 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Searching...' : 'Check Status'}
+                {!loading && <ArrowForwardIcon fontSize="small" />}
+              </button>
+            </form>
+          </motion.div>
+
+          {/* Results Area */}
+          <AnimatePresence>
+            {result && (
+              <motion.div
+                initial={{ opacity: 0, y: 20, height: 0 }}
+                animate={{ opacity: 1, y: 0, height: 'auto' }}
+                exit={{ opacity: 0, y: -20, height: 0 }}
+                className="mt-8 space-y-6"
+              >
+                {/* Applicant Summary */}
+                <div className="bg-white rounded-3xl p-8 shadow-card border border-navy-50 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-accent-50 rounded-bl-[100px] -z-10" />
+                  
+                  <div className="flex items-start justify-between gap-4 mb-8">
+                    <div className="flex items-center gap-5">
+                      {result.photo ? (
+                        <img 
+                          src={result.photo} 
+                          alt={result.full_name} 
+                          className="w-16 h-16 rounded-2xl object-cover border border-navy-100 shadow-sm shrink-0"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-2xl bg-navy-50 flex items-center justify-center text-navy-400 font-bold text-2xl font-heading border border-navy-100 shrink-0 shadow-sm">
+                          {result.full_name?.charAt(0) || 'A'}
+                        </div>
+                      )}
+                      <div>
+                        <h2 className="text-2xl font-black text-navy-900 font-heading mb-1">{result.full_name}</h2>
+                        <div className="inline-flex items-center gap-2 text-sm text-navy-500 bg-navy-50 px-3 py-1 rounded-md font-mono">
+                          <FactCheckIcon fontSize="small" />
+                          {result.application_id}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <span
+                      className="px-4 py-2 rounded-xl text-sm font-bold uppercase tracking-wider"
+                      style={{
+                        backgroundColor: result.status_color ? `${result.status_color}15` : '#E0EAFF',
+                        color: result.status_color || '#0F2B5B',
+                        border: `1px solid ${result.status_color ? `${result.status_color}30` : '#C1D4FE'}`
+                      }}
+                    >
+                      {result.status}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6 pt-6 border-t border-navy-50">
+                    <div>
+                      <span className="eyebrow text-navy-400 block mb-1">Destination</span>
+                      <p className="text-base font-bold text-navy-900">{result.country}</p>
+                    </div>
+                    <div>
+                      <span className="eyebrow text-navy-400 block mb-1">Visa Type</span>
+                      <p className="text-base font-bold text-navy-900">{result.visa}</p>
+                    </div>
+                    <div>
+                      <span className="eyebrow text-navy-400 block mb-1">Position</span>
+                      <p className="text-base font-bold text-navy-900">{result.job}</p>
+                    </div>
+                    {result.assigned_staff && (
+                      <div>
+                        <span className="eyebrow text-navy-400 block mb-1">Agent</span>
+                        <p className="text-base font-bold text-navy-900">{result.assigned_staff.name}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Timeline */}
+                {result.status_history?.length > 0 && (
+                  <div className="bg-white rounded-3xl p-8 shadow-card border border-navy-50">
+                    <h3 className="heading-md font-heading text-navy-900 mb-8">Status Timeline</h3>
+                    
+                    <div className="relative">
+                      {/* Vertical connector */}
+                      <div className="absolute left-[15px] top-4 bottom-4 w-0.5 bg-navy-100" />
+                      
+                      <div className="space-y-8">
+                        {result.status_history.map((entry, i) => (
+                          <div key={i} className="relative flex gap-6">
+                            <div
+                              className="w-8 h-8 rounded-full flex items-center justify-center z-10 shrink-0 mt-0.5 ring-4 ring-white"
+                              style={{ backgroundColor: entry.color ? `${entry.color}20` : '#E0EAFF' }}
+                            >
+                              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color || '#0F2B5B' }} />
+                            </div>
+                            <div>
+                              <p className="text-base font-bold text-navy-900">{entry.status}</p>
+                              <p className="text-sm text-navy-500 font-medium mt-1">
+                                {new Date(entry.changed_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
-    </>
+    </div>
   );
 }

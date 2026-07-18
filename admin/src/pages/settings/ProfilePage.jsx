@@ -15,6 +15,10 @@ export default function ProfilePage() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   
+  // SMTP Config
+  const [smtpEmail, setSmtpEmail] = useState('');
+  const [smtpPassword, setSmtpPassword] = useState('');
+  
   // Password form
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -31,6 +35,8 @@ export default function ProfilePage() {
       setFirstName(profile.first_name || '');
       setLastName(profile.last_name || '');
       setEmail(profile.email || '');
+      setSmtpEmail(profile.smtp_email || '');
+      setSmtpPassword(profile.smtp_password || '');
     }
   }, [profile]);
 
@@ -67,6 +73,8 @@ export default function ProfilePage() {
       first_name: firstName,
       last_name: lastName,
       email: email,
+      smtp_email: smtpEmail,
+      smtp_password: smtpPassword,
     });
   };
 
@@ -126,6 +134,21 @@ export default function ProfilePage() {
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Username (Read Only)</label>
               <input type="text" value={profile?.username || ''} disabled className="w-full px-4 py-2 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed" />
+            </div>
+
+            <div className="pt-4 border-t border-slate-100">
+              <h4 className="text-sm font-bold text-slate-700 mb-4">SMTP Configuration (System Default Email)</h4>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">SMTP Email</label>
+                  <input type="email" value={smtpEmail} onChange={e => setSmtpEmail(e.target.value)} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="admin@example.com" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1">SMTP Password / App Password</label>
+                  <input type="password" value={smtpPassword} onChange={e => setSmtpPassword(e.target.value)} className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition-all" placeholder="••••••••" />
+                  <p className="text-[10px] text-slate-400 mt-1">Used as the default sender for status updates if no lawyer is assigned.</p>
+                </div>
+              </div>
             </div>
             
             <button type="submit" disabled={updateMutation.isLoading} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-sm disabled:opacity-50">

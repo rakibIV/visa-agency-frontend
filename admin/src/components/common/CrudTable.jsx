@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { PlusIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilSquareIcon, TrashIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import api from '../../api/client';
 import { parseApiError } from '../../utils/errorParser';
@@ -17,14 +17,17 @@ export default function CrudTable({
   disableAdd = false,
   disableEdit = false,
   disableDelete = false,
+  enableSearch = false,
 }) {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [search, setSearch] = useState('');
 
   const { data, isLoading, error } = useQuery({
-    queryKey: [queryKey],
-    queryFn: () => api.get(endpoint).then(r => r.data.results ?? r.data),
+    queryKey: [queryKey, search],
+    queryFn: () => api.get(endpoint, { params: search ? { search } : {} }).then(r => r.data.results ?? r.data),
+    keepPreviousData: true,
   });
 
   const mutationCreate = useMutation({
@@ -136,9 +139,24 @@ export default function CrudTable({
         )}
       </div>
 
+      {enableSearch && (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 flex items-center gap-3">
+          <div className="relative flex-1">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search..."
+              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="overflow-x-auto w-full">
-          <table className="w-full text-left border-collapse whitespace-nowrap">
+        <div>
+          <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
                 {columns.map((col, idx) => (

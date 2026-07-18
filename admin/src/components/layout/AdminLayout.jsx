@@ -26,12 +26,24 @@ import {
   RectangleStackIcon,
   TagIcon,
   CalendarIcon,
+  EnvelopeIcon,
+  DocumentTextIcon,
+  ArrowPathIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../context/AuthContext';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', icon: Squares2X2Icon, to: '/dashboard' },
-  { label: 'Applicants', icon: UsersIcon, to: '/applicants' },
+  {
+    label: 'Applicants',
+    icon: UsersIcon,
+    children: [
+      { label: 'All Applicants', icon: UsersIcon, to: '/applicants' },
+      { label: 'Status Updates', icon: ArrowPathIcon, to: '/applicants/statuses' },
+      { label: 'Deleted Applicants', icon: TrashIcon, to: '/applicants/deleted' },
+    ],
+  },
   { label: 'Refunds', icon: ArrowUturnLeftIcon, to: '/refunds' },
   { label: 'Agreements', icon: DocumentCheckIcon, to: '/agreements' },
   { label: 'Staff', icon: IdentificationIcon, to: '/staff' },
@@ -48,6 +60,14 @@ const NAV_ITEMS = [
     ],
   },
   {
+    label: 'Communication',
+    icon: EnvelopeIcon,
+    children: [
+      { label: 'Send Email', icon: PaperAirplaneIcon, to: '/communication/send-email' },
+      { label: 'Templates', icon: DocumentTextIcon, to: '/communication/templates' },
+    ],
+  },
+  {
     label: 'Configuration',
     icon: ClipboardDocumentListIcon,
     children: [
@@ -55,7 +75,8 @@ const NAV_ITEMS = [
       { label: 'Visa Categories', icon: TagIcon, to: '/config/visa-categories' },
       { label: 'Visas', icon: PaperAirplaneIcon, to: '/config/visas' },
       { label: 'Jobs', icon: BriefcaseIcon, to: '/config/jobs' },
-      { label: 'Slots', icon: CalendarIcon, to: '/config/slots' },
+      { label: 'Slots Config', icon: CalendarIcon, to: '/config/slots' },
+      { label: 'Allocate Slots', icon: CalendarIcon, to: '/slots' },
     ],
   },
   { label: 'Settings', icon: Cog8ToothIcon, to: '/settings' },

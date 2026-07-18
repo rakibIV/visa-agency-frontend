@@ -27,6 +27,7 @@ export default function VisaFormPage() {
   const [isFeatured, setIsFeatured] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [selectedServices, setSelectedServices] = useState([]);
+  const [selectedJobs, setSelectedJobs] = useState([]);
 
   const [error, setError] = useState('');
 
@@ -54,6 +55,12 @@ export default function VisaFormPage() {
     staleTime: 1000 * 60 * 10,
   });
 
+  const { data: allJobs } = useQuery({
+    queryKey: ['config-jobs'],
+    queryFn: () => api.get('/jobs/').then(r => r.data.results ?? r.data),
+    staleTime: 1000 * 60 * 10,
+  });
+
   useEffect(() => {
     if (visa && isEdit) {
       setName(visa.name || '');
@@ -71,6 +78,7 @@ export default function VisaFormPage() {
       setIsFeatured(visa.is_featured || false);
       setIsActive(visa.is_active ?? true);
       setSelectedServices(visa.services?.map(s => s.id) || []);
+      setSelectedJobs(visa.jobs?.map(j => j.id) || []);
     }
   }, [visa, isEdit]);
 
@@ -117,6 +125,7 @@ export default function VisaFormPage() {
       is_featured: isFeatured,
       is_active: isActive,
       services: selectedServices,
+      jobs: selectedJobs,
     };
 
     saveMutation.mutate(payload);
@@ -125,6 +134,12 @@ export default function VisaFormPage() {
   const handleServiceToggle = (id) => {
     setSelectedServices(prev => 
       prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
+    );
+  };
+
+  const handleJobToggle = (id) => {
+    setSelectedJobs(prev => 
+      prev.includes(id) ? prev.filter(j => j !== id) : [...prev, id]
     );
   };
 
@@ -210,6 +225,24 @@ export default function VisaFormPage() {
             ))}
             {(!agencyServices || agencyServices.length === 0) && (
               <div className="text-sm text-slate-500 col-span-full">No agency services configured. Add them in Settings.</div>
+            )}
+          </div>
+
+          <div className="col-span-1 md:col-span-2 text-sm font-bold text-slate-800 border-b pb-2 mb-2 mt-4">Linked Jobs</div>
+          <div className="col-span-1 md:col-span-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {allJobs?.map(job => (
+              <label key={job.id} className="flex items-center gap-3 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition-colors">
+                <input 
+                  type="checkbox" 
+                  checked={selectedJobs.includes(job.id)} 
+                  onChange={() => handleJobToggle(job.id)}
+                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
+                />
+                <span className="text-sm font-semibold text-slate-700">{job.title}</span>
+              </label>
+            ))}
+            {(!allJobs || allJobs.length === 0) && (
+              <div className="text-sm text-slate-500 col-span-full">No jobs configured. Add them in Configuration.</div>
             )}
           </div>
 

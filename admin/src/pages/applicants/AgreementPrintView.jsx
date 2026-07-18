@@ -7,13 +7,6 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
   const showTemplate1Part1 = type === 'all' || type === 'tc';
   const showTemplate1Part2 = type === 'all' || type === 'clauses';
   const showTemplate2 = type === 'all' || type === 'tc2';
-  const showRefund = type === 'all' || type === 'refund';
-
-  const refundMethodDisplay = applicant?.profile?.preferred_refund_method 
-    ? applicant.profile.preferred_refund_method.replace('_', ' ').toUpperCase()
-    : 'BANK TRANSFER';
-    
-  const isCash = refundMethodDisplay.includes('CASH');
 
   const sortedTemplates = [...(templates || [])].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
   const template1 = sortedTemplates.length > 0 ? sortedTemplates[0] : null;
@@ -85,6 +78,20 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
     </div>
   );
 
+  const parseClauseText = (text) => {
+    if (!text) return '';
+    return text
+      .replace(/\{staff_name\}/g, applicant?.assigned_staff_name || 'Authorized Representative')
+      .replace(/\{staff\}/g, applicant?.assigned_staff_name || 'Authorized Representative')
+      .replace(/\{application_id\}/g, applicant?.application_id || '—')
+      .replace(/\{full_name\}/g, applicant?.full_name || '—')
+      .replace(/\{passport_number\}/g, applicant?.passport_number || '—')
+      .replace(/\{visa\}/g, applicant?.visa?.name || '—')
+      .replace(/\{job\}/g, applicant?.job?.title || '—')
+      .replace(/\{country\}/g, applicant?.country?.name || '—')
+      .replace(/\{payment\}/g, applicant?.agreed_amount || '—');
+  };
+
   const ClauseBlock = ({ clause, isTerms = false }) => (
     <div className="mb-4 flex gap-4 break-inside-avoid">
       <div className="w-8 shrink-0 flex justify-center">
@@ -104,18 +111,18 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
         <div className="grid grid-cols-1 gap-2">
           {clause.body_en && (
             <p className="text-slate-700 text-xs leading-relaxed font-serif text-justify">
-              {clause.body_en.replace(/\{staff_name\}/g, applicant?.assigned_staff_name || 'Authorized Representative')}
+              {parseClauseText(clause.body_en)}
             </p>
           )}
           <div className={showBengali ? 'grid grid-cols-2 gap-6 pt-1' : 'pt-1'}>
             {showBengali && clause.body_bn && (
               <p className="text-slate-600 text-[11px] leading-relaxed font-sans text-justify">
-                {clause.body_bn.replace(/\{staff_name\}/g, applicant?.assigned_staff_name || 'Authorized Representative')}
+                {parseClauseText(clause.body_bn)}
               </p>
             )}
             {clause.body_ar && (
               <p className={`text-slate-800 text-[11px] leading-relaxed font-sans text-justify ${showBengali ? '' : 'w-full'}`} dir="rtl">
-                {clause.body_ar.replace(/\{staff_name\}/g, applicant?.assigned_staff_name || 'Authorized Representative')}
+                {parseClauseText(clause.body_ar)}
               </p>
             )}
           </div>
@@ -196,9 +203,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
   );
 
 
-  // Compute Second Payment refund value (80%)
-  const secondPayment = applicant?.payments?.[1]?.amount ? Number(applicant.payments[1].amount) : 0;
-  const refundAmount = secondPayment * 0.8;
+  // Remove old secondPayment logic
 
   return (
     <div className="w-full bg-slate-100 py-8 print:py-0 print:bg-white text-slate-900">
@@ -262,19 +267,24 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
                 <h3 className="font-bold text-slate-800 uppercase tracking-widest text-xs border-b-2 border-slate-200 pb-1 mb-3 font-serif">3. Financial Summary</h3>
                 <div className="bg-slate-50 p-5 rounded border border-slate-100 space-y-3">
                   <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
-                    <div className="flex justify-between border-b border-slate-200 pb-1">
-                      <span className="text-slate-500 font-medium text-[11px] uppercase">1st Installment (Receipt 1)</span>
-                      <span className="font-bold text-slate-900 text-xs">৳{applicant?.payments?.[0] ? Number(applicant.payments[0].amount).toLocaleString() : '0'}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-200 pb-1">
-                      <span className="text-slate-500 font-medium text-[11px] uppercase">2nd Installment (Receipt 2)</span>
-                      <span className="font-bold text-slate-900 text-xs">৳{applicant?.payments?.[1] ? Number(applicant.payments[1].amount).toLocaleString() : '0'}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-200 pb-1">
-                      <span className="text-slate-500 font-medium text-[11px] uppercase">Payment Date</span>
-                      <span className="font-bold text-slate-900 text-xs">{applicant?.payments?.[0] ? new Date(applicant.payments[0].payment_date).toLocaleDateString('en-GB') : '—'}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-slate-200 pb-1">
+                    {applicant?.payments?.map((payment, index) => (
+                      <React.Fragment key={payment.id || index}>
+                        <div className="flex justify-between border-b border-slate-200 pb-1">
+                          <span className="text-slate-500 font-medium text-[11px] uppercase">Installment {index + 1} (Receipt {payment.receipt_number || (index + 1)})</span>
+                          <span className="font-bold text-slate-900 text-xs">৳{Number(payment.amount).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between border-b border-slate-200 pb-1">
+                          <span className="text-slate-500 font-medium text-[11px] uppercase">Payment Date</span>
+                          <span className="font-bold text-slate-900 text-xs">{payment.payment_date ? new Date(payment.payment_date).toLocaleDateString('en-GB') : '—'}</span>
+                        </div>
+                      </React.Fragment>
+                    ))}
+                    {(!applicant?.payments || applicant.payments.length === 0) && (
+                      <div className="col-span-2 text-center text-slate-400 text-xs py-2 italic">
+                        No payments recorded yet.
+                      </div>
+                    )}
+                    <div className="flex justify-between border-b border-slate-200 pb-1 col-span-2 mt-2">
                       <span className="text-slate-500 font-medium text-[11px] uppercase">Total Amount Paid</span>
                       <span className="font-extrabold text-blue-800 text-xs">৳{Number(applicant?.total_paid || 0).toLocaleString()}</span>
                     </div>
@@ -374,149 +384,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
         </PageContainer>
       )}
 
-      {/* ========================================================== */}
-      {/* PAGE 5: REFUND RECEIPT (EXACT MATCH) */}
-      {/* ========================================================== */}
-      {showRefund && (
-        <PageContainer>
-          <div className="flex-1 w-full relative z-20 flex flex-col">
-            {/* Custom Header for Page 5 (Matches the image) */}
-            <div className="flex justify-between items-start mb-6">
-              <div className="flex items-center gap-3">
-                {companyInfo?.company_logo ? (
-                  <img src={companyInfo.company_logo} alt="Logo" className="w-16 h-16 object-contain" />
-                ) : (
-                  <div className="w-12 h-12 bg-blue-900 rounded-full flex items-center justify-center p-1">
-                    <span className="text-white font-bold text-[6px] text-center uppercase leading-tight">{companyInfo?.company_name || 'AL-RAYYAN'}</span>
-                  </div>
-                )}
-                <div>
-                  <h1 className="text-xl font-black tracking-wider text-blue-900 font-serif">
-                    {companyInfo?.company_name || 'AL-RAIYAN GROUP'}
-                  </h1>
-                  <p className="text-[10px] text-blue-900 font-bold tracking-widest mt-0.5">Global Visa Services</p>
-                  <p className="text-[9px] text-orange-600 font-bold tracking-widest mt-0.5">Trust • Process • Success</p>
-                </div>
-              </div>
-              <div className="text-right flex flex-col items-end pt-2">
-                 <h2 className="text-xl font-bold font-serif text-slate-800" dir="rtl">مجموعة الريان</h2>
-                 <p className="text-sm font-serif italic text-slate-700 mt-1" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</p>
-              </div>
-              {/* Illustration is now handled by PageContainer at the page level */}
-            </div>
 
-            {/* ACKNOWLEDGEMENT TITLE */}
-            <div className="text-center mt-4 mb-6">
-              <h2 className="text-[26px] font-black uppercase tracking-tighter">
-                <span className="text-blue-900">ACKNOWLEDGEMENT OF </span>
-                <span className={isCash ? 'text-green-600' : 'text-red-600'}>
-                  {isCash ? 'CASH ' : 'BANK '}REFUND RECEIPT
-                </span>
-              </h2>
-              <div className="flex items-center justify-center gap-4 mt-2">
-                <div className="h-px bg-slate-400 flex-1 max-w-[100px]"></div>
-                <p className="text-xs font-semibold italic text-slate-800">(80% Refundable – Second Payment)</p>
-                <div className="h-px bg-slate-400 flex-1 max-w-[100px]"></div>
-              </div>
-              <div className="text-yellow-500 text-lg tracking-widest mt-1">★ ★ ★</div>
-              <p className="text-[11px] text-slate-800 font-medium mt-2">
-                This is to acknowledge that I have received the refund amount as per the terms and conditions of the agreement.
-              </p>
-            </div>
-
-            {/* Data Columns */}
-            <div className="flex flex-row gap-6 mb-8">
-              {/* Left Column */}
-              <div className="flex-1 space-y-3 text-[11px] font-semibold text-slate-800 pt-2">
-                <div className="flex"><span className="w-6 text-blue-900">👤</span><span className="w-28 text-slate-600">Name</span><span className="mx-2">:</span><span className="uppercase flex-1 border-b border-slate-300 pb-0.5">{applicant?.full_name}</span></div>
-                <div className="flex"><span className="w-6 text-blue-900">👤</span><span className="w-28 text-slate-600">Father's Name</span><span className="mx-2">:</span><span className="uppercase flex-1 border-b border-slate-300 pb-0.5">{applicant?.profile?.father_name || '—'}</span></div>
-                <div className="flex"><span className="w-6 text-blue-900">🌐</span><span className="w-28 text-slate-600">Nationality</span><span className="mx-2">:</span><span className="uppercase flex-1 border-b border-slate-300 pb-0.5">{applicant?.country?.nationality || 'Bangladeshi'}</span></div>
-                <div className="flex"><span className="w-6 text-blue-900">🛂</span><span className="w-28 text-slate-600">Passport Number</span><span className="mx-2">:</span><span className="uppercase flex-1 border-b border-slate-300 pb-0.5 font-mono">{applicant?.passport_number}</span></div>
-                <div className="flex"><span className="w-6 text-blue-900">📄</span><span className="w-28 text-slate-600">Application No.</span><span className="mx-2">:</span><span className="uppercase flex-1 border-b border-slate-300 pb-0.5 font-mono">{applicant?.application_number || `APP-${applicant?.id?.slice(0,8)}`}</span></div>
-                <div className="flex"><span className="w-6 text-blue-900">✈️</span><span className="w-28 text-slate-600">Receipt No.</span><span className="mx-2">:</span><span className="uppercase flex-1 border-b border-slate-300 pb-0.5 font-mono">RCPT-{applicant?.id?.slice(0,8)}</span></div>
-                <div className="flex"><span className="w-6 text-blue-900">📝</span><span className="w-28 text-slate-600">Payment Date</span><span className="mx-2">:</span><span className="uppercase flex-1 border-b border-slate-300 pb-0.5">{applicant?.payments?.[1] ? new Date(applicant.payments[1].payment_date).toLocaleDateString('en-GB') : '—'}</span></div>
-                <div className="flex"><span className="w-6 text-blue-900">🗓️</span><span className="w-28 text-slate-600">Refund Received Date</span><span className="mx-2">:</span><span className="uppercase flex-1 border-b border-slate-300 pb-0.5">_________________</span></div>
-              </div>
-
-              <div className="w-px bg-slate-300"></div>
-
-              {/* Right Column */}
-              <div className="w-[280px] flex flex-col gap-4">
-                <div className={`border-2 rounded-xl p-4 flex items-center gap-4 ${isCash ? 'border-green-600' : 'border-blue-700'}`}>
-                   <div className={`text-4xl ${isCash ? 'text-green-700' : 'text-blue-800'}`}>
-                     {isCash ? '💵' : '🏦'}
-                   </div>
-                   <div className="text-[11px] font-semibold text-slate-700">
-                     You have selected <br/>
-                     <span className={`text-sm font-black tracking-wider uppercase ${isCash ? 'text-green-600' : 'text-blue-700'}`}>
-                       {refundMethodDisplay}
-                     </span><br/>
-                     as your refund method.
-                   </div>
-                </div>
-
-                <div className="border border-slate-300 rounded-xl flex items-center justify-between text-center overflow-hidden">
-                  <div className="p-3 bg-slate-50 text-[10px] font-bold text-slate-600 uppercase flex-1 h-full flex items-center justify-center border-r border-slate-300">
-                    80% Refund Amount Received
-                  </div>
-                  <div className="p-3 flex-1 flex flex-col justify-center items-center">
-                    <span className="font-bold text-blue-900 text-sm">BDT {refundAmount.toLocaleString()}</span>
-                    <span className="text-[9px] text-slate-600 mt-1 italic font-serif leading-tight">({refundAmount} Taka only)</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Acknowledgment Text */}
-            <p className="text-[11px] text-slate-800 font-medium leading-relaxed text-justify mb-6">
-              I hereby confirm that I have received the refund amount of 80% (Eighty Percent) of the Second Payment, which is 
-              <span className="font-bold text-slate-900"> BDT {refundAmount.toLocaleString()} </span> 
-              ({refundAmount} Taka only) in <span className={`font-bold ${isCash ? 'text-green-600' : 'text-blue-700'}`}>{isCash ? 'CASH' : 'BANK TRANSFER'}</span> on __________________________.
-            </p>
-
-            {/* PAYMENT DETAILS TABLE */}
-            <div className="border border-blue-900 rounded-xl overflow-hidden mb-6">
-               <div className="bg-blue-900 text-white font-bold text-xs uppercase px-4 py-2 tracking-wider">
-                 {isCash ? 'CASH' : 'BANK'} PAYMENT DETAILS
-               </div>
-               <div className="p-5 bg-white space-y-4 text-[11px] font-semibold text-slate-800">
-                 <div className="flex"><span className="w-8 text-blue-900">💵</span><span className="w-32">Payment Method</span><span className="mx-2">:</span><span>{isCash ? 'Cash (In Hand)' : 'Bank Transfer'}</span></div>
-                 <div className="flex"><span className="w-8 text-blue-900">💰</span><span className="w-32">Refund Amount</span><span className="mx-2">:</span><span className="font-bold">BDT {refundAmount.toLocaleString()} <span className="font-normal italic">({refundAmount} Taka only)</span></span></div>
-                 <div className="flex"><span className="w-8 text-blue-900">👤</span><span className="w-32">Received By</span><span className="mx-2">:</span><span className="uppercase">{applicant?.full_name}</span></div>
-                 <div className="flex"><span className="w-8 text-blue-900">📅</span><span className="w-32">Refund Received Date</span><span className="mx-2">:</span><span className="flex-1 border-b border-slate-300 pb-0.5 max-w-[200px]"></span></div>
-                 <div className="flex"><span className="w-8 text-blue-900">📝</span><span className="w-32">Notes</span><span className="mx-2">:</span><span>Full refund amount received in {isCash ? 'cash' : 'bank'}.</span></div>
-               </div>
-            </div>
-
-            <p className="text-[11px] text-slate-800 font-medium leading-relaxed text-justify mb-4">
-              I hereby acknowledge that I have received the {isCash ? 'cash' : 'transfer'} amount of <span className="font-bold">BDT {refundAmount.toLocaleString()}</span> ({refundAmount} Taka only) as an 80% refundable amount of my second payment. I confirm that I have accepted this amount in full satisfaction of the refundable amount.
-            </p>
-
-            <div className="flex items-center justify-center mb-4 text-slate-400">
-              <span className="flex-1 h-px bg-slate-200"></span>
-              <span className="mx-4 text-lg">❦</span>
-              <span className="flex-1 h-px bg-slate-200"></span>
-            </div>
-
-            {/* Bullet Points */}
-            <ul className="list-disc pl-5 space-y-2 text-[10px] text-slate-800 font-medium leading-relaxed text-justify mb-4">
-              <li>I further acknowledge and confirm that the First Installment is fully paid and is strictly <span className="text-red-600 font-bold">NON-REFUNDABLE</span> under the terms and conditions of the agreement.</li>
-              <li>I further acknowledge and confirm that the remaining twenty percent (20%) of the Second Installment is also <span className="text-red-600 font-bold">NON-REFUNDABLE</span>, as it has already been utilized for visa processing charges, government fees, administrative expenses, documentation, embassy-related costs, and other applicable service charges.</li>
-            </ul>
-
-            <div className="flex items-start gap-3 mt-2">
-              <div className="w-4 h-4 border border-slate-400 rounded-sm mt-0.5 shrink-0"></div>
-              <p className="text-[10px] text-slate-800 font-medium leading-relaxed text-justify">
-                I declare that I have read, fully understood, and voluntarily accepted these terms and conditions without any force, pressure, or objection, and I shall have no further claim or demand regarding the above-mentioned non-refundable amounts.
-              </p>
-            </div>
-            
-            <div className="mt-auto pb-4">
-              <SignatureBlock showThumb={true} showSeal={true} />
-            </div>
-          </div>
-        </PageContainer>
-      )}
 
     </div>
   );

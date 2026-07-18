@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { PlusIcon, TrashIcon, CalendarDaysIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
 import api from '../../api/client';
 
 export default function SlotsPage() {
@@ -9,6 +10,7 @@ export default function SlotsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [allocationMonth, setAllocationMonth] = useState('');
   const [totalSlot, setTotalSlot] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   // Fetch all staff members for selection
   const { data: staffs } = useQuery({
@@ -16,7 +18,7 @@ export default function SlotsPage() {
     queryFn: () => api.get('/staffs/').then((r) => {
       const results = r.data.results ?? r.data;
       if (results?.length > 0 && !selectedStaffId) {
-        setSelectedStaffId(results[0].id);
+        setSelectedStaffId(String(results[0].id));
       }
       return results;
     }),
@@ -25,7 +27,7 @@ export default function SlotsPage() {
 
   // Fetch monthly slots for the selected staff member
   const { data: slots, isLoading } = useQuery({
-    queryKey: ['staff-monthly-slots', selectedStaffId],
+    queryKey: ['staff-monthly-slots', String(selectedStaffId)],
     queryFn: () => {
       if (!selectedStaffId) return [];
       return api.get(`/staffs/${selectedStaffId}/monthly-slots/`).then((r) => r.data.results ?? r.data);
@@ -37,18 +39,37 @@ export default function SlotsPage() {
   const addSlotMutation = useMutation({
     mutationFn: (newSlot) => api.post(`/staffs/${selectedStaffId}/monthly-slots/`, newSlot),
     onSuccess: () => {
-      queryClient.invalidateQueries(['staff-monthly-slots', selectedStaffId]);
+      queryClient.invalidateQueries(['staff-monthly-slots', String(selectedStaffId)]);
+      queryClient.invalidateQueries(['config-staffs-with-slots']);
+      toast.success('Slot allocated successfully');
       setShowAddModal(false);
       setAllocationMonth('');
       setTotalSlot('');
+      setErrorMsg('');
     },
+    onError: (err) => {
+      const data = err?.response?.data;
+      if (data?.allocation_month) {
+        setErrorMsg(data.allocation_month.join(' '));
+      } else if (data?.detail) {
+        setErrorMsg(data.detail);
+      } else {
+        setErrorMsg('Failed to allocate slot. Please check your inputs.');
+      }
+      toast.error('Failed to allocate slot');
+    }
   });
 
   const deleteSlotMutation = useMutation({
     mutationFn: (id) => api.delete(`/staffs/${selectedStaffId}/monthly-slots/${id}/`),
     onSuccess: () => {
-      queryClient.invalidateQueries(['staff-monthly-slots', selectedStaffId]);
+      queryClient.invalidateQueries(['staff-monthly-slots', String(selectedStaffId)]);
+      queryClient.invalidateQueries(['config-staffs-with-slots']);
+      toast.success('Slot deleted successfully');
     },
+    onError: () => {
+      toast.error('Failed to delete slot');
+    }
   });
 
   return (
@@ -62,7 +83,7 @@ export default function SlotsPage() {
           {/* Staff Selector */}
           <select
             value={selectedStaffId}
-            onChange={(e) => setSelectedStaffId(e.target.value)}
+            onChange={(e) => setSelectedStaffId(String(e.target.value))}
             className="px-3 py-2 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
           >
             {staffs?.map((s) => (
@@ -70,7 +91,7 @@ export default function SlotsPage() {
             ))}
           </select>
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => { setShowAddModal(true); setErrorMsg(''); }}
             disabled={!selectedStaffId}
             className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-xl text-sm font-semibold hover:bg-blue-800 transition-colors disabled:opacity-50"
           >
@@ -99,6 +120,11 @@ export default function SlotsPage() {
                   <p className="text-slate-400 text-xs font-semibold mt-1">
                     Total Slots: <span className="text-slate-700 font-bold">{slot.total_slot}</span>
                   </p>
+                  {slot.remaining_slot !== undefined && (
+                    <p className="text-slate-400 text-xs font-semibold mt-0.5">
+                      Remaining: <span className="text-blue-600 font-bold">{slot.remaining_slot}</span>
+                    </p>
+                  )}
                 </div>
               </div>
               <button
@@ -126,18 +152,18 @@ export default function SlotsPage() {
           <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
             <h3 className="font-bold text-slate-800 text-lg">Allocate Monthly Slots</h3>
             <div className="space-y-3">
+              {errorMsg && <div className="text-red-600 text-xs font-bold bg-red-50 p-2 rounded">{errorMsg}</div>}
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Allocation Month (YYYY-MM)</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Allocation Month <span className="text-red-500">*</span></label>
                 <input
-                  type="text"
+                  type="month"
                   value={allocationMonth}
                   onChange={(e) => setAllocationMonth(e.target.value)}
-                  placeholder="e.g. 2026-08"
                   className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Total Slots</label>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Total Slots <span className="text-red-500">*</span></label>
                 <input
                   type="number"
                   value={totalSlot}
@@ -147,7 +173,7 @@ export default function SlotsPage() {
                 />
               </div>
             </div>
-            <div className="flex gap-2 justify-end text-sm font-semibold">
+            <div className="flex gap-2 justify-end text-sm font-semibold mt-4">
               <button
                 onClick={() => setShowAddModal(false)}
                 className="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50"
@@ -155,13 +181,14 @@ export default function SlotsPage() {
                 Cancel
               </button>
               <button
+                disabled={addSlotMutation.isPending || !allocationMonth || !totalSlot}
                 onClick={() => addSlotMutation.mutate({
                   allocation_month: allocationMonth ? `${allocationMonth}-01` : '',
                   total_slot: Number(totalSlot),
                 })}
-                className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800"
+                className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 disabled:opacity-50"
               >
-                Allocate
+                {addSlotMutation.isPending ? 'Allocating...' : 'Allocate'}
               </button>
             </div>
           </div>

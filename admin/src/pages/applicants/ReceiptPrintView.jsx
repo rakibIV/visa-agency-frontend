@@ -31,9 +31,9 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo }) {
     }
   };
 
-  const exchangeRate = 140.69;
   const bdtAmount = Number(payment.amount) || 0;
-  const eurAmount = (bdtAmount / exchangeRate);
+  const eurAmount = Number(payment.euro_amount) || 0;
+  const exchangeRate = eurAmount > 0 ? (bdtAmount / eurAmount).toFixed(2) : '140.69';
   
   const amountInWordsBDT = numberToWords(Math.floor(bdtAmount)) + ' Bangladeshi Taka Only';
   const amountInWordsEUR = numberToWords(Math.floor(eurAmount)) + ' Euros Only';
