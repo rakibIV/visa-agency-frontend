@@ -9,17 +9,22 @@ import {
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import AgreementTemplatesConfig from './AgreementTemplatesConfig';
+import Pagination from '../../components/common/Pagination';
 
 export default function AgreementsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const currentTab = searchParams.get('tab') || 'ledger';
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
 
   // Fetch applicants for agreements. We can use a larger page size or search.
-  const { data: applicants, isLoading } = useQuery({
-    queryKey: ['agreements-applicants', searchTerm],
-    queryFn: () => api.get('/applicants/', { params: { search: searchTerm } }).then(r => r.data.results ?? r.data),
+  const { data, isLoading } = useQuery({
+    queryKey: ['agreements-applicants', searchTerm, page],
+    queryFn: () => api.get('/applicants/', { params: { page, search: searchTerm || undefined } }).then(r => r.data),
   });
+
+  const applicants = data?.results ?? data ?? [];
+  const totalPages = data?.count ? Math.ceil(data.count / 20) : 1;
 
   return (
     <div className="max-w-screen-xl mx-auto space-y-6">
@@ -150,6 +155,7 @@ export default function AgreementsPage() {
           </table>
         </div>
       </div>
+      <Pagination page={page} setPage={setPage} totalPages={totalPages} />
       </>
       )}
     </div>

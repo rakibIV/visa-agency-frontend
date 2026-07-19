@@ -19,11 +19,13 @@ const STATUS_STYLES = {
 import toast from 'react-hot-toast';
 import api from '../../api/client';
 import { parseApiError } from '../../utils/errorParser';
+import Pagination from '../../components/common/Pagination';
 
 export default function ApplicantStatusUpdatePage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(1);
 
   // Fetch all statuses for the filter dropdown
   const { data: statuses } = useQuery({
@@ -34,9 +36,10 @@ export default function ApplicantStatusUpdatePage() {
 
   // Fetch applicants
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['applicants-status-update', search, statusFilter],
+    queryKey: ['applicants-status-update', search, statusFilter, page],
     queryFn: () => api.get('/applicants/', { 
       params: { 
+        page,
         ...(search ? { search } : {}),
         ...(statusFilter ? { status: statusFilter } : {})
       } 
@@ -46,6 +49,7 @@ export default function ApplicantStatusUpdatePage() {
   });
 
   const applicants = data?.results ?? data ?? [];
+  const totalPages = data?.count ? Math.ceil(data.count / 20) : 1;
 
   // Mutation to quickly update an applicant's status
   const updateStatusMutation = useMutation({
@@ -189,6 +193,8 @@ export default function ApplicantStatusUpdatePage() {
           </div>
         )}
       </div>
+
+      <Pagination page={page} setPage={setPage} totalPages={totalPages} />
     </div>
   );
 }

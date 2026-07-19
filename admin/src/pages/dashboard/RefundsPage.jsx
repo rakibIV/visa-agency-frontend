@@ -8,6 +8,7 @@ import {
   ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
+import Pagination from '../../components/common/Pagination';
 
 const STATUS_COLORS = {
   rejected: 'bg-red-100 text-red-700 ring-1 ring-red-200',
@@ -24,14 +25,18 @@ function getStatusColor(statusName) {
 
 export default function RefundsPage() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
 
   // Fetch applicants — search is backend-handled
-  const { data: applicants, isLoading } = useQuery({
-    queryKey: ['refund-applicants', searchTerm],
+  const { data, isLoading } = useQuery({
+    queryKey: ['refund-applicants', searchTerm, page],
     queryFn: () =>
-      api.get('/applicants/', { params: { search: searchTerm || undefined } })
-        .then(r => r.data.results ?? r.data),
+      api.get('/applicants/', { params: { page, search: searchTerm || undefined } })
+        .then(r => r.data),
   });
+
+  const applicants = data?.results ?? data ?? [];
+  const totalPages = data?.count ? Math.ceil(data.count / 20) : 1;
 
   // When no search: show applicants whose status name contains "rejected" or "refund"
   // When searching: show all results
@@ -175,6 +180,8 @@ export default function RefundsPage() {
           </table>
         </div>
       </div>
+      
+      <Pagination page={page} setPage={setPage} totalPages={totalPages} />
     </div>
   );
 }

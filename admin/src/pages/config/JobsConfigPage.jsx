@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/client';
+import Pagination from '../../components/common/Pagination';
 
 export default function JobsConfigPage() {
   const queryClient = useQueryClient();
@@ -30,17 +31,22 @@ export default function JobsConfigPage() {
     staleTime: 1000 * 60 * 10,
   });
 
+  const [page, setPage] = useState(1);
+
   // Fetch jobs for the selected visa
-  const { data: jobs, isLoading } = useQuery({
-    queryKey: ['config-visa-jobs', selectedVisaId, search],
+  const { data, isLoading } = useQuery({
+    queryKey: ['config-visa-jobs', selectedVisaId, search, page],
     queryFn: () => {
       if (!selectedVisaId) return [];
-      return api.get(`/visas/${selectedVisaId}/jobs/`, { params: search ? { search } : {} }).then((r) => r.data.results ?? r.data);
+      return api.get(`/visas/${selectedVisaId}/jobs/`, { params: { page, ...(search ? { search } : {}) } }).then((r) => r.data);
     },
     enabled: !!selectedVisaId,
     staleTime: 1000 * 60 * 5,
     keepPreviousData: true,
   });
+
+  const jobs = data?.results ?? data ?? [];
+  const totalPages = data?.count ? Math.ceil(data.count / 20) : 1;
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/visas/${selectedVisaId}/jobs/${id}/`),
@@ -221,6 +227,8 @@ export default function JobsConfigPage() {
           )}
         </div>
       )}
+      
+      <Pagination page={page} setPage={setPage} totalPages={totalPages} />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -10,6 +10,7 @@ import {
   PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
+import Pagination from '../../components/common/Pagination';
 
 const STATUS_STYLES = {
   pending:    'bg-yellow-100 text-yellow-700 ring-1 ring-yellow-200',
@@ -20,8 +21,11 @@ const STATUS_STYLES = {
 };
 
 export default function ApplicantsPage() {
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
+
+  const [page, setPage] = useState(1);
 
   const { data: statuses } = useQuery({
     queryKey: ['application-statuses'],
@@ -30,9 +34,10 @@ export default function ApplicantsPage() {
   });
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['applicants', search, statusFilter],
+    queryKey: ['applicants', search, statusFilter, page],
     queryFn: () => api.get('/applicants/', { 
       params: { 
+        page,
         ...(search ? { search } : {}),
         ...(statusFilter ? { status: statusFilter } : {})
       } 
@@ -42,6 +47,7 @@ export default function ApplicantsPage() {
   });
 
   const applicants = data?.results ?? data ?? [];
+  const totalPages = data?.count ? Math.ceil(data.count / 20) : 1;
 
   return (
     <div className="space-y-5 max-w-screen-xl mx-auto">
@@ -167,6 +173,8 @@ export default function ApplicantsPage() {
           </div>
         )}
       </div>
+      
+      <Pagination page={page} setPage={setPage} totalPages={totalPages} />
     </div>
   );
 }

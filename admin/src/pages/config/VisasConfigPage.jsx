@@ -3,19 +3,24 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PlusIcon, TrashIcon, PaperAirplaneIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/client';
+import Pagination from '../../components/common/Pagination';
 
 export default function VisasConfigPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
 
-  const { data: visas, isLoading } = useQuery({
-    queryKey: ['config-visas', search],
-    queryFn: () => api.get('/visas/', { params: search ? { search } : {} }).then((r) => r.data.results ?? r.data),
+  const { data, isLoading } = useQuery({
+    queryKey: ['config-visas', search, page],
+    queryFn: () => api.get('/visas/', { params: { page, ...(search ? { search } : {}) } }).then((r) => r.data),
     staleTime: 1000 * 60 * 10,
     keepPreviousData: true,
   });
+
+  const visas = data?.results ?? data ?? [];
+  const totalPages = data?.count ? Math.ceil(data.count / 20) : 1;
 
   const deleteMutation = useMutation({
     mutationFn: (id) => api.delete(`/visas/${id}/`),
@@ -88,6 +93,8 @@ export default function VisasConfigPage() {
           )}
         </div>
       )}
+      
+      <Pagination page={page} setPage={setPage} totalPages={totalPages} />
     </div>
   );
 }

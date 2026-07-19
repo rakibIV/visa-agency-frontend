@@ -208,13 +208,17 @@ export default function StaffDetailPage() {
           queryKey={`staff-sub-staffs-${id}`}
           columns={[
             { header: 'Name', accessor: 'name' },
-            { header: 'Designation', accessor: 'designation' },
             { header: 'Phone', accessor: 'phone' },
+            { header: 'Status', render: (item) => item.is_active ? 'Active' : 'Inactive' },
+            { 
+              header: 'Actions', 
+              render: (item) => <Link to={`/staff/${id}/sub-staffs/${item.id}`} className="text-blue-600 hover:underline font-semibold">Manage Slots</Link>
+            }
           ]}
           formFields={[
             { name: 'name', label: 'Name', type: 'text', required: true },
-            { name: 'designation', label: 'Designation', type: 'text', required: true },
-            { name: 'phone', label: 'Phone', type: 'text', required: true },
+            { name: 'phone', label: 'Phone', type: 'text', required: false },
+            { name: 'is_active', label: 'Active', type: 'checkbox', required: false },
           ]}
         />
 

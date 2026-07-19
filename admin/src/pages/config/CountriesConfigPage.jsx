@@ -3,19 +3,24 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { PlusIcon, TrashIcon, GlobeAltIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api/client';
+import Pagination from '../../components/common/Pagination';
 
 export default function CountriesConfigPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
 
-  const { data: countries, isLoading } = useQuery({
-    queryKey: ['config-countries', search],
-    queryFn: () => api.get('/countries/', { params: search ? { search } : {} }).then((r) => r.data.results ?? r.data),
+  const { data, isLoading } = useQuery({
+    queryKey: ['config-countries', search, page],
+    queryFn: () => api.get('/countries/', { params: { page, ...(search ? { search } : {}) } }).then((r) => r.data),
     staleTime: 1000 * 60 * 10,
     keepPreviousData: true,
   });
+
+  const countries = data?.results ?? data ?? [];
+  const totalPages = data?.count ? Math.ceil(data.count / 20) : 1;
 
   const deleteMutation = useMutation({
     mutationFn: (slug) => api.delete(`/countries/${slug}/`),
@@ -89,6 +94,8 @@ export default function CountriesConfigPage() {
           )}
         </div>
       )}
+      
+      <Pagination page={page} setPage={setPage} totalPages={totalPages} />
     </div>
   );
 }

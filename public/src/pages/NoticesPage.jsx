@@ -1,14 +1,22 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import Pagination from '../components/common/Pagination';
 import { motion } from 'framer-motion';
 import api from '../api/client';
 import CampaignIcon from '@mui/icons-material/Campaign';
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 
 export default function NoticesPage() {
-  const { data: notices, isLoading } = useQuery({
-    queryKey: ['public-notices'],
-    queryFn: () => api.get('/notices/').then(r => r.data.results ?? r.data),
+  const [page, setPage] = useState(1);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['public-notices', page],
+    queryFn: () => api.get('/notices/', { params: { page } }).then(r => r.data),
+    keepPreviousData: true,
   });
+
+  const notices = data?.results ?? data ?? [];
+  const totalPages = data?.count ? Math.ceil(data.count / 20) : 1;
 
   return (
     <div className="bg-surface-dim min-h-screen pb-24">
@@ -118,6 +126,8 @@ export default function NoticesPage() {
               ))}
             </div>
           )}
+          
+          <Pagination page={page} setPage={setPage} totalPages={totalPages} />
         </div>
       </section>
     </div>

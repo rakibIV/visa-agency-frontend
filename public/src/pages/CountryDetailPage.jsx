@@ -94,9 +94,9 @@ export default function CountryDetailPage() {
               </div>
             </div>
             
-            {country.description && (
+            {country.short_description && (
               <p className="body-lg text-white/80 max-w-3xl leading-relaxed">
-                {country.description}
+                {country.short_description}
               </p>
             )}
           </motion.div>
@@ -110,7 +110,7 @@ export default function CountryDetailPage() {
         <div className="lg:col-span-8 space-y-16">
           
           {/* General Information */}
-          {country.info && country.info.length > 0 && (
+          {country.description && country.description.length > 0 && (
             <section>
               <h2 className="heading-lg font-heading text-navy-900 mb-6 flex items-center gap-3">
                 <span className="w-8 h-8 rounded-lg bg-navy-50 text-accent-600 flex items-center justify-center border border-navy-100">
@@ -119,7 +119,7 @@ export default function CountryDetailPage() {
                 Overview
               </h2>
               <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-soft border border-navy-50 prose prose-navy max-w-none">
-                <div dangerouslySetInnerHTML={{ __html: country.info }} />
+                <div dangerouslySetInnerHTML={{ __html: country.description }} />
               </div>
             </section>
           )}

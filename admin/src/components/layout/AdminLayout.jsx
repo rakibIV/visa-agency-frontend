@@ -46,7 +46,14 @@ const NAV_ITEMS = [
   },
   { label: 'Refunds', icon: ArrowUturnLeftIcon, to: '/refunds' },
   { label: 'Agreements', icon: DocumentCheckIcon, to: '/agreements' },
-  { label: 'Staff', icon: IdentificationIcon, to: '/staff' },
+  {
+    label: 'Staff',
+    icon: IdentificationIcon,
+    children: [
+      { label: 'Staff List', icon: UsersIcon, to: '/staff' },
+      { label: 'Sub-Staff Allocations', icon: BriefcaseIcon, to: '/staff/allocations' },
+    ],
+  },
   {
     label: 'Website Content',
     icon: GlobeAltIcon,

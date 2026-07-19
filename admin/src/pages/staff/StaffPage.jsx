@@ -10,17 +10,22 @@ import {
   PhoneIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
+import Pagination from '../../components/common/Pagination';
 
 export default function StaffPage() {
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const navigate = useNavigate();
 
   // Fetch staff list
-  const { data: staffs, isLoading, isError } = useQuery({
-    queryKey: ['staffs', search],
-    queryFn: () => api.get('/staffs/', { params: search ? { search } : {} }).then((r) => r.data.results ?? r.data),
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['staffs', search, page],
+    queryFn: () => api.get('/staffs/', { params: { page, ...(search ? { search } : {}) } }).then((r) => r.data),
     staleTime: 1000 * 60 * 5,
   });
+
+  const staffs = data?.results ?? data ?? [];
+  const totalPages = data?.count ? Math.ceil(data.count / 20) : 1;
 
   return (
     <div className="space-y-5 max-w-screen-xl mx-auto">
@@ -121,6 +126,8 @@ export default function StaffPage() {
           )}
         </div>
       )}
+
+      <Pagination page={page} setPage={setPage} totalPages={totalPages} />
     </div>
   );
 }

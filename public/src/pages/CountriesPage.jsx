@@ -4,18 +4,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/client';
 import CountryCard from '../components/ui/CountryCard';
 import SearchIcon from '@mui/icons-material/Search';
+import Pagination from '../components/common/Pagination';
 
 export default function CountriesPage() {
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  // Debounce search in a real app, but for now we'll just use it directly or via form submit if needed.
+  // We can just rely on the API call.
 
-  const { data: countries, isLoading } = useQuery({
-    queryKey: ['countries'],
-    queryFn: () => api.get('/countries/').then(r => r.data.results ?? r.data),
+  const { data, isLoading } = useQuery({
+    queryKey: ['countries', search, page],
+    queryFn: () => api.get('/countries/', { params: { page, ...(search ? { search } : {}) } }).then(r => r.data),
+    keepPreviousData: true,
   });
 
-  const filtered = countries?.filter(c =>
-    c.is_active && c.name.toLowerCase().includes(search.toLowerCase())
-  ) || [];
+  const countries = data?.results ?? data ?? [];
+  const totalPages = data?.count ? Math.ceil(data.count / 20) : 1;
+  const filtered = countries.filter(c => c.is_active);
 
   return (
     <div className="bg-surface-dim min-h-screen">
@@ -117,6 +122,8 @@ export default function CountriesPage() {
                   <CountryCard key={country.slug || i} country={country} index={i} />
                 ))}
               </div>
+              
+              <Pagination page={page} setPage={setPage} totalPages={totalPages} />
             </>
           )}
         </div>

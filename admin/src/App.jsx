@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import AdminLayout from './components/layout/AdminLayout';
 import LoginPage from './pages/auth/LoginPage';
 import DashboardPage from './pages/dashboard/DashboardPage';
@@ -16,6 +17,8 @@ import SoftDeletedApplicantsPage from './pages/applicants/SoftDeletedApplicantsP
 import StaffPage from './pages/staff/StaffPage';
 import StaffFormPage from './pages/staff/StaffFormPage';
 import StaffDetailPage from './pages/staff/StaffDetailPage';
+import SubStaffDetailPage from './pages/staff/SubStaffDetailPage';
+import SubStaffAllocationsPage from './pages/staff/SubStaffAllocationsPage';
 import SlotsPage from './pages/staff/SlotsPage';
 import CountriesConfigPage from './pages/config/CountriesConfigPage';
 import CountryFormPage from './pages/config/CountryFormPage';
@@ -54,9 +57,10 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BrowserRouter>
-          <Toaster position="top-right" />
+      <ErrorBoundary>
+        <AuthProvider>
+          <BrowserRouter>
+            <Toaster position="top-right" />
           <Routes>
             {/* Public auth route */}
             <Route path="/login" element={<LoginPage />} />
@@ -112,12 +116,20 @@ function App() {
                 element={<AdminLayout><StaffFormPage /></AdminLayout>}
               />
               <Route
+                path="/staff/allocations"
+                element={<AdminLayout><SubStaffAllocationsPage /></AdminLayout>}
+              />
+              <Route
                 path="/staff/:id"
                 element={<AdminLayout><StaffDetailPage /></AdminLayout>}
               />
               <Route
                 path="/staff/:id/edit"
                 element={<AdminLayout><StaffFormPage /></AdminLayout>}
+              />
+              <Route
+                path="/staff/:staffId/sub-staffs/:subStaffId"
+                element={<AdminLayout><SubStaffDetailPage /></AdminLayout>}
               />
               <Route
                 path="/slots"
@@ -225,8 +237,9 @@ function App() {
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
-        </BrowserRouter>
-      </AuthProvider>
+          </BrowserRouter>
+        </AuthProvider>
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 }

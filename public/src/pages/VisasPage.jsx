@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import Pagination from '../components/common/Pagination';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../api/client';
@@ -6,10 +8,16 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArticleIcon from '@mui/icons-material/Article';
 
 export default function VisasPage() {
-  const { data: visas, isLoading } = useQuery({
-    queryKey: ['all-visas'],
-    queryFn: () => api.get('/visas/').then(r => r.data.results ?? r.data),
+  const [page, setPage] = useState(1);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['all-visas', page],
+    queryFn: () => api.get('/visas/', { params: { page } }).then(r => r.data),
+    keepPreviousData: true,
   });
+
+  const visas = data?.results ?? data ?? [];
+  const totalPages = data?.count ? Math.ceil(data.count / 20) : 1;
 
   if (isLoading) {
     return (
@@ -134,6 +142,8 @@ export default function VisasPage() {
               })}
             </div>
           )}
+          
+          <Pagination page={page} setPage={setPage} totalPages={totalPages} />
         </div>
       </section>
     </div>
