@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+const isProd = import.meta.env.MODE === 'production';
+const BASE_URL = isProd 
+  ? 'https://visaagency-dusky.vercel.app/api' 
+  : 'http://127.0.0.1:8000/api';
 
 const api = axios.create({
   baseURL: BASE_URL,
