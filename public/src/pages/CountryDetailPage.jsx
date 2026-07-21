@@ -7,10 +7,12 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import FactCheckIcon from '@mui/icons-material/FactCheck';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutlined';
 import CollectionsIcon from '@mui/icons-material/Collections';
+import ImageLightbox from '../components/ui/ImageLightbox';
 
 export default function CountryDetailPage() {
   const { slug } = useParams();
   const [openFaq, setOpenFaq] = useState(null);
+  const [lightbox, setLightbox] = useState({ isOpen: false, index: 0 });
 
   const { data: country, isLoading } = useQuery({
     queryKey: ['country', slug],
@@ -162,10 +164,14 @@ export default function CountryDetailPage() {
               </h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {gallery.map((img, i) => (
-                  <a key={img.id || i} href={img.image} target="_blank" rel="noopener noreferrer" className="block relative aspect-square rounded-2xl overflow-hidden group shadow-soft border border-navy-50">
+                  <button 
+                    key={img.id || i} 
+                    onClick={() => setLightbox({ isOpen: true, index: i })}
+                    className="block relative w-full text-left aspect-square rounded-2xl overflow-hidden group shadow-soft border border-navy-50"
+                  >
                     <img src={img.image} alt={img.caption || ''} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                     <div className="absolute inset-0 bg-navy-950/0 group-hover:bg-navy-950/20 transition-colors" />
-                  </a>
+                  </button>
                 ))}
               </div>
             </section>
@@ -260,6 +266,16 @@ export default function CountryDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Fullscreen Image Lightbox */}
+      <ImageLightbox 
+        isOpen={lightbox.isOpen} 
+        images={gallery || []} 
+        currentIndex={lightbox.index} 
+        onClose={() => setLightbox(prev => ({ ...prev, isOpen: false }))}
+        onNext={() => setLightbox(prev => ({ ...prev, index: (prev.index + 1) % (gallery?.length || 1) }))}
+        onPrev={() => setLightbox(prev => ({ ...prev, index: (prev.index - 1 + (gallery?.length || 1)) % (gallery?.length || 1) }))}
+      />
     </div>
   );
 }

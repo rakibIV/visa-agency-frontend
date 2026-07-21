@@ -29,7 +29,7 @@ export default function ApplicantStatusUpdatePage() {
 
   // Fetch all statuses for the filter dropdown
   const { data: statuses } = useQuery({
-    queryKey: ['application-statuses'],
+    queryKey: ['application-statuses', 'v2'],
     queryFn: () => api.get('/application-statuses/').then(r => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 15,
   });

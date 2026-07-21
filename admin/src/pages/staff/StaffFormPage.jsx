@@ -122,8 +122,8 @@ export default function StaffFormPage() {
     setError('');
 
     // Check required fields
-    if (!firstName || !designationId || !officeId || !phone || !dateOfBirth || !joiningDate || !gender || !fatherName || !motherName || !nationality) {
-      return setError('Please fill all required fields.');
+    if (!firstName || !designationId || !officeId || !phone || !dateOfBirth || !joiningDate || !gender || !fatherName || !motherName || !nationality || !nidNumber || !passportNumber || (!isEdit && !photoFile)) {
+      return setError('Please fill all required fields including NID, Passport, and Photo.');
     }
 
     if (!isEdit && !password) {
@@ -252,19 +252,19 @@ export default function StaffFormPage() {
             <input type="text" value={nationality} onChange={e => setNationality(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl" required />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">NID Number</label>
-            <input type="text" value={nidNumber} onChange={e => setNidNumber(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl" />
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">NID Number <span className="text-red-500">*</span></label>
+            <input type="text" value={nidNumber} onChange={e => setNidNumber(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl" required />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Passport Number</label>
-            <input type="text" value={passportNumber} onChange={e => setPassportNumber(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl" />
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Passport Number <span className="text-red-500">*</span></label>
+            <input type="text" value={passportNumber} onChange={e => setPassportNumber(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl" required />
           </div>
           
           <div className="col-span-1 md:col-span-2 text-sm font-bold text-slate-800 border-b pb-2 mb-2 mt-4">Media</div>
           
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Photo</label>
-            <input type="file" onChange={e => setPhotoFile(e.target.files[0])} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Photo {(!isEdit || !staff?.photo) && <span className="text-red-500">*</span>}</label>
+            <input type="file" onChange={e => setPhotoFile(e.target.files[0])} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required={!isEdit && !staff?.photo} />
             {isEdit && staff?.photo && (
               <div className="mt-2 text-sm">
                 <span className="text-slate-500">Current photo: </span>

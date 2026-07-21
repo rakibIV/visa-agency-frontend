@@ -9,12 +9,15 @@ export default function FormModal({
   initialData = {},
   onSubmit,
   isLoading = false,
+  isViewOnly = false,
 }) {
   const [formData, setFormData] = useState({});
+  const [imagePreviews, setImagePreviews] = useState({});
 
   useEffect(() => {
     if (isOpen) {
       setFormData(initialData || {});
+      setImagePreviews({});
     }
   }, [isOpen, initialData]);
 
@@ -27,6 +30,14 @@ export default function FormModal({
 
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
+    
+    if (type === 'file' && files?.[0]) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        setImagePreviews(prev => ({ ...prev, [name]: URL.createObjectURL(file) }));
+      }
+    }
+
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : type === 'file' ? (files?.[0] || null) : value,
@@ -56,7 +67,8 @@ export default function FormModal({
                     name={field.name}
                     checked={formData[field.name] || false}
                     onChange={handleChange}
-                    className="w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-600"
+                    disabled={isViewOnly || field.disabled}
+                    className="w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <span className="text-sm font-semibold text-slate-700">{field.label}</span>
                 </label>
@@ -71,8 +83,9 @@ export default function FormModal({
                       value={formData[field.name] || ''}
                       onChange={handleChange}
                       required={field.required}
+                      disabled={isViewOnly || field.disabled}
                       rows={field.rows || 3}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors text-slate-800 font-medium text-sm"
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors text-slate-800 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   ) : field.type === 'select' ? (
                     <select
@@ -80,7 +93,8 @@ export default function FormModal({
                       value={formData[field.name] || ''}
                       onChange={handleChange}
                       required={field.required}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors text-slate-800 font-medium text-sm appearance-none"
+                      disabled={isViewOnly || field.disabled}
+                      className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors text-slate-800 font-medium text-sm appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <option value="">Select {field.label}</option>
                       {field.options?.map((opt) => (
@@ -97,16 +111,27 @@ export default function FormModal({
                         value={field.type === 'file' ? undefined : formData[field.name] || ''}
                         onChange={handleChange}
                         required={field.required}
+                        disabled={isViewOnly || field.disabled}
                         min={field.min}
                         max={field.max}
                         step={field.step}
                         className={
                           field.type === 'file'
-                            ? "w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                            : "w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors text-slate-800 font-medium text-sm"
+                            ? "w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
+                            : "w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors text-slate-800 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         }
+                        accept={field.accept}
                       />
-                      {field.type === 'file' && initialData && initialData[field.name] && typeof initialData[field.name] === 'string' && (
+                      {field.type === 'file' && field.accept?.includes('image') && (imagePreviews[field.name] || (initialData && typeof initialData[field.name] === 'string')) ? (
+                        <div className="mt-3">
+                          <span className="text-slate-500 text-xs font-bold uppercase mb-2 block">Image Preview:</span>
+                          <img 
+                            src={imagePreviews[field.name] || initialData[field.name]} 
+                            alt="Preview" 
+                            className="w-32 h-20 object-cover rounded-xl border border-slate-200 shadow-sm" 
+                          />
+                        </div>
+                      ) : field.type === 'file' && initialData && initialData[field.name] && typeof initialData[field.name] === 'string' && (
                         <div className="mt-2 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between">
                           <div className="flex items-center gap-2 overflow-hidden">
                             <svg className="w-5 h-5 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -144,15 +169,17 @@ export default function FormModal({
               onClick={onClose}
               className="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors"
             >
-              Cancel
+              {isViewOnly ? 'Close' : 'Cancel'}
             </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-5 py-2.5 rounded-xl text-sm font-bold bg-blue-700 text-white hover:bg-blue-800 disabled:opacity-50 transition-colors"
-            >
-              {isLoading ? 'Saving...' : 'Save'}
-            </button>
+            {!isViewOnly && (
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="px-5 py-2.5 rounded-xl text-sm font-bold bg-blue-700 text-white hover:bg-blue-800 disabled:opacity-50 transition-colors"
+              >
+                {isLoading ? 'Saving...' : 'Save'}
+              </button>
+            )}
           </div>
         </form>
       </div>

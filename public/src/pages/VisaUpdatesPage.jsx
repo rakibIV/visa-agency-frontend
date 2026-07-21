@@ -119,12 +119,21 @@ export default function VisaUpdatesPage() {
                       
                       <div>
                         <h4 className="heading-md font-heading text-navy-900 line-clamp-1">{update.applicant_name}</h4>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-sm text-navy-500 font-medium">
-                          <span className="text-navy-900">{update.country}</span>
-                          <span className="text-navy-300">•</span>
-                          <span>{update.visa}</span>
-                          <span className="text-navy-300 hidden sm:inline">•</span>
-                          <span className="hidden sm:inline">{update.job}</span>
+                        <div className="flex flex-col gap-1 mt-1 text-sm text-navy-500 font-medium">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span className="text-navy-900 font-bold">ID: {update.application_id}</span>
+                            <span className="text-navy-300 hidden sm:inline">•</span>
+                            <span className="text-navy-700">Passport: {update.passport_number || 'N/A'}</span>
+                            <span className="text-navy-300 hidden sm:inline">•</span>
+                            <span className="text-navy-700">{update.email || 'N/A'}</span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                            <span className="text-navy-900">{update.country}</span>
+                            <span className="text-navy-300">•</span>
+                            <span>{update.visa}</span>
+                            <span className="text-navy-300 hidden sm:inline">•</span>
+                            <span className="hidden sm:inline">{update.job}</span>
+                          </div>
                         </div>
                       </div>
                     </div>

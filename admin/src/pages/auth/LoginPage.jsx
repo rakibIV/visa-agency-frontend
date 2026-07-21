@@ -74,7 +74,7 @@ export default function LoginPage() {
               className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-lg mb-4 overflow-hidden p-2"
             >
               {companyInfo?.company_logo ? (
-                <img src={companyInfo.company_logo} alt="Company Logo" className="w-full h-full object-contain" />
+                <img src={companyInfo.company_logo.startsWith('http') ? companyInfo.company_logo : `https://res.cloudinary.com/prfvuhln/${companyInfo.company_logo}`} alt="Company Logo" className="w-full h-full object-contain" />
               ) : (
                 <LockClosedIcon className="w-10 h-10 text-blue-700" />
               )}

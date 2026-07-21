@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -72,6 +72,28 @@ export default function ApplicantDetailPage() {
     staleTime: 1000 * 60 * 5,
   });
 
+  useEffect(() => {
+    if (applicant?.refund_bank_detail && Object.keys(applicant.refund_bank_detail).length > 0) {
+      const rbd = applicant.refund_bank_detail;
+      setDestMethod(rbd.notes || 'BANK');
+      setDestHolder(rbd.account_holder_name || '');
+      setDestBank(rbd.bank_name || '');
+      setDestBranch(rbd.branch_name || '');
+      setDestAccount(rbd.account_number_or_iban || '');
+      setDestRouting(rbd.routing_number || '');
+      setDestMobile(rbd.mobile_number || '');
+    } else {
+      setDestMethod('BANK');
+      setDestHolder('');
+      setDestBank('');
+      setDestBranch('');
+      setDestAccount('');
+      setDestRouting('');
+      setDestMobile('');
+    }
+  }, [applicant]);
+
+
   // Fetch agreement templates for printing
   const { data: templates } = useQuery({
     queryKey: ['agreement-templates'],
@@ -130,7 +152,11 @@ export default function ApplicantDetailPage() {
     mutationFn: (bankDetails) => api.post(`/applicants/${id}/refund-bank-detail/`, bankDetails),
     onSuccess: () => {
       queryClient.invalidateQueries(['applicant', id]);
+      alert('Refund Destination Details saved successfully!');
     },
+    onError: (err) => {
+      alert('Failed to save refund destination details: ' + (err.response?.data?.detail || err.message));
+    }
   });
 
   // Mutation for generating refund
@@ -140,7 +166,11 @@ export default function ApplicantDetailPage() {
       queryClient.invalidateQueries(['applicant', id]);
       setShowRefundModal(false);
       setRefundRemarks('');
+      alert('Refund record generated successfully!');
     },
+    onError: (err) => {
+      alert('Failed to generate refund: ' + (err.response?.data?.detail || err.response?.data?.status || err.message));
+    }
   });
 
   const markRefundPaidMutation = useMutation({
@@ -218,10 +248,9 @@ export default function ApplicantDetailPage() {
   }
 
   const rbd = applicant.refund_bank_detail || {};
-  const isRefundDataValid = !!(
-    (rbd.account_number_or_iban && rbd.account_holder_name && rbd.bank_name) ||
-    (rbd.mobile_number && rbd.account_holder_name && rbd.bank_name)
-  );
+  // Simplified validation: as long as an account holder name is provided, we consider it valid enough to try. 
+  // The backend will set status to BANK_INFO_MISSING if it needs more info.
+  const isRefundDataValid = !!rbd.account_holder_name;
 
   const isRejected = applicant.status?.slug?.includes('reject') || applicant.status?.name?.toLowerCase().includes('reject') || applicant.status_name?.toLowerCase().includes('reject');
 
@@ -828,7 +857,6 @@ export default function ApplicantDetailPage() {
               <h3 className="font-bold text-slate-800 text-base">Refund Logs</h3>
               <button
                 onClick={() => setShowRefundModal(true)}
-                disabled={!isRejected || !isRefundDataValid}
                 className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-xl text-sm font-semibold shadow hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <PlusIcon className="w-4 h-4" />
@@ -1028,12 +1056,7 @@ export default function ApplicantDetailPage() {
               </table>
             </div>
 
-            {/* Hidden logic for validation */}
-            {(() => {
-              const r = applicant.refund_bank_detail;
-              const isRefundDataValid = r && r.account_holder_name && (r.notes === 'CASH' || r.bank_name);
-              return null;
-            })()}
+
 
             {/* Modal for Refund record creation */}
             {showRefundModal && (

@@ -17,11 +17,13 @@ export default function CrudTable({
   disableAdd = false,
   disableEdit = false,
   disableDelete = false,
+  enableView = false,
   enableSearch = false,
 }) {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [isViewOnly, setIsViewOnly] = useState(false);
   const [search, setSearch] = useState('');
 
   const { data, isLoading, error } = useQuery({
@@ -35,6 +37,7 @@ export default function CrudTable({
     onSuccess: () => {
       toast.success('Item created successfully!');
       queryClient.invalidateQueries([queryKey]);
+      queryClient.invalidateQueries(['admin-notifications']);
       setIsModalOpen(false);
     },
     onError: (err) => {
@@ -47,6 +50,7 @@ export default function CrudTable({
     onSuccess: () => {
       toast.success('Item updated successfully!');
       queryClient.invalidateQueries([queryKey]);
+      queryClient.invalidateQueries(['admin-notifications']);
       setIsModalOpen(false);
     },
     onError: (err) => {
@@ -59,6 +63,7 @@ export default function CrudTable({
     onSuccess: () => {
       toast.success('Item deleted successfully!');
       queryClient.invalidateQueries([queryKey]);
+      queryClient.invalidateQueries(['admin-notifications']);
     },
     onError: (err) => {
       toast.error(parseApiError(err));
@@ -67,11 +72,19 @@ export default function CrudTable({
 
   const handleAdd = () => {
     setEditingItem(null);
+    setIsViewOnly(false);
     setIsModalOpen(true);
   };
 
   const handleEdit = (item) => {
     setEditingItem(item);
+    setIsViewOnly(false);
+    setIsModalOpen(true);
+  };
+
+  const handleView = (item) => {
+    setEditingItem(item);
+    setIsViewOnly(true);
     setIsModalOpen(true);
   };
 
@@ -164,7 +177,7 @@ export default function CrudTable({
                     {col.header}
                   </th>
                 ))}
-                {(!disableEdit || !disableDelete) && (
+                {(enableView || !disableEdit || !disableDelete) && (
                   <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">
                     Actions
                   </th>
@@ -198,8 +211,20 @@ export default function CrudTable({
                         {col.render ? col.render(item) : item[col.accessor]}
                       </td>
                     ))}
-                    {(!disableEdit || !disableDelete) && (
-                      <td className="px-6 py-4 text-right space-x-2">
+                    {(enableView || !disableEdit || !disableDelete) && (
+                      <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                        {enableView && (
+                          <button
+                            onClick={() => handleView(item)}
+                            className="inline-flex items-center p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                            title="View"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                        )}
                         {!disableEdit && (
                           <button
                             onClick={() => handleEdit(item)}
@@ -231,11 +256,12 @@ export default function CrudTable({
       <FormModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingItem ? `Edit ${title}` : `Add ${title}`}
+        title={isViewOnly ? `View ${title}` : editingItem ? `Edit ${title}` : `Add ${title}`}
         fields={formFields}
         initialData={editingItem}
         onSubmit={handleSubmit}
         isLoading={mutationCreate.isPending || mutationUpdate.isPending}
+        isViewOnly={isViewOnly}
       />
     </div>
   );

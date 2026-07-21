@@ -1,7 +1,28 @@
 import React from 'react';
 import CrudTable from '../../components/common/CrudTable';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import api from '../../api/client';
+import toast from 'react-hot-toast';
 
 export default function ApplicationRequestsPage() {
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: ({ id, status }) => api.patch(`/application-requests/${id}/`, { status }),
+    onSuccess: () => {
+      toast.success('Status updated');
+      queryClient.invalidateQueries(['application-requests']);
+      queryClient.invalidateQueries(['admin-notifications']);
+    },
+    onError: () => {
+      toast.error('Failed to update status');
+    }
+  });
+
+  const handleStatusChange = (id, status) => {
+    mutation.mutate({ id, status });
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -14,6 +35,9 @@ export default function ApplicationRequestsPage() {
       <CrudTable
         endpoint="/application-requests/"
         queryKey="application-requests"
+        disableAdd={true}
+        disableEdit={true}
+        enableView={true}
         columns={[
           { header: 'Name', accessor: 'name' },
           { header: 'Phone', accessor: 'phone' },
@@ -28,15 +52,21 @@ export default function ApplicationRequestsPage() {
             header: 'Status', 
             render: (item) => {
               const statusColors = {
-                PENDING: 'bg-yellow-100 text-yellow-800',
-                REVIEWED: 'bg-blue-100 text-blue-800',
-                CONTACTED: 'bg-green-100 text-green-800',
+                PENDING: 'bg-yellow-50 text-yellow-800 border-yellow-200',
+                REVIEWED: 'bg-blue-50 text-blue-800 border-blue-200',
+                CONTACTED: 'bg-green-50 text-green-800 border-green-200',
               };
-              const color = statusColors[item.status] || 'bg-gray-100 text-gray-800';
+              const color = statusColors[item.status] || 'bg-gray-50 text-gray-800 border-gray-200';
               return (
-                <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${color}`}>
-                  {item.status}
-                </span>
+                <select
+                  value={item.status}
+                  onChange={(e) => handleStatusChange(item.id, e.target.value)}
+                  className={`text-xs font-bold rounded-md px-2 py-1 border outline-none cursor-pointer transition-colors ${color}`}
+                >
+                  <option value="PENDING" className="text-slate-800">Pending</option>
+                  <option value="REVIEWED" className="text-slate-800">Reviewed</option>
+                  <option value="CONTACTED" className="text-slate-800">Contacted</option>
+                </select>
               );
             }
           },
@@ -46,21 +76,10 @@ export default function ApplicationRequestsPage() {
           },
         ]}
         formFields={[
-          { name: 'name', label: 'Name', type: 'text', required: true },
-          { name: 'phone', label: 'Phone', type: 'text', required: true },
-          { name: 'email', label: 'Email', type: 'email', required: false },
-          { name: 'message', label: 'Message', type: 'textarea', required: false },
-          {
-            name: 'status',
-            label: 'Status',
-            type: 'select',
-            required: true,
-            options: [
-              { value: 'PENDING', label: 'Pending' },
-              { value: 'REVIEWED', label: 'Reviewed' },
-              { value: 'CONTACTED', label: 'Contacted' },
-            ],
-          },
+          { name: 'name', label: 'Name', type: 'text' },
+          { name: 'phone', label: 'Phone', type: 'text' },
+          { name: 'email', label: 'Email', type: 'email' },
+          { name: 'message', label: 'Message', type: 'textarea' },
         ]}
       />
     </div>

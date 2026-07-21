@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import api from '../api/client';
@@ -7,6 +8,7 @@ import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import PublicIcon from '@mui/icons-material/Public';
 import AssuredWorkloadIcon from '@mui/icons-material/AssuredWorkload';
 import HandshakeIcon from '@mui/icons-material/Handshake';
+import ImageLightbox from '../components/ui/ImageLightbox';
 
 const services = [
   "Europe Work Permit Visa Processing",
@@ -20,9 +22,16 @@ const services = [
 ];
 
 export default function AboutPage() {
+  const [lightbox, setLightbox] = useState({ isOpen: false, index: 0 });
+
   const { data: offices, isLoading: officesLoading } = useQuery({
     queryKey: ['branches'],
     queryFn: () => api.get('/branches/').then(r => r.data.results ?? r.data),
+  });
+
+  const { data: company } = useQuery({
+    queryKey: ['company'],
+    queryFn: () => api.get('/companies/').then(r => r.data.results?.[0] ?? r.data?.[0]),
   });
 
   return (
@@ -263,9 +272,53 @@ export default function AboutPage() {
                 </motion.div>
               ))}
             </div>
-          ) : null}
+          ) : (
+            <div className="text-center text-navy-400 py-12 bg-navy-50 rounded-3xl border border-navy-100">
+              No offices found.
+            </div>
+          )}
         </div>
       </section>
+
+      {/* ═══════════════════════════════════════════
+          GALLERY
+      ═══════════════════════════════════════════ */}
+      {company?.images?.length > 0 && (
+        <section id="gallery" className="section-py bg-surface-dim grain relative border-t border-navy-50">
+          <div className="container-wide relative z-10">
+            <div className="text-center mb-16">
+              <span className="eyebrow text-accent-600 mb-3 block">Gallery</span>
+              <h2 className="display-lg font-heading text-navy-900">Agency Images</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {company.images.map((img, i) => (
+                <motion.div
+                  key={img.id || i}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="aspect-square rounded-2xl overflow-hidden border border-navy-100 shadow-soft cursor-pointer group"
+                  onClick={() => setLightbox({ isOpen: true, index: i })}
+                >
+                  <img src={img.image} alt={img.caption || `Gallery ${i}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Fullscreen Image Lightbox */}
+      <ImageLightbox 
+        isOpen={lightbox.isOpen} 
+        images={company?.images || []} 
+        currentIndex={lightbox.index} 
+        onClose={() => setLightbox(prev => ({ ...prev, isOpen: false }))}
+        onNext={() => setLightbox(prev => ({ ...prev, index: (prev.index + 1) % (company?.images?.length || 1) }))}
+        onPrev={() => setLightbox(prev => ({ ...prev, index: (prev.index - 1 + (company?.images?.length || 1)) % (company?.images?.length || 1) }))}
+      />
+
     </div>
   );
 }

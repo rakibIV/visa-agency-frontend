@@ -64,6 +64,8 @@ const NAV_ITEMS = [
       { label: 'Messages', icon: ChatBubbleLeftEllipsisIcon, to: '/website/messages' },
       { label: 'App Requests', icon: ClipboardDocumentListIcon, to: '/website/application-requests' },
       { label: 'Social Links', icon: LinkIcon, to: '/website/social-links' },
+      { label: 'Fake Live Results', icon: ClipboardDocumentListIcon, to: '/website/fake-live-results' },
+      { label: 'Agency Images', icon: RectangleStackIcon, to: '/website/agency-images' },
     ],
   },
   {
@@ -89,10 +91,21 @@ const NAV_ITEMS = [
   { label: 'Settings', icon: Cog8ToothIcon, to: '/settings' },
 ];
 
-function NavItem({ item, collapsed, onNavClick }) {
+function NavItem({ item, collapsed, onNavClick, notificationCounts }) {
   const location = useLocation();
   const isChildActive = item.children?.some((c) => location.pathname.startsWith(c.to));
   const [open, setOpen] = useState(isChildActive || false);
+
+  const getBadgeCount = (label) => {
+    if (!notificationCounts) return 0;
+    if (label === 'Messages') return notificationCounts.unread_messages;
+    if (label === 'App Requests') return notificationCounts.pending_requests;
+    return 0;
+  };
+
+  const parentBadgeCount = item.children 
+    ? item.children.reduce((acc, child) => acc + getBadgeCount(child.label), 0)
+    : getBadgeCount(item.label);
 
   if (item.children) {
     return (
@@ -106,6 +119,11 @@ function NavItem({ item, collapsed, onNavClick }) {
           {!collapsed && (
             <>
               <span className="flex-1 text-left">{item.label}</span>
+              {parentBadgeCount > 0 && !open && (
+                <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full mr-2">
+                  {parentBadgeCount}
+                </span>
+              )}
               <ChevronDownIcon
                 className={`w-4 h-4 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
               />
@@ -134,7 +152,12 @@ function NavItem({ item, collapsed, onNavClick }) {
                     }
                   >
                     <child.icon className="w-4 h-4 shrink-0" />
-                    {child.label}
+                    <span className="flex-1">{child.label}</span>
+                    {getBadgeCount(child.label) > 0 && (
+                      <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                        {getBadgeCount(child.label)}
+                      </span>
+                    )}
                   </NavLink>
                 ))}
               </div>
@@ -157,7 +180,16 @@ function NavItem({ item, collapsed, onNavClick }) {
       }
     >
       <item.icon className="w-5 h-5 shrink-0" />
-      {!collapsed && <span>{item.label}</span>}
+      {!collapsed && (
+        <>
+          <span className="flex-1">{item.label}</span>
+          {parentBadgeCount > 0 && (
+            <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+              {parentBadgeCount}
+            </span>
+          )}
+        </>
+      )}
     </NavLink>
   );
 }
@@ -168,6 +200,12 @@ export default function AdminLayout({ children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { data: notificationCounts } = useQuery({
+    queryKey: ['admin-notifications'],
+    queryFn: () => api.get('/admin-notifications/').then(r => r.data),
+    refetchInterval: 30000,
+  });
 
   useEffect(() => {
     const handleResize = () => {
@@ -232,7 +270,7 @@ export default function AdminLayout({ children }) {
         <div className={`flex items-center gap-3 px-4 py-4 border-b border-white/10 shrink-0 ${collapsed ? 'justify-center px-0' : ''}`}>
           <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-md overflow-hidden p-1">
             {companyInfo?.company_logo ? (
-              <img src={companyInfo.company_logo} alt="Logo" className="w-full h-full object-contain" />
+              <img src={companyInfo.company_logo.startsWith('http') ? companyInfo.company_logo : `https://res.cloudinary.com/prfvuhln/${companyInfo.company_logo}`} alt="Logo" className="w-full h-full object-contain" />
             ) : (
               <span className="text-blue-800 font-black text-sm tracking-tight">VA</span>
             )}
@@ -248,7 +286,7 @@ export default function AdminLayout({ children }) {
         {/* Nav — scrollable middle section */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4 space-y-0.5" style={{ scrollbarWidth: 'none' }}>
           {NAV_ITEMS.map((item) => (
-            <NavItem key={item.label} item={item} collapsed={collapsed && !isMobile} onNavClick={handleNavClick} />
+            <NavItem key={item.label} item={item} collapsed={collapsed && !isMobile} onNavClick={handleNavClick} notificationCounts={notificationCounts} />
           ))}
         </nav>
 

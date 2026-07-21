@@ -111,7 +111,7 @@ export default function ApplicantFormPage() {
   }, [applicant, isEdit]);
 
   const { data: statuses } = useQuery({
-    queryKey: ['application-statuses'],
+    queryKey: ['application-statuses', 'v2'],
     queryFn: () => api.get('/application-statuses/').then(r => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 10,
   });
@@ -193,12 +193,16 @@ export default function ApplicantFormPage() {
   const validateStep = (step) => {
     setError('');
     if (step === 1) {
-      if (!fullName || !passportNumber || !dateOfBirth) {
-        return 'Please fill in all required fields (Full Name, Passport Number, Date of Birth).';
+      if (!fullName || !passportNumber || !dateOfBirth || !nidNumber) {
+        return 'Please fill in all required fields (Full Name, Passport Number, NID, Date of Birth).';
+      }
+    } else if (step === 2) {
+      if (!placeOfBirth || !currentCountry || !gender || !nationality || !fatherName || !motherName || !emergencyContactName || !emergencyContactPhone || (!isEdit && !photoFile)) {
+        return 'Please fill in all required Profile fields and upload a photo.';
       }
     } else if (step === 3) {
-      if (!selectedVisaId || !selectedJobId) {
-        return 'Please select a Target Visa and Target Job.';
+      if (!selectedVisaId || !selectedJobId || !paymentPlan || !selectedStaffId || !selectedSlotId) {
+        return 'Please select a Target Visa, Target Job, Installment Plan, Staff, and Staff Slot.';
       }
     }
     return null;
@@ -240,8 +244,9 @@ export default function ApplicantFormPage() {
     e.preventDefault();
     setError('');
 
-    if (!fullName || !passportNumber || !dateOfBirth || !selectedVisaId || !selectedJobId) {
-      setError('Please fill in all required fields: Full Name, Passport, Date of Birth, Visa, and Job.');
+    const errorMsg = validateStep(1) || validateStep(2) || validateStep(3);
+    if (errorMsg) {
+      setError(errorMsg);
       return;
     }
 
@@ -368,8 +373,8 @@ export default function ApplicantFormPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>NID Number</label>
-                <input type="text" value={nidNumber} onChange={e => setNidNumber(e.target.value)} placeholder="10 or 17 digit NID" className={`${inputCls} font-mono`} />
+                <label className={labelCls}>NID Number <span className="text-red-500">*</span></label>
+                <input type="text" value={nidNumber} onChange={e => setNidNumber(e.target.value)} placeholder="10 or 17 digit NID" className={`${inputCls} font-mono`} required />
               </div>
               <div>
                 <label className={labelCls}>Date of Birth <span className="text-red-500">*</span></label>
@@ -387,16 +392,16 @@ export default function ApplicantFormPage() {
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>Place of Birth</label>
-                <input type="text" value={placeOfBirth} onChange={e => setPlaceOfBirth(e.target.value)} className={inputCls} />
+                <label className={labelCls}>Place of Birth <span className="text-red-500">*</span></label>
+                <input type="text" value={placeOfBirth} onChange={e => setPlaceOfBirth(e.target.value)} className={inputCls} required />
               </div>
               <div>
-                <label className={labelCls}>Current Country</label>
-                <input type="text" value={currentCountry} onChange={e => setCurrentCountry(e.target.value)} className={inputCls} />
+                <label className={labelCls}>Current Country <span className="text-red-500">*</span></label>
+                <input type="text" value={currentCountry} onChange={e => setCurrentCountry(e.target.value)} className={inputCls} required />
               </div>
               <div>
-                <label className={labelCls}>Gender</label>
-                <select value={gender} onChange={e => setGender(e.target.value)} className={inputCls}>
+                <label className={labelCls}>Gender <span className="text-red-500">*</span></label>
+                <select value={gender} onChange={e => setGender(e.target.value)} className={inputCls} required>
                   <option value="">Select Gender</option>
                   <option value="MALE">Male</option>
                   <option value="FEMALE">Female</option>
@@ -404,8 +409,8 @@ export default function ApplicantFormPage() {
                 </select>
               </div>
               <div>
-                <label className={labelCls}>Nationality</label>
-                <input type="text" value={nationality} onChange={e => setNationality(e.target.value)} className={inputCls} />
+                <label className={labelCls}>Nationality <span className="text-red-500">*</span></label>
+                <input type="text" value={nationality} onChange={e => setNationality(e.target.value)} className={inputCls} required />
               </div>
               <div>
                 <label className={labelCls}>Phone</label>
@@ -416,12 +421,12 @@ export default function ApplicantFormPage() {
                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Father's Name</label>
-                <input type="text" value={fatherName} onChange={e => setFatherName(e.target.value)} className={inputCls} />
+                <label className={labelCls}>Father's Name <span className="text-red-500">*</span></label>
+                <input type="text" value={fatherName} onChange={e => setFatherName(e.target.value)} className={inputCls} required />
               </div>
               <div>
-                <label className={labelCls}>Mother's Name</label>
-                <input type="text" value={motherName} onChange={e => setMotherName(e.target.value)} className={inputCls} />
+                <label className={labelCls}>Mother's Name <span className="text-red-500">*</span></label>
+                <input type="text" value={motherName} onChange={e => setMotherName(e.target.value)} className={inputCls} required />
               </div>
               <div>
                 <label className={labelCls}>Marital Status</label>
@@ -442,12 +447,12 @@ export default function ApplicantFormPage() {
             <h4 className="font-bold text-slate-700 text-xs uppercase tracking-wider mt-6 mb-2 border-t border-slate-50 pt-4">Emergency Contact</h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className={labelCls}>Name</label>
-                <input type="text" value={emergencyContactName} onChange={e => setEmergencyContactName(e.target.value)} className={inputCls} />
+                <label className={labelCls}>Name <span className="text-red-500">*</span></label>
+                <input type="text" value={emergencyContactName} onChange={e => setEmergencyContactName(e.target.value)} className={inputCls} required />
               </div>
               <div>
-                <label className={labelCls}>Phone</label>
-                <input type="text" value={emergencyContactPhone} onChange={e => setEmergencyContactPhone(e.target.value)} className={inputCls} />
+                <label className={labelCls}>Phone <span className="text-red-500">*</span></label>
+                <input type="text" value={emergencyContactPhone} onChange={e => setEmergencyContactPhone(e.target.value)} className={inputCls} required />
               </div>
               <div>
                 <label className={labelCls}>Relation</label>
@@ -456,8 +461,8 @@ export default function ApplicantFormPage() {
             </div>
 
             <div className="mt-4">
-              <label className={labelCls}>Applicant Photo</label>
-              <input type="file" onChange={e => setPhotoFile(e.target.files[0])} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+              <label className={labelCls}>Applicant Photo {(!isEdit || !applicant?.photo) && <span className="text-red-500">*</span>}</label>
+              <input type="file" onChange={e => setPhotoFile(e.target.files[0])} className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" required={!isEdit && !applicant?.photo} />
               {isEdit && applicant?.photo && (
                 <div className="mt-2 text-sm">
                   <span className="text-slate-500">Current photo: </span>
@@ -502,12 +507,13 @@ export default function ApplicantFormPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>Payment Plan</label>
+                <label className={labelCls}>Payment Plan <span className="text-red-500">*</span></label>
                 <select 
                   value={paymentPlan} 
                   onChange={e => setPaymentPlan(Number(e.target.value))} 
                   className={`${inputCls} ${isPaymentComplete ? 'bg-slate-100 cursor-not-allowed' : 'bg-white'}`}
                   disabled={isPaymentComplete}
+                  required
                 >
                   <option value={2}>Two Installments</option>
                   <option value={3}>Three Installments</option>
@@ -531,15 +537,15 @@ export default function ApplicantFormPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className={labelCls}>Assign Staff</label>
-                <select value={selectedStaffId} onChange={e => setSelectedStaffId(e.target.value)} className={`${inputCls} bg-white`}>
-                  <option value="">— Select Staff (Optional) —</option>
+                <label className={labelCls}>Assign Staff <span className="text-red-500">*</span></label>
+                <select value={selectedStaffId} onChange={e => setSelectedStaffId(e.target.value)} className={`${inputCls} bg-white`} required>
+                  <option value="">— Select Staff —</option>
                   {staffs?.map(s => <option key={s.id} value={s.id}>{s.full_name || s.username || s.employee_id}</option>)}
                 </select>
               </div>
               <div>
-                <label className={labelCls}>Assign Slot</label>
-                <select value={selectedSlotId} onChange={e => setSelectedSlotId(e.target.value)} disabled={!selectedStaffId} className={`${inputCls} bg-white disabled:opacity-50`}>
+                <label className={labelCls}>Assign Slot <span className="text-red-500">*</span></label>
+                <select value={selectedSlotId} onChange={e => setSelectedSlotId(e.target.value)} disabled={!selectedStaffId} className={`${inputCls} bg-white disabled:opacity-50`} required>
                   <option value="">— Select Slot —</option>
                   {slots?.map(sl => <option key={sl.id} value={sl.id}>{sl.allocation_month}</option>)}
                 </select>

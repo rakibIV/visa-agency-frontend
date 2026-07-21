@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import api from '../api/client';
 import CountryCard from '../components/ui/CountryCard';
 import StaffProfileModal from '../components/ui/StaffProfileModal';
+import WaterDropMenu from '../components/ui/WaterDropMenu';
 
 // MUI Icons
 import PublicIcon from '@mui/icons-material/Public';
@@ -31,6 +32,8 @@ import designServiceImg from '../assets/residency.jpg';
 import handshakeImg from '../assets/Handshake.jpg';
 
 export default function HomePage() {
+  const USE_NEW_WATERDROP_HERO = true; // Toggle to true to use the new waterdrop hero section
+
   const { data: countries, isLoading: isLoadingCountries } = useQuery({
     queryKey: ['countries'],
     queryFn: () => api.get('/countries/').then(r => r.data.results ?? r.data),
@@ -94,83 +97,171 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════
           HERO — Full-bleed cinematic
       ═══════════════════════════════════════════ */}
-      <section className="relative min-h-[100svh] flex items-center justify-center overflow-hidden">
-        {/* Background Image */}
-        <div className="absolute inset-0 z-0">
-          <img src={heroImg} alt="" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-b from-navy-950/70 via-navy-950/50 to-navy-950/80" />
-        </div>
+      {USE_NEW_WATERDROP_HERO ? (
+        <section className="relative min-h-[100svh] flex items-center justify-center overflow-hidden">
+          {/* Background */}
+          <div className="absolute inset-0 z-0 bg-gradient-to-br from-navy-900 to-navy-950" />
 
-        {/* Content */}
-        <div className="relative z-10 container-wide text-center pt-24 pb-16">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white/90 text-xs font-bold uppercase tracking-widest mb-8">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent-400 animate-pulse" />
-              World Class Immigration
-            </div>
-
-            <h1 className="display-hero font-heading text-white mb-6 max-w-4xl mx-auto">
-              Your Future Beyond{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-400 to-accent-300">Borders</span>{' '}
-              Starts Here
-            </h1>
-
-            <p className="body-lg text-white/70 max-w-2xl mx-auto mb-10">
-              Expert guidance and seamless processing for work, study, and immigration visas to the world's most desired destinations.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                to="/contact"
-                className="w-full sm:w-auto px-8 py-4 bg-accent-600 hover:bg-accent-700 text-white text-base font-bold rounded-full shadow-lg shadow-accent-600/30 transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2"
-              >
-                Start Your Journey <ArrowForwardIcon fontSize="small" />
-              </Link>
-              <Link
-                to="/status-check"
-                className="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-base font-semibold rounded-full transition-all flex items-center justify-center gap-2 backdrop-blur-md"
-              >
-                <AssignmentTurnedInIcon fontSize="small" /> Track Application
-              </Link>
-            </div>
-          </motion.div>
-
-          {/* Trust Row */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.6 }}
-            className="mt-16 flex flex-wrap items-center justify-center gap-6 sm:gap-10"
-          >
-            {[
-              { value: '15k+', label: 'Applicants Served' },
-              { value: '98%', label: 'Success Rate' },
-              { value: '50+', label: 'Countries' },
-              { value: '10+', label: 'Years Experience' },
-            ].map((stat, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <span className="text-2xl sm:text-3xl font-black text-white font-heading">{stat.value}</span>
-                <span className="text-xs text-white/50 uppercase tracking-wide font-semibold leading-tight">{stat.label}</span>
+          {/* Content */}
+          <div className="relative z-10 container-wide flex flex-col lg:flex-row items-center justify-between gap-12 pt-24 pb-16">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+              className="flex-1 lg:text-left text-center"
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white/90 text-xs font-bold uppercase tracking-widest mb-8">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-400 animate-pulse" />
+                World Class Immigration
               </div>
-            ))}
-          </motion.div>
-        </div>
 
-        {/* Scroll indicator */}
-        <motion.div
-          animate={{ y: [0, 8, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
-        >
-          <div className="w-6 h-10 rounded-full border-2 border-white/30 flex justify-center pt-2">
-            <div className="w-1 h-2.5 rounded-full bg-white/50" />
+              <h1 className="display-hero font-heading text-white mb-6 max-w-4xl lg:mx-0 mx-auto">
+                Your Future Beyond{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-400 to-accent-300">Borders</span>{' '}
+                Starts Here
+              </h1>
+
+              <p className="body-lg text-white/70 max-w-2xl lg:mx-0 mx-auto mb-10">
+                Expert guidance and seamless processing for work, study, and immigration visas to the world's most desired destinations.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center lg:justify-start justify-center gap-4">
+                <Link
+                  to="/contact"
+                  className="w-full sm:w-auto px-8 py-4 bg-accent-600 hover:bg-accent-700 text-white text-base font-bold rounded-full shadow-lg shadow-accent-600/30 transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                >
+                  Start Your Journey <ArrowForwardIcon fontSize="small" />
+                </Link>
+                <Link
+                  to="/status-check"
+                  className="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-base font-semibold rounded-full transition-all flex items-center justify-center gap-2 backdrop-blur-md"
+                >
+                  <AssignmentTurnedInIcon fontSize="small" /> Track Application
+                </Link>
+              </div>
+
+              {/* Trust Row */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5, duration: 0.6 }}
+                className="mt-16 flex flex-wrap items-center lg:justify-start justify-center gap-6 sm:gap-10"
+              >
+                {[
+                  { value: '15k+', label: 'Applicants Served' },
+                  { value: '98%', label: 'Success Rate' },
+                  { value: '50+', label: 'Countries' },
+                  { value: '10+', label: 'Years Experience' },
+                ].map((stat, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <span className="text-2xl sm:text-3xl font-black text-white font-heading">{stat.value}</span>
+                    <span className="text-xs text-white/50 uppercase tracking-wide font-semibold leading-tight">{stat.label}</span>
+                  </div>
+                ))}
+              </motion.div>
+            </motion.div>
+
+            {/* Right Side Menu */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
+              className="w-full lg:w-[450px] shrink-0"
+            >
+              <WaterDropMenu />
+            </motion.div>
           </div>
-        </motion.div>
-      </section>
+
+          {/* Scroll indicator */}
+          <motion.div
+            animate={{ y: [0, 8, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
+          >
+            <div className="w-6 h-10 rounded-full border-2 border-white/30 flex justify-center pt-2">
+              <div className="w-1 h-2.5 rounded-full bg-white/50" />
+            </div>
+          </motion.div>
+        </section>
+      ) : (
+        <section className="relative min-h-[100svh] flex items-center justify-center overflow-hidden">
+          {/* Background Image */}
+          <div className="absolute inset-0 z-0">
+            <img src={heroImg} alt="" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-b from-navy-950/70 via-navy-950/50 to-navy-950/80" />
+          </div>
+
+          {/* Content */}
+          <div className="relative z-10 container-wide text-center pt-24 pb-16">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white/90 text-xs font-bold uppercase tracking-widest mb-8">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent-400 animate-pulse" />
+                World Class Immigration
+              </div>
+
+              <h1 className="display-hero font-heading text-white mb-6 max-w-4xl mx-auto">
+                Your Future Beyond{' '}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-400 to-accent-300">Borders</span>{' '}
+                Starts Here
+              </h1>
+
+              <p className="body-lg text-white/70 max-w-2xl mx-auto mb-10">
+                Expert guidance and seamless processing for work, study, and immigration visas to the world's most desired destinations.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link
+                  to="/contact"
+                  className="w-full sm:w-auto px-8 py-4 bg-accent-600 hover:bg-accent-700 text-white text-base font-bold rounded-full shadow-lg shadow-accent-600/30 transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                >
+                  Start Your Journey <ArrowForwardIcon fontSize="small" />
+                </Link>
+                <Link
+                  to="/status-check"
+                  className="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-base font-semibold rounded-full transition-all flex items-center justify-center gap-2 backdrop-blur-md"
+                >
+                  <AssignmentTurnedInIcon fontSize="small" /> Track Application
+                </Link>
+              </div>
+            </motion.div>
+
+            {/* Trust Row */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
+              className="mt-16 flex flex-wrap items-center justify-center gap-6 sm:gap-10"
+            >
+              {[
+                { value: '15k+', label: 'Applicants Served' },
+                { value: '98%', label: 'Success Rate' },
+                { value: '50+', label: 'Countries' },
+                { value: '10+', label: 'Years Experience' },
+              ].map((stat, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <span className="text-2xl sm:text-3xl font-black text-white font-heading">{stat.value}</span>
+                  <span className="text-xs text-white/50 uppercase tracking-wide font-semibold leading-tight">{stat.label}</span>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+
+          {/* Scroll indicator */}
+          <motion.div
+            animate={{ y: [0, 8, 0] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
+          >
+            <div className="w-6 h-10 rounded-full border-2 border-white/30 flex justify-center pt-2">
+              <div className="w-1 h-2.5 rounded-full bg-white/50" />
+            </div>
+          </motion.div>
+        </section>
+      )}
 
       {/* ═══════════════════════════════════════════
           SERVICES — Asymmetric editorial grid
@@ -190,51 +281,57 @@ export default function HomePage() {
           {/* Asymmetric: 1 large + 2 stacked on desktop */}
           <div className="grid lg:grid-cols-5 gap-6">
             {/* Featured large card */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="lg:col-span-3 group relative rounded-3xl overflow-hidden"
-            >
-              <div className="aspect-[4/3] lg:aspect-auto lg:h-full w-full relative min-h-[300px]">
-                <img src={services[0].image} alt={services[0].title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/30 to-transparent" />
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
-                <div className="w-12 h-12 bg-white/15 backdrop-blur-md rounded-xl flex items-center justify-center text-white mb-4 border border-white/20">
-                  {services[0].icon}
+            <Link to="/visas" className="lg:col-span-3 block">
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="group relative rounded-3xl overflow-hidden h-full"
+              >
+                <div className="aspect-[4/3] lg:aspect-auto lg:h-full w-full relative min-h-[300px]">
+                  <img src={services[0].image} alt={services[0].title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/30 to-transparent" />
                 </div>
-                <h3 className="heading-lg text-white mb-2 font-heading">{services[0].title}</h3>
-                <p className="text-white/70 text-sm max-w-md mb-4">{services[0].description}</p>
-                <Link to="/visas" className="inline-flex items-center gap-2 text-white text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  Learn More <ArrowForwardIcon fontSize="small" />
-                </Link>
-              </div>
-            </motion.div>
+                <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
+                  <div className="w-12 h-12 bg-white/15 backdrop-blur-md rounded-xl flex items-center justify-center text-white mb-4 border border-white/20">
+                    {services[0].icon}
+                  </div>
+                  <h3 className="heading-lg text-white mb-2 font-heading">{services[0].title}</h3>
+                  <p className="text-white/70 text-sm max-w-md mb-4">{services[0].description}</p>
+                  <span className="inline-flex items-center gap-2 text-white text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    Learn More <ArrowForwardIcon fontSize="small" />
+                  </span>
+                </div>
+              </motion.div>
+            </Link>
 
             {/* 2 stacked smaller cards */}
             <div className="lg:col-span-2 flex flex-col gap-6">
               {services.slice(1).map((service, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: (i + 1) * 0.1 }}
-                  className="group relative rounded-3xl overflow-hidden flex-1"
-                >
-                  <div className="aspect-[16/10] lg:aspect-auto lg:h-full w-full relative min-h-[200px]">
-                    <img src={service.image} alt={service.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/30 to-transparent" />
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 p-6">
-                    <div className="w-10 h-10 bg-white/15 backdrop-blur-md rounded-lg flex items-center justify-center text-white mb-3 border border-white/20">
-                      {service.icon}
+                <Link to="/visas" key={i} className="block flex-1">
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: (i + 1) * 0.1 }}
+                    className="group relative rounded-3xl overflow-hidden h-full"
+                  >
+                    <div className="aspect-[16/10] lg:aspect-auto lg:h-full w-full relative min-h-[200px]">
+                      <img src={service.image} alt={service.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/30 to-transparent" />
                     </div>
-                    <h3 className="heading-md text-white font-heading mb-1">{service.title}</h3>
-                    <p className="text-white/60 text-xs line-clamp-2">{service.description}</p>
-                  </div>
-                </motion.div>
+                    <div className="absolute bottom-0 left-0 right-0 p-6">
+                      <div className="w-10 h-10 bg-white/15 backdrop-blur-md rounded-lg flex items-center justify-center text-white mb-3 border border-white/20">
+                        {service.icon}
+                      </div>
+                      <h3 className="heading-md text-white font-heading mb-1">{service.title}</h3>
+                      <p className="text-white/60 text-xs line-clamp-2 mb-2">{service.description}</p>
+                      <span className="inline-flex items-center gap-2 text-white/90 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        Learn More <ArrowForwardIcon fontSize="small" />
+                      </span>
+                    </div>
+                  </motion.div>
+                </Link>
               ))}
             </div>
           </div>
@@ -511,9 +608,8 @@ export default function HomePage() {
                     <button
                       key={i}
                       onClick={() => setActiveReview(i)}
-                      className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                        i === activeReview ? 'bg-accent-500 w-8' : 'bg-white/20 hover:bg-white/40'
-                      }`}
+                      className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${i === activeReview ? 'bg-accent-500 w-8' : 'bg-white/20 hover:bg-white/40'
+                        }`}
                       aria-label={`View review ${i + 1}`}
                     />
                   ))}
@@ -562,16 +658,16 @@ export default function HomePage() {
 
               <form className="space-y-4 relative z-10" onSubmit={handleRequestSubmit}>
                 <div>
-                  <input type="text" required value={requestData.name} onChange={e => setRequestData({...requestData, name: e.target.value})} placeholder="Your Full Name" className="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-navy-400 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all text-sm font-medium" />
+                  <input type="text" required value={requestData.name} onChange={e => setRequestData({ ...requestData, name: e.target.value })} placeholder="Your Full Name" className="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-navy-400 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all text-sm font-medium" />
                 </div>
                 <div>
-                  <input type="email" value={requestData.email} onChange={e => setRequestData({...requestData, email: e.target.value})} placeholder="Email Address (Optional)" className="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-navy-400 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all text-sm font-medium" />
+                  <input type="email" value={requestData.email} onChange={e => setRequestData({ ...requestData, email: e.target.value })} placeholder="Email Address (Optional)" className="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-navy-400 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all text-sm font-medium" />
                 </div>
                 <div>
-                  <input type="tel" required value={requestData.phone} onChange={e => setRequestData({...requestData, phone: e.target.value})} placeholder="Phone Number" className="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-navy-400 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all text-sm font-medium" />
+                  <input type="tel" required value={requestData.phone} onChange={e => setRequestData({ ...requestData, phone: e.target.value })} placeholder="Phone Number" className="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-navy-400 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all text-sm font-medium" />
                 </div>
                 <div>
-                  <textarea rows={3} value={requestData.message} onChange={e => setRequestData({...requestData, message: e.target.value})} placeholder="How can we help you?" className="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-navy-400 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all text-sm font-medium resize-none" />
+                  <textarea rows={3} value={requestData.message} onChange={e => setRequestData({ ...requestData, message: e.target.value })} placeholder="How can we help you?" className="w-full px-5 py-3.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-navy-400 focus:outline-none focus:border-accent-500 focus:bg-white/10 transition-all text-sm font-medium resize-none" />
                 </div>
 
                 {requestStatus === 'success' && (
