@@ -24,6 +24,8 @@ export default function CompanySettings() {
         { name: 'mission', label: 'Mission', type: 'textarea' },
         { name: 'vision', label: 'Vision', type: 'textarea' },
       ]}
+      disableAdd={true}
+      disableDelete={true}
     />
   );
 }

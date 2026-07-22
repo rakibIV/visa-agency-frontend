@@ -1,5 +1,6 @@
 import React from 'react';
 import topIllustration from '../../assets/top-illustration.png';
+import companyLogo from '../../assets/logo.png';
 
 // Helper to convert number to words (simple version)
 function numberToWords(num) {
@@ -50,9 +51,9 @@ export default function RefundPrintView({ applicant, refund, companyInfo }) {
   );
 
   const PageContainer = ({ children }) => (
-    <div className="print-page w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white mb-8 shadow-[0_0_15px_rgba(0,0,0,0.1)] print:shadow-none print:mb-0 flex flex-col pt-12 pb-20 px-12 box-border relative overflow-hidden">
+    <div className="print-page w-full max-w-[210mm] print:max-w-full print:w-full min-h-[297mm] print:min-h-[100vh] mx-auto bg-white mb-8 shadow-[0_0_15px_rgba(0,0,0,0.1)] print:shadow-none print:m-0 flex flex-col pt-8 pb-16 px-8 box-border relative overflow-hidden">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] pointer-events-none z-0">
-         <h1 className="text-[100px] font-serif font-black uppercase tracking-[1rem] rotate-[-45deg] whitespace-nowrap text-center leading-none">{companyInfo?.company_name || 'AL-RAYYAN'}</h1>
+         <h1 className="text-[100px] font-serif font-black uppercase tracking-[1rem] rotate-[-45deg] whitespace-nowrap text-center leading-none">{companyInfo?.company_name || 'Al Raiyan Group'}</h1>
       </div>
       <img
         src={topIllustration}
@@ -67,7 +68,7 @@ export default function RefundPrintView({ applicant, refund, companyInfo }) {
   );
 
   const SignatureBlock = ({ showThumb = false, showSeal = false }) => (
-    <div className={`grid ${showThumb || showSeal ? 'grid-cols-4' : 'grid-cols-3'} gap-6 pt-8 text-center text-[10px] font-semibold text-slate-600 break-inside-avoid relative z-20`}>
+    <div className={`grid ${showThumb || showSeal ? 'grid-cols-4' : 'grid-cols-3'} gap-6 pt-4 text-center text-[10px] font-semibold text-slate-600 break-inside-avoid relative z-20`}>
       <div className="flex flex-col items-center">
         <div className="w-full border-t border-slate-400 pt-2">
           <p className="uppercase tracking-wider">Applicant's Signature</p>
@@ -108,39 +109,37 @@ export default function RefundPrintView({ applicant, refund, companyInfo }) {
     <>
       <style>{`
         @media print {
-          @page { size: A4 portrait !important; margin: 0; }
-          body { width: 210mm !important; height: 297mm !important; }
+          @page { size: A4 portrait; margin: 0 !important; }
+          html { font-size: 13.6px !important; }
+          html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+          body > *:not(.print-portal) { display: none !important; }
+          .print-portal { display: block !important; position: static !important; width: 100%; height: auto !important; overflow: visible !important; }
         }
       `}</style>
       <div className="w-full bg-slate-100 py-8 print:py-0 print:bg-white text-slate-900 font-sans">
         <PageContainer>
           <div className="flex-1 w-full relative z-20 flex flex-col">
-            {/* Custom Header for Page 5 (Matches the image) */}
-            <div className="flex justify-between items-start mb-6">
-              <div className="flex items-center gap-3">
-                {companyInfo?.company_logo ? (
-                  <img src={companyInfo.company_logo} alt="Logo" className="w-16 h-16 object-contain" />
-                ) : (
-                  <div className="w-12 h-12 bg-blue-900 rounded-full flex items-center justify-center p-1">
-                    <span className="text-white font-bold text-[6px] text-center uppercase leading-tight">{companyInfo?.company_name || 'AL-RAYYAN'}</span>
-                  </div>
-                )}
+            {/* Custom Header */}
+            <div className="flex justify-between items-start mb-4">
+              <div className="flex items-center gap-4 w-1/3">
+                <img src={companyInfo?.company_logo || companyLogo} alt="Logo" className="w-20 h-20 object-contain drop-shadow-md" />
                 <div>
-                  <h1 className="text-xl font-black tracking-wider text-blue-900 font-serif">
-                    {companyInfo?.company_name || 'AL-RAIYAN GROUP'}
+                  <h1 className="text-xl font-black tracking-wider text-blue-900 font-serif uppercase leading-none">
+                    {companyInfo?.company_name || 'Al Raiyan Group'}
                   </h1>
-                  <p className="text-[10px] text-blue-900 font-bold tracking-widest mt-0.5">Global Visa Services</p>
+                  <p className="text-[10px] text-blue-900 font-bold tracking-widest mt-1">Global Visa Services</p>
                   <p className="text-[9px] text-orange-600 font-bold tracking-widest mt-0.5">Trust • Process • Success</p>
                 </div>
               </div>
-              <div className="text-right flex flex-col items-end pt-2">
+              <div className="flex flex-col items-center justify-center w-1/3 pt-2 text-center relative z-20">
                  <h2 className="text-xl font-bold font-serif text-slate-800" dir="rtl">مجموعة الريان</h2>
                  <p className="text-sm font-serif italic text-slate-700 mt-1" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</p>
               </div>
+              <div className="w-1/3"></div>
             </div>
 
             {/* ACKNOWLEDGEMENT TITLE */}
-            <div className="text-center mt-4 mb-6">
+            <div className="text-center mt-2 mb-4">
               <h2 className="text-[26px] font-black uppercase tracking-tighter">
                 <span className="text-blue-900">ACKNOWLEDGEMENT OF </span>
                 <span className={isCash ? 'text-green-600' : 'text-red-600'}>
@@ -159,7 +158,7 @@ export default function RefundPrintView({ applicant, refund, companyInfo }) {
             </div>
 
             {/* Data Columns */}
-            <div className="flex flex-row gap-6 mb-8">
+            <div className="flex flex-row gap-6 mb-4">
               {/* Left Column */}
               <div className="flex-1 space-y-3 text-[11px] font-semibold text-slate-800 pt-2">
                 <div className="flex"><span className="w-6 text-blue-900">👤</span><span className="w-28 text-slate-600">Name</span><span className="mx-2">:</span><span className="uppercase flex-1 border-b border-slate-300 pb-0.5">{applicant?.full_name}</span></div>
@@ -204,14 +203,14 @@ export default function RefundPrintView({ applicant, refund, companyInfo }) {
             </div>
 
             {/* Acknowledgment Text */}
-            <p className="text-[11px] text-slate-800 font-medium leading-relaxed text-justify mb-6">
+            <p className="text-[11px] text-slate-800 font-medium leading-relaxed text-justify mb-4">
               I hereby confirm that I have received the refund amount of 
               <span className="font-bold text-slate-900"> BDT {bdtAmount.toLocaleString()} </span> 
               ({amountInWordsBDT}) in <span className={`font-bold ${isCash ? 'text-green-600' : 'text-blue-700'}`}>{isCash ? 'CASH' : 'BANK TRANSFER'}</span> on __________________________. This amount is calculated based on my total refundable payments.
             </p>
 
             {/* PAYMENT DETAILS TABLE */}
-            <div className="border border-blue-900 rounded-xl overflow-hidden mb-6">
+            <div className="border border-blue-900 rounded-xl overflow-hidden mb-4">
                <div className="bg-blue-900 text-white font-bold text-[10px] uppercase px-4 py-2 tracking-wider flex justify-between">
                  <span>REFUND BREAKDOWN & DETAILS</span>
                  <span>Rate: 1 EUR = BDT 140.69</span>
@@ -227,22 +226,22 @@ export default function RefundPrintView({ applicant, refund, companyInfo }) {
                </div>
             </div>
 
-            <p className="text-[11px] text-slate-800 font-medium leading-relaxed text-justify mb-4">
+            <p className="text-[11px] text-slate-800 font-medium leading-relaxed text-justify mb-2">
               I hereby acknowledge that I have received the {isCash ? 'cash' : 'transfer'} amount of <span className="font-bold">BDT {bdtAmount.toLocaleString()}</span> ({amountInWordsBDT}) which represents <span className="font-bold">€{eurAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} Euros</span> equivalent as a refund of my payment. I confirm that I have accepted this amount in full satisfaction of the refundable amount.
             </p>
 
-            <div className="flex items-center justify-center mb-4 text-slate-400">
+            <div className="flex items-center justify-center mb-2 text-slate-400">
               <span className="flex-1 h-px bg-slate-200"></span>
               <span className="mx-4 text-lg">❦</span>
               <span className="flex-1 h-px bg-slate-200"></span>
             </div>
 
             {/* Bullet Points */}
-            <ul className="list-disc pl-5 space-y-2 text-[10px] text-slate-800 font-medium leading-relaxed text-justify mb-4">
+            <ul className="list-disc pl-5 space-y-2 text-[10px] text-slate-800 font-medium leading-relaxed text-justify mb-2">
               <li>I further acknowledge and confirm that the non-refundable amount of <span className="text-red-600 font-bold">BDT {nonRefundable.toLocaleString()}</span> is strictly <span className="text-red-600 font-bold">NON-REFUNDABLE</span>, as it has already been utilized for visa processing charges, government fees, administrative expenses, documentation, embassy-related costs, and other applicable service charges.</li>
             </ul>
 
-            <div className="flex items-start gap-3 mt-2">
+            <div className="flex items-start gap-3 mt-1">
               <div className="w-4 h-4 border border-slate-400 rounded-sm mt-0.5 shrink-0"></div>
               <p className="text-[10px] text-slate-800 font-medium leading-relaxed text-justify">
                 I declare that I have read, fully understood, and voluntarily accepted these terms and conditions without any force, pressure, or objection, and I shall have no further claim or demand regarding the above-mentioned non-refundable amounts.

@@ -1,5 +1,6 @@
 import React from 'react';
 import topIllustration from '../../assets/top-illustration.png';
+import companyLogo from '../../assets/logo.png';
 
 export default function AgreementPrintView({ applicant, templates = [], type, companyInfo, showBengali = false }) {
   // Page visibility toggles
@@ -42,16 +43,10 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
       {/* Illustration removed here — now rendered at page level in PageContainer */}
       
       <div className="flex items-center gap-4 relative z-20">
-        {companyInfo?.company_logo ? (
-          <img src={companyInfo.company_logo} alt="Logo" className="w-16 h-16 object-contain" />
-        ) : (
-          <div className="w-16 h-16 bg-blue-900 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-[8px] text-center leading-tight px-1 uppercase">{companyInfo?.company_name || 'AL-RAYYAN'}</span>
-          </div>
-        )}
+        <img src={companyInfo?.company_logo || companyLogo} alt="Logo" className="w-20 h-20 object-contain drop-shadow-md" />
         <div>
-          <h1 className="text-2xl font-extrabold tracking-widest text-slate-900 uppercase font-serif">
-            {companyInfo?.company_name || 'Al-Rayyan Group'}
+          <h1 className="text-2xl font-extrabold tracking-widest text-slate-900 uppercase font-serif leading-none">
+            {companyInfo?.company_name || 'Al Raiyan Group'}
           </h1>
           <p className="text-[10px] text-slate-600 font-bold tracking-widest mt-0.5 uppercase">
             Global Visa Services
@@ -93,7 +88,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
   };
 
   const ClauseBlock = ({ clause, isTerms = false }) => (
-    <div className="mb-4 flex gap-4 break-inside-avoid">
+    <div className="mb-3 flex gap-4 break-inside-avoid">
       <div className="w-8 shrink-0 flex justify-center">
         <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-700 border border-slate-300">
           {clause.clause_number}
@@ -132,7 +127,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
   );
 
   const SignatureBlock = ({ showThumb = false, showSeal = false }) => (
-    <div className={`grid ${showThumb || showSeal ? 'grid-cols-4' : 'grid-cols-3'} gap-6 pt-8 text-center text-[10px] font-semibold text-slate-600 break-inside-avoid relative z-20`}>
+    <div className={`grid ${showThumb || showSeal ? 'grid-cols-4' : 'grid-cols-3'} gap-6 pt-4 text-center text-[10px] font-semibold text-slate-600 break-inside-avoid relative z-20`}>
       <div className="flex flex-col items-center">
         <div className="w-full border-t border-slate-400 pt-2">
           <p className="uppercase tracking-wider">Applicant's Signature</p>
@@ -183,10 +178,10 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
 
   // A4 Page Container styling wrapper
   const PageContainer = ({ children }) => (
-    <div className="print-page w-full max-w-[210mm] min-h-[297mm] mx-auto bg-white mb-8 shadow-[0_0_15px_rgba(0,0,0,0.1)] print:shadow-none print:mb-0 flex flex-col pt-12 pb-20 px-12 box-border relative overflow-hidden">
+    <div className="print-page w-full max-w-[210mm] print:max-w-full print:w-full min-h-[297mm] print:min-h-[100vh] mx-auto bg-white mb-8 shadow-[0_0_15px_rgba(0,0,0,0.1)] print:shadow-none print:m-0 flex flex-col pt-8 pb-16 px-8 box-border relative overflow-hidden">
       {/* Watermark */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] pointer-events-none z-0">
-         <h1 className="text-[100px] font-serif font-black uppercase tracking-[1rem] rotate-[-45deg] whitespace-nowrap text-center leading-none">{companyInfo?.company_name || 'AL-RAYYAN'}</h1>
+         <h1 className="text-[100px] font-serif font-black uppercase tracking-[1rem] rotate-[-45deg] whitespace-nowrap text-center leading-none">{companyInfo?.company_name || 'Al Raiyan Group'}</h1>
       </div>
       {/* Top-right illustration: absolute on the PAGE, not inside padding — goes flush to paper edge */}
       <img
@@ -206,7 +201,17 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
   // Remove old secondPayment logic
 
   return (
-    <div className="w-full bg-slate-100 py-8 print:py-0 print:bg-white text-slate-900">
+    <>
+      <style>{`
+        @media print {
+          @page { size: A4 portrait; margin: 0 !important; }
+          html { font-size: 13.6px !important; }
+          html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+          body > *:not(.print-portal) { display: none !important; }
+          .print-portal { display: block !important; position: static !important; width: 100%; height: auto !important; overflow: visible !important; }
+        }
+      `}</style>
+      <div className="w-full bg-slate-100 py-8 print:py-0 print:bg-white text-slate-900">
       
       {/* ========================================================== */}
       {/* PAGE 1: COVER PAGE / SUMMARY */}
@@ -286,7 +291,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
                     )}
                     <div className="flex justify-between border-b border-slate-200 pb-1 col-span-2 mt-2">
                       <span className="text-slate-500 font-medium text-[11px] uppercase">Total Amount Paid</span>
-                      <span className="font-extrabold text-blue-800 text-xs">৳{Number(applicant?.total_paid || 0).toLocaleString()}</span>
+                      <span className="font-extrabold text-blue-800 text-xs">৳{Number(applicant?.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -317,7 +322,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
             
             <div className="bg-slate-50 border border-slate-200 rounded p-4 flex justify-between items-center mb-6">
                <div className="text-xs uppercase font-bold text-slate-500 tracking-wider">Total Amount Received</div>
-               <div className="text-xl font-black text-slate-900">৳{Number(applicant?.total_paid || 0).toLocaleString()}</div>
+               <div className="text-xl font-black text-slate-900">৳{Number(applicant?.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0).toLocaleString()}</div>
             </div>
 
             <div className="space-y-1">
@@ -387,5 +392,6 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
 
 
     </div>
+    </>
   );
 }

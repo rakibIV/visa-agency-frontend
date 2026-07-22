@@ -42,12 +42,15 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo }) {
     <>
       <style>{`
         @media print {
-          @page { size: A4 landscape !important; margin: 0; }
-          body { width: 297mm !important; height: 210mm !important; }
+          @page { size: A4 portrait; margin: 0 !important; }
+          html { font-size: 13.6px !important; }
+          html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+          body > *:not(.print-portal) { display: none !important; }
+          .print-portal { display: block !important; position: static !important; width: 100%; height: auto !important; overflow: visible !important; }
         }
       `}</style>
-      <div className="print-page-landscape w-full max-w-[297mm] min-h-[210mm] mx-auto bg-white mb-8 shadow-[0_0_15px_rgba(0,0,0,0.1)] print:shadow-none print:mb-0 flex flex-col box-border relative overflow-hidden font-sans border-8 border-slate-50 rounded-3xl"
-           style={{ pageBreakAfter: 'always', margin: '0 auto', zoom: 0.85 }}>
+      <div className="w-full max-w-[210mm] print:max-w-full print:w-full min-h-[297mm] print:min-h-[100vh] bg-white text-slate-900 shadow-xl print:shadow-none print:m-0 flex flex-col relative overflow-hidden"
+           style={{ pageBreakAfter: 'always', margin: '0 auto' }}>
       
       {/* Decorative corners */}
       <div className="absolute top-0 left-0 w-32 h-32 bg-blue-900 rounded-br-[100px] z-0"></div>
@@ -58,10 +61,10 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo }) {
         {/* Header Section */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-4 w-1/3">
-             <img src={companyLogo} alt="Logo" className="w-28 h-28 object-contain drop-shadow-md" />
+                <img src={companyInfo?.company_logo || companyLogo} alt="Logo" className="w-20 h-20 object-contain drop-shadow-md" />
               <div className="mt-2">
                 <h1 className="text-2xl font-extrabold tracking-widest text-slate-900 uppercase font-serif leading-none">
-                  {companyInfo?.company_name || 'Al-Rayyan Group'}
+                  {companyInfo?.company_name || 'Al Raiyan Group'}
                 </h1>
                 <p className="text-[10px] text-slate-600 font-bold tracking-widest uppercase mt-1">
                   Global Visa Services
@@ -162,8 +165,8 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo }) {
              <div className="absolute top-0 left-0 bg-blue-900 text-white text-xs font-bold px-4 py-1.5 rounded-br-xl flex items-center gap-2 shadow-sm">
                 <CreditCardIcon className="w-4 h-4" /> PAYMENT DETAILS
              </div>
-             <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-20 pointer-events-none">
-                <img src={companyLogo} alt="" className="w-40 h-40 grayscale" />
+             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] pointer-events-none z-0">
+               <h1 className="text-[100px] font-serif font-black uppercase tracking-[1rem] rotate-[-45deg] whitespace-nowrap text-center leading-none">{companyInfo?.company_name || 'Al Raiyan Group'}</h1>
              </div>
              
 

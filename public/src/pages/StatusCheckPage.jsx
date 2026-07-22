@@ -220,6 +220,62 @@ export default function StatusCheckPage() {
                     </div>
                   </div>
                 )}
+                {/* Financial Summary */}
+                {(result.payments?.length > 0 || result.refunds?.length > 0) && (
+                  <div className="bg-white rounded-3xl p-8 shadow-card border border-navy-50">
+                    <h3 className="heading-md font-heading text-navy-900 mb-8">Financial Summary</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {/* Payments */}
+                      {result.payments?.length > 0 && (
+                        <div>
+                          <h4 className="font-bold text-navy-800 uppercase tracking-widest text-xs mb-4">Payment Receipts</h4>
+                          <div className="space-y-4">
+                            {result.payments.map((payment, i) => (
+                              <div key={payment.id || i} className="bg-surface-dim p-4 rounded-2xl border border-navy-50">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div>
+                                    <span className="text-xs font-bold text-navy-500 uppercase">{payment.receipt_number || `Receipt #${i+1}`}</span>
+                                    <p className="font-bold text-navy-900">{payment.installment_type} Installment</p>
+                                  </div>
+                                  <span className="font-black text-green-700 text-lg">৳{Number(payment.amount).toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs font-medium text-navy-500">
+                                  <span>{payment.payment_method}</span>
+                                  <span>{payment.payment_date ? new Date(payment.payment_date).toLocaleDateString() : 'N/A'}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Refunds */}
+                      {result.refunds?.length > 0 && (
+                        <div>
+                          <h4 className="font-bold text-navy-800 uppercase tracking-widest text-xs mb-4">Refund Records</h4>
+                          <div className="space-y-4">
+                            {result.refunds.map((refund, i) => (
+                              <div key={refund.id || i} className="bg-red-50 p-4 rounded-2xl border border-red-100">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div>
+                                    <span className="text-xs font-bold text-red-400 uppercase">{refund.receipt_number || `REF-${refund.id}`}</span>
+                                    <p className="font-bold text-red-900 capitalize">Refund ({refund.refund_status})</p>
+                                  </div>
+                                  <span className="font-black text-red-700 text-lg">৳{Number(refund.refund_amount).toLocaleString()}</span>
+                                </div>
+                                <div className="flex items-center justify-between text-xs font-medium text-red-500">
+                                  <span className="capitalize">{refund.refund_method}</span>
+                                  <span>{new Date(refund.created_at).toLocaleDateString()}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

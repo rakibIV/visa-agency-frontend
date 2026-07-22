@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import api from '../api/client';
@@ -36,17 +36,44 @@ export default function MonthlySlotsPage() {
   });
 
   const [selectedStaff, setSelectedStaff] = useState(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
+
+  // Calculate zoom level to fit 800px table into mobile screens
+  useEffect(() => {
+    const updateZoom = () => {
+      const width = window.innerWidth;
+      // Subtracting approx 32px for padding on mobile
+      if (width < 800) {
+        setZoomLevel((width - 32) / 800);
+      } else {
+        setZoomLevel(1);
+      }
+    };
+    
+    updateZoom();
+    window.addEventListener('resize', updateZoom);
+    return () => window.removeEventListener('resize', updateZoom);
+  }, []);
+
   const currentMonthFormatted = new Date().toLocaleString('default', { month: 'short', year: '2-digit' }).replace(' ', '-');
   const totalSlots = slots?.reduce((acc, curr) => acc + (curr.total_slot || 0), 0) || 0;
 
   return (
     <div className="bg-[#f8fafd] min-h-screen pb-24 font-sans">
-      <section className="container max-w-7xl mx-auto pt-32 pb-16 lg:pt-40 lg:pb-24 px-4 sm:px-6 relative z-10">
+      <section 
+        className="container max-w-7xl mx-auto pt-32 pb-16 lg:pt-40 lg:pb-24 px-4 sm:px-6 relative z-10 origin-top"
+        style={{ 
+          zoom: zoomLevel < 1 ? zoomLevel : 1,
+          paddingTop: zoomLevel < 1 
+            ? `${(typeof window !== 'undefined' && window.innerWidth >= 1024 ? 160 : 128) / zoomLevel}px` 
+            : undefined
+        }}
+      >
         
         {/* Premium Top Dashboard Header */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10 bg-white/60 backdrop-blur-2xl p-6 sm:p-8 rounded-[2.5rem] shadow-soft border border-white/80 relative overflow-hidden">
           {/* Subtle glow background */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-accent-50 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/3 opacity-60 pointer-events-none" />
+          <div className="hidden md:block absolute top-0 right-0 w-64 h-64 bg-accent-50 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/3 opacity-60 pointer-events-none" />
           
           {/* Logo and Company Details (left) */}
           <div className="relative z-10 shrink-0 flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-6 group cursor-default w-full md:w-auto">
@@ -110,54 +137,11 @@ export default function MonthlySlotsPage() {
           </div>
         ) : (
           <>
-            {/* MOBILE VIEW (Cards) - Hidden on large screens */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:hidden">
-              {slots?.map((slot, index) => (
-                <div key={slot.id} className="bg-white rounded-3xl p-5 shadow-soft border border-navy-50 flex flex-col relative overflow-hidden group hover:shadow-card transition-all duration-300">
-                  {/* Top line ID/Rank */}
-                  <div className="flex justify-between items-center mb-4">
-                    <div className="w-8 h-8 rounded-full bg-navy-50 text-navy-900 flex items-center justify-center font-bold text-sm">
-                      {index + 1}
-                    </div>
-                    <span className={`inline-flex items-center justify-center px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase ${
-                      slot.gender?.toLowerCase() === 'female' ? 'bg-pink-50 text-pink-600' : 'bg-blue-50 text-blue-600'
-                    }`}>
-                      {slot.gender || 'N/A'}
-                    </span>
-                  </div>
-                  
-                  {/* Name and Country */}
-                  <div className="mb-6">
-                    <h4 className="text-lg font-black text-navy-900 leading-tight mb-1">{slot.staff_name}</h4>
-                    <div className="flex items-center gap-2 text-sm text-navy-500 font-medium">
-                      <span>{getCountryFlag(slot.nationality)}</span> {slot.nationality || 'Unknown'}
-                    </div>
-                  </div>
-                  
-                  {/* Bottom Stats & Action */}
-                  <div className="mt-auto flex items-center justify-between border-t border-navy-50 pt-4">
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-bold text-navy-400 uppercase tracking-widest mb-1">Slots</span>
-                      <span className="text-xl font-black text-navy-900 leading-none">{slot.total_slot}</span>
-                    </div>
-                    {slot.staff_slug ? (
-                      <button
-                        onClick={() => setSelectedStaff({ slug: slot.staff_slug, name: slot.staff_name })}
-                        className="bg-navy-900 hover:bg-accent-600 text-white rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-widest transition-colors shadow-sm flex items-center gap-2"
-                      >
-                        Profile <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
-                      </button>
-                    ) : (
-                      <span className="text-[10px] font-bold text-navy-300 uppercase tracking-widest">N/A</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
 
-            {/* DESKTOP VIEW (Table) - Hidden on small screens */}
-            <div className="hidden lg:block bg-white rounded-[2rem] shadow-card border border-navy-50 overflow-hidden">
-              <table className="w-full text-left border-collapse">
+
+            {/* FULL TABLE VIEW (For all screens) */}
+            <div className="bg-white rounded-[2rem] shadow-card border border-navy-50 overflow-hidden">
+              <table className="w-full min-w-[800px] text-left border-collapse">
                 <thead>
                   <tr className="bg-navy-900 text-white border-b border-navy-800">
                     <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em] w-24 text-center">

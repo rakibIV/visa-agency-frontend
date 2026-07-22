@@ -23,6 +23,7 @@ import RefundPrintView from './RefundPrintView';
 
 import FormModal from '../../components/common/FormModal';
 import CrudTable from '../../components/common/CrudTable';
+import toast from 'react-hot-toast';
 
 export default function ApplicantDetailPage() {
   const { id } = useParams();
@@ -152,10 +153,10 @@ export default function ApplicantDetailPage() {
     mutationFn: (bankDetails) => api.post(`/applicants/${id}/refund-bank-detail/`, bankDetails),
     onSuccess: () => {
       queryClient.invalidateQueries(['applicant', id]);
-      alert('Refund Destination Details saved successfully!');
+      toast.success('Refund Destination Details saved successfully!');
     },
     onError: (err) => {
-      alert('Failed to save refund destination details: ' + (err.response?.data?.detail || err.message));
+      toast.error('Failed to save refund destination details: ' + (err.response?.data?.detail || err.message));
     }
   });
 
@@ -166,10 +167,10 @@ export default function ApplicantDetailPage() {
       queryClient.invalidateQueries(['applicant', id]);
       setShowRefundModal(false);
       setRefundRemarks('');
-      alert('Refund record generated successfully!');
+      toast.success('Refund record generated successfully!');
     },
     onError: (err) => {
-      alert('Failed to generate refund: ' + (err.response?.data?.detail || err.response?.data?.status || err.message));
+      toast.error('Failed to generate refund: ' + (err.response?.data?.detail || err.response?.data?.status || err.message));
     }
   });
 
@@ -177,7 +178,22 @@ export default function ApplicantDetailPage() {
     mutationFn: (refundId) => api.post(`/applicants/${id}/refunds/${refundId}/mark_as_paid/`),
     onSuccess: () => {
       queryClient.invalidateQueries(['applicant', id]);
+      toast.success('Refund marked as paid!');
     },
+    onError: (err) => {
+      toast.error('Failed to mark refund as paid: ' + (err.response?.data?.detail || err.message));
+    }
+  });
+
+  const deleteRefundMutation = useMutation({
+    mutationFn: (refundId) => api.delete(`/applicants/${id}/refunds/${refundId}/`),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['applicant', id]);
+      toast.success('Refund deleted successfully!');
+    },
+    onError: (err) => {
+      toast.error('Failed to delete refund: ' + (err.response?.data?.detail || err.message));
+    }
   });
 
   const deleteApplicantMutation = useMutation({
@@ -186,7 +202,7 @@ export default function ApplicantDetailPage() {
       navigate('/applicants');
     },
     onError: (err) => {
-      alert('Failed to delete applicant: ' + (err.response?.data?.detail || err.message));
+      toast.error('Failed to delete applicant: ' + (err.response?.data?.detail || err.message));
     }
   });
 
@@ -857,7 +873,9 @@ export default function ApplicantDetailPage() {
               <h3 className="font-bold text-slate-800 text-base">Refund Logs</h3>
               <button
                 onClick={() => setShowRefundModal(true)}
+                disabled={applicant?.refunds && applicant.refunds.length > 0}
                 className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-xl text-sm font-semibold shadow hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title={applicant?.refunds && applicant.refunds.length > 0 ? "A refund receipt has already been generated" : "Approve & Disburse Refund"}
               >
                 <PlusIcon className="w-4 h-4" />
                 Approve & Disburse Refund
@@ -1043,6 +1061,20 @@ export default function ApplicantDetailPage() {
                               Mark as Paid
                             </button>
                           )}
+                          <button
+                            onClick={() => {
+                              if (window.confirm("Are you sure you want to delete this refund receipt? This action cannot be undone.")) {
+                                deleteRefundMutation.mutate(refund.id);
+                              }
+                            }}
+                            disabled={deleteRefundMutation.isPending}
+                            className="p-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50"
+                            title="Delete Refund"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -1088,9 +1120,17 @@ export default function ApplicantDetailPage() {
                       onClick={() => generateRefundMutation.mutate({
                         reason: refundRemarks,
                       })}
-                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                      disabled={generateRefundMutation.isPending}
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[140px]"
                     >
-                      Generate Refund
+                      {generateRefundMutation.isPending ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                          Generating...
+                        </>
+                      ) : (
+                        'Generate Refund'
+                      )}
                     </button>
                   </div>
                 </div>

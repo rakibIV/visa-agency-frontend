@@ -61,7 +61,7 @@ export default function Navbar() {
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 pt-[env(safe-area-inset-top)] ${
           showSolid
-            ? 'bg-white/90 backdrop-blur-xl shadow-soft border-b border-navy-100/50'
+            ? 'bg-white/90 backdrop-blur-md shadow-soft border-b border-navy-100/50'
             : 'bg-transparent'
         }`}
       >
@@ -194,7 +194,7 @@ export default function Navbar() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[60] bg-navy-950/95 backdrop-blur-2xl lg:hidden"
+            className="fixed inset-0 z-[60] bg-navy-950/95 backdrop-blur-lg lg:hidden"
           >
             {/* Close Button */}
             <div className="flex justify-end p-4">
