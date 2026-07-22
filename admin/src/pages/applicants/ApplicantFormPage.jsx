@@ -16,6 +16,7 @@ export default function ApplicantFormPage() {
   const totalSteps = 3;
 
   // ── Step 1: Basic Info ──
+  const [applicationId, setApplicationId] = useState('');
   const [fullName, setFullName] = useState('');
   const [passportNumber, setPassportNumber] = useState('');
   const [passportIssueDate, setPassportIssueDate] = useState('');
@@ -51,8 +52,6 @@ export default function ApplicantFormPage() {
   const [defaultStatusId, setDefaultStatusId] = useState('');
   const [selectedStatusId, setSelectedStatusId] = useState('');
 
-
-
   const [error, setError] = useState('');
 
   // ────────────────────────────────────────
@@ -66,6 +65,7 @@ export default function ApplicantFormPage() {
 
   useEffect(() => {
     if (applicant && isEdit) {
+      setApplicationId(applicant.application_id || '');
       setFullName(applicant.full_name || '');
       setPassportNumber(applicant.passport_number || '');
       setPassportIssueDate(applicant.passport_issue_date || '');
@@ -197,8 +197,8 @@ export default function ApplicantFormPage() {
         return 'Please fill in all required fields (Full Name, Passport Number, NID, Date of Birth).';
       }
     } else if (step === 2) {
-      if (!placeOfBirth || !currentCountry || !gender || !nationality || !fatherName || !motherName || !emergencyContactName || !emergencyContactPhone || (!isEdit && !photoFile)) {
-        return 'Please fill in all required Profile fields and upload a photo.';
+      if (!placeOfBirth || !currentCountry || !gender || !nationality || !email || !fatherName || !motherName || !emergencyContactName || !emergencyContactPhone || (!isEdit && !photoFile)) {
+        return 'Please fill in all required Profile fields (including Email) and upload a photo.';
       }
     } else if (step === 3) {
       if (!selectedVisaId || !selectedJobId || !paymentPlan || !selectedStaffId || !selectedSlotId) {
@@ -251,6 +251,7 @@ export default function ApplicantFormPage() {
     }
 
     const fd = new FormData();
+    if (applicationId) fd.append('application_id', applicationId);
     fd.append('full_name', fullName);
     fd.append('passport_number', passportNumber);
     fd.append('date_of_birth', dateOfBirth);
@@ -353,9 +354,15 @@ export default function ApplicantFormPage() {
             <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wider border-b border-slate-100 pb-2">
               Basic Information
             </h3>
-            <div>
-              <label className={labelCls}>Full Name <span className="text-red-500">*</span></label>
-              <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="e.g. Mohammad Ali Khan" className={inputCls} required />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Application ID <span className="text-slate-400 font-normal text-[10px] lowercase">(optional)</span></label>
+                <input type="text" value={applicationId} onChange={e => setApplicationId(e.target.value)} placeholder="e.g. ARG-001 (Leave blank if none)" className={`${inputCls} font-mono uppercase`} />
+              </div>
+              <div>
+                <label className={labelCls}>Full Name <span className="text-red-500">*</span></label>
+                <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="e.g. Mohammad Ali Khan" className={inputCls} required />
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
@@ -417,8 +424,8 @@ export default function ApplicantFormPage() {
                 <input type="text" value={phone} onChange={e => setPhone(e.target.value)} className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Email</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
+                <label className={labelCls}>Email <span className="text-red-500">*</span></label>
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="e.g. applicant@email.com" className={inputCls} required />
               </div>
               <div>
                 <label className={labelCls}>Father's Name <span className="text-red-500">*</span></label>

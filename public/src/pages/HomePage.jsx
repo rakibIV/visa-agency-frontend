@@ -264,70 +264,76 @@ export default function HomePage() {
       )}
 
       {/* ═══════════════════════════════════════════
-          SERVICES — Asymmetric editorial grid
+          SERVICES — Fully Responsive Editorial Grid
       ═══════════════════════════════════════════ */}
       <section className="section-py bg-white">
-        <div className="container-wide">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4">
+        <div className="container-wide px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 sm:mb-12 gap-4">
             <div>
-              <span className="eyebrow text-accent-600 mb-3 block">What We Do</span>
+              <span className="eyebrow text-accent-600 mb-2 sm:mb-3 block">What We Do</span>
               <h2 className="display-lg font-heading text-navy-900">Immigration Solutions</h2>
             </div>
-            <Link to="/visas" className="inline-flex items-center gap-2 text-navy-900 font-bold hover:text-accent-600 transition-colors text-sm">
+            <Link to="/visas" className="inline-flex items-center gap-2 text-navy-900 font-bold hover:text-accent-600 transition-colors text-sm shrink-0">
               All Services <ArrowForwardIcon fontSize="small" />
             </Link>
           </div>
 
-          {/* Asymmetric: 1 large + 2 stacked on desktop */}
-          <div className="grid lg:grid-cols-5 gap-6">
+          {/* Fully Responsive Grid: 1 col mobile, 2 col tablet, 5 col desktop */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
             {/* Featured large card */}
-            <Link to="/visas" className="lg:col-span-3 block">
+            <Link to="/visas" className="md:col-span-2 lg:col-span-3 block group">
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                className="group relative rounded-3xl overflow-hidden h-full"
+                className="relative rounded-3xl overflow-hidden min-h-[320px] sm:min-h-[380px] lg:h-full flex flex-col justify-end p-6 sm:p-8 lg:p-10 bg-navy-950"
               >
-                <div className="aspect-[4/3] lg:aspect-auto lg:h-full w-full relative min-h-[300px]">
-                  <img src={services[0].image} alt={services[0].title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/30 to-transparent" />
-                </div>
-                <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10">
-                  <div className="w-12 h-12 bg-white/15 backdrop-blur-md rounded-xl flex items-center justify-center text-white mb-4 border border-white/20">
+                <img 
+                  src={services[0].image} 
+                  alt={services[0].title} 
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/60 to-transparent" />
+                
+                <div className="relative z-10">
+                  <div className="w-12 h-12 bg-white/15 backdrop-blur-md rounded-xl flex items-center justify-center text-white mb-4 border border-white/20 shadow-sm">
                     {services[0].icon}
                   </div>
-                  <h3 className="heading-lg text-white mb-2 font-heading">{services[0].title}</h3>
-                  <p className="text-white/70 text-sm max-w-md mb-4">{services[0].description}</p>
-                  <span className="inline-flex items-center gap-2 text-white text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    Learn More <ArrowForwardIcon fontSize="small" />
+                  <h3 className="heading-lg text-white mb-2 font-heading text-xl sm:text-2xl lg:text-3xl">{services[0].title}</h3>
+                  <p className="text-white/80 text-sm max-w-md mb-4 leading-relaxed">{services[0].description}</p>
+                  <span className="inline-flex items-center gap-2 text-accent-300 sm:text-white text-sm font-bold group-hover:text-accent-300 transition-colors">
+                    Learn More <ArrowForwardIcon fontSize="small" className="transition-transform duration-300 group-hover:translate-x-1" />
                   </span>
                 </div>
               </motion.div>
             </Link>
 
-            {/* 2 stacked smaller cards */}
-            <div className="lg:col-span-2 flex flex-col gap-6">
+            {/* 2 sub-cards */}
+            <div className="md:col-span-2 lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6">
               {services.slice(1).map((service, i) => (
-                <Link to="/visas" key={i} className="block flex-1">
+                <Link to="/visas" key={i} className="block group flex-1">
                   <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: (i + 1) * 0.1 }}
-                    className="group relative rounded-3xl overflow-hidden h-full"
+                    className="relative rounded-3xl overflow-hidden min-h-[260px] sm:min-h-[280px] lg:h-full flex flex-col justify-end p-6 bg-navy-950"
                   >
-                    <div className="aspect-[16/10] lg:aspect-auto lg:h-full w-full relative min-h-[200px]">
-                      <img src={service.image} alt={service.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/30 to-transparent" />
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 p-6">
-                      <div className="w-10 h-10 bg-white/15 backdrop-blur-md rounded-lg flex items-center justify-center text-white mb-3 border border-white/20">
+                    <img 
+                      src={service.image} 
+                      alt={service.title} 
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/70 to-transparent" />
+                    
+                    <div className="relative z-10">
+                      <div className="w-10 h-10 bg-white/15 backdrop-blur-md rounded-lg flex items-center justify-center text-white mb-3 border border-white/20 shadow-sm">
                         {service.icon}
                       </div>
-                      <h3 className="heading-md text-white font-heading mb-1">{service.title}</h3>
-                      <p className="text-white/60 text-xs line-clamp-2 mb-2">{service.description}</p>
-                      <span className="inline-flex items-center gap-2 text-white/90 text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        Learn More <ArrowForwardIcon fontSize="small" />
+                      <h3 className="heading-md text-white font-heading text-lg sm:text-xl mb-1.5">{service.title}</h3>
+                      <p className="text-white/70 text-xs sm:text-sm line-clamp-2 mb-3 leading-relaxed">{service.description}</p>
+                      <span className="inline-flex items-center gap-2 text-accent-300 sm:text-white/90 text-xs sm:text-sm font-bold group-hover:text-accent-300 transition-colors">
+                        Learn More <ArrowForwardIcon fontSize="small" className="transition-transform duration-300 group-hover:translate-x-1" />
                       </span>
                     </div>
                   </motion.div>

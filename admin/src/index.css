@@ -35,14 +35,14 @@
 }
 
 @media print {
-  /* @page: A4 size, no default browser margins */
+  /* @page: Letter size, no default browser margins */
   @page {
-    size: A4 portrait;
+    size: letter portrait;
     margin: 0;
   }
 
   html, body {
-    width: 210mm;
+    width: 8.5in;
     height: auto;
     background: white !important;
     -webkit-print-color-adjust: exact;
