@@ -30,7 +30,7 @@ export default function StaffPage() {
   return (
     <div className="space-y-5 max-w-screen-xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-slate-800">Staff & Team</h2>
           <p className="text-slate-400 text-sm mt-0.5">Manage office representatives and agents</p>
@@ -39,7 +39,7 @@ export default function StaffPage() {
           onClick={() => navigate('/staff/new')}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.97 }}
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-700 text-white rounded-xl text-sm font-semibold shadow hover:bg-blue-800 transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-700 text-white rounded-xl text-sm font-semibold shadow hover:bg-blue-800 transition-colors w-full sm:w-auto"
         >
           <PlusIcon className="w-4 h-4" />
           Add Team Member

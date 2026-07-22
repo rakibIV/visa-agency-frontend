@@ -92,7 +92,7 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="bg-white selection:bg-accent-600 selection:text-white">
+    <div className="bg-white selection:bg-accent-600 selection:text-white overflow-x-hidden w-full relative">
 
       {/* ═══════════════════════════════════════════
           HERO — Full-bleed cinematic
@@ -415,7 +415,7 @@ export default function HomePage() {
               ))}
             </div>
           ) : (
-            <div className="flex gap-6 overflow-x-hidden relative pl-40">
+            <div className="flex gap-6 overflow-x-hidden relative pl-40 w-full">
               <motion.div
                 animate={{ x: ['0%', '-50%'] }}
                 transition={{ duration: 35, repeat: Infinity, ease: 'linear' }}

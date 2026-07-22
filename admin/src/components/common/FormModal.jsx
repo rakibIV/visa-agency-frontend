@@ -45,9 +45,9 @@ export default function FormModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-900/50 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+        <div className="px-4 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0">
           <h3 className="font-bold text-lg text-slate-800">{title}</h3>
           <button
             onClick={onClose}
@@ -57,7 +57,7 @@ export default function FormModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="overflow-y-auto p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="overflow-y-auto p-4 sm:p-6 space-y-4">
           {fields.map((field) => (
             <div key={field.name}>
               {field.type === 'checkbox' ? (

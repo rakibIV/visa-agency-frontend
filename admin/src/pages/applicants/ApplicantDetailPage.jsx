@@ -271,7 +271,7 @@ export default function ApplicantDetailPage() {
   const isRejected = applicant.status?.slug?.includes('reject') || applicant.status?.name?.toLowerCase().includes('reject') || applicant.status_name?.toLowerCase().includes('reject');
 
   return (
-    <div className="space-y-6 max-w-screen-xl mx-auto">
+    <div className="space-y-6 max-w-screen-xl mx-auto w-full overflow-x-hidden sm:overflow-visible">
       {/* Screen preview overlay */}
       {showPrintView && (
         <div className="fixed inset-0 bg-white z-[999] overflow-y-auto">
@@ -376,25 +376,25 @@ export default function ApplicantDetailPage() {
 
 
       {/* Header / Back */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <button
           onClick={() => navigate('/applicants')}
-          className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors text-sm font-semibold"
+          className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors text-sm font-semibold shrink-0"
         >
-          <ArrowLeftIcon className="w-4 h-4" />
+          <ArrowLeftIcon className="w-4 h-4 shrink-0" />
           Back to list
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {applicant.tags?.map(tag => (
-            <span key={tag.id} className="px-3 py-1 rounded-full text-xs font-bold" style={{ backgroundColor: tag.color ? `${tag.color}20` : '#f1f5f9', color: tag.color || '#475569' }}>
+            <span key={tag.id} className="px-3 py-1 rounded-full text-xs font-bold shrink-0" style={{ backgroundColor: tag.color ? `${tag.color}20` : '#f1f5f9', color: tag.color || '#475569' }}>
               {tag.name}
             </span>
           ))}
-          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${getStatusColor(applicant.status?.slug)}`}>
+          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase shrink-0 ${getStatusColor(applicant.status?.slug)}`}>
             {applicant.status?.name || 'Unknown'}
           </span>
-          <Link to={`/applicants/${id}/edit`} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-colors ml-2 text-sm">
-            <PencilSquareIcon className="w-4 h-4" /> Edit Profile
+          <Link to={`/applicants/${id}/edit`} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-colors text-sm shrink-0">
+            <PencilSquareIcon className="w-4 h-4 shrink-0" /> Edit Profile
           </Link>
           <button 
             onClick={() => {
@@ -403,9 +403,9 @@ export default function ApplicantDetailPage() {
               }
             }}
             disabled={deleteApplicantMutation.isPending}
-            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-xl font-bold hover:bg-red-100 transition-colors ml-2 text-sm disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-xl font-bold hover:bg-red-100 transition-colors text-sm disabled:opacity-50 shrink-0"
           >
-            <TrashIcon className="w-4 h-4" /> {deleteApplicantMutation.isPending ? 'Deleting...' : 'Delete'}
+            <TrashIcon className="w-4 h-4 shrink-0" /> {deleteApplicantMutation.isPending ? 'Deleting...' : 'Delete'}
           </button>
         </div>
       </div>
@@ -420,12 +420,12 @@ export default function ApplicantDetailPage() {
               <UserIcon className="w-8 h-8 text-blue-600" />
             )}
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-slate-800">{applicant.full_name}</h1>
-            <p className="text-slate-400 font-mono text-xs font-semibold mt-1">
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold text-slate-800 break-words line-clamp-2">{applicant.full_name}</h1>
+            <p className="text-slate-400 font-mono text-xs font-semibold mt-1 break-all">
               App ID: {applicant.application_id || 'N/A'} | Passport: {applicant.passport_number || 'N/A'}
             </p>
-            <p className="text-slate-500 text-sm mt-1">
+            <p className="text-slate-500 text-sm mt-1 truncate">
               Visa: <span className="font-semibold text-slate-700">{applicant.visa_name || 'N/A'}</span>
               {applicant.assigned_staff_name && (
                 <span className="ml-3">Agent: <span className="font-semibold text-slate-700">{applicant.assigned_staff_name}</span></span>
@@ -444,8 +444,8 @@ export default function ApplicantDetailPage() {
       </div>
 
       {/* Tabs Layout */}
-      <div className="border-b border-slate-200">
-        <nav className="flex gap-6">
+      <div className="border-b border-slate-200 overflow-x-auto whitespace-nowrap scrollbar-hide">
+        <nav className="flex gap-6 pb-2 min-w-max">
           {[
             { id: 'general', label: 'General Info', icon: UserIcon },
             { id: 'addresses', label: 'Addresses', icon: MapPinIcon },
@@ -505,7 +505,7 @@ export default function ApplicantDetailPage() {
                 <span className="text-slate-400">Phone</span>
                 <span className="text-slate-700 font-semibold">{applicant.profile?.phone || '—'}</span>
                 <span className="text-slate-400">Email</span>
-                <span className="text-slate-700 font-semibold">{applicant.profile?.email || '—'}</span>
+                <span className="text-slate-700 font-semibold break-all">{applicant.profile?.email || '—'}</span>
                 <span className="text-slate-400">Father's Name</span>
                 <span className="text-slate-700 font-semibold">{applicant.profile?.father_name || '—'}</span>
                 <span className="text-slate-400">Mother's Name</span>

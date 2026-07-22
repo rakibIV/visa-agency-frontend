@@ -85,7 +85,7 @@ export default function CountryDetailPage() {
           </div>
         </div>
       )}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/config/countries')} className="p-2 hover:bg-slate-100 rounded-full">
             <ArrowLeftIcon className="w-5 h-5 text-slate-500" />
@@ -95,8 +95,8 @@ export default function CountryDetailPage() {
             {country.is_active && <CheckBadgeIcon className="w-6 h-6 text-green-500" title="Active" />}
           </h2>
         </div>
-        <div className="flex gap-2">
-          <Link to={`/config/countries/${slug}/edit`} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-colors">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link to={`/config/countries/${slug}/edit`} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-colors text-sm">
             <PencilSquareIcon className="w-4 h-4" /> Edit Country
           </Link>
           <button 
@@ -106,15 +106,15 @@ export default function CountryDetailPage() {
               }
             }}
             disabled={deleteCountryMutation.isPending}
-            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-xl font-bold hover:bg-red-100 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-xl font-bold hover:bg-red-100 transition-colors text-sm disabled:opacity-50"
           >
             <TrashIcon className="w-4 h-4" /> {deleteCountryMutation.isPending ? 'Deleting...' : 'Delete'}
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-6">
-        <div className="flex items-start gap-6 border-b border-slate-100 pb-6">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 sm:p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 border-b border-slate-100 pb-6 text-center sm:text-left">
           <div className="w-24 h-16 bg-slate-100 rounded-xl overflow-hidden shrink-0 shadow-inner">
             {country.flag ? (
               <img src={country.flag} alt={`${country.name} Flag`} className="w-full h-full object-cover" />
@@ -122,10 +122,10 @@ export default function CountryDetailPage() {
               <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs font-bold uppercase tracking-wider">No Flag</div>
             )}
           </div>
-          <div className="space-y-1">
-            <h3 className="text-lg font-bold text-slate-800">{country.name}</h3>
-            <p className="text-slate-500 text-sm font-medium">{country.short_description || 'No short description provided.'}</p>
-            <div className="flex gap-2 mt-2">
+          <div className="space-y-1 min-w-0">
+            <h3 className="text-lg font-bold text-slate-800 break-words">{country.name}</h3>
+            <p className="text-slate-500 text-sm font-medium break-words">{country.short_description || 'No short description provided.'}</p>
+            <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-2">
               {country.is_featured && <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-bold rounded-lg">Featured Country</span>}
               <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-lg uppercase tracking-wider">{country.iso3 || country.iso2}</span>
             </div>

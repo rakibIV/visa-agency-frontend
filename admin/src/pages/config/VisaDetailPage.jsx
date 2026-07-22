@@ -29,7 +29,7 @@ export default function VisaDetailPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/config/visas')} className="p-2 hover:bg-slate-100 rounded-full">
             <ArrowLeftIcon className="w-5 h-5 text-slate-500" />
@@ -39,8 +39,8 @@ export default function VisaDetailPage() {
             {visa.is_active && <CheckBadgeIcon className="w-6 h-6 text-green-500" title="Active" />}
           </h2>
         </div>
-        <div className="flex gap-2">
-          <Link to={`/config/visas/${id}/edit`} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-colors">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link to={`/config/visas/${id}/edit`} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-colors text-sm">
             <PencilSquareIcon className="w-4 h-4" /> Edit Visa
           </Link>
           <button 
@@ -50,29 +50,29 @@ export default function VisaDetailPage() {
               }
             }}
             disabled={deleteVisaMutation.isPending}
-            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-xl font-bold hover:bg-red-100 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-xl font-bold hover:bg-red-100 transition-colors text-sm disabled:opacity-50"
           >
             <TrashIcon className="w-4 h-4" /> {deleteVisaMutation.isPending ? 'Deleting...' : 'Delete'}
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-6">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 sm:p-6 space-y-6">
         <div className="flex items-start gap-6 border-b border-slate-100 pb-6">
-          <div className="space-y-1">
-            <h3 className="text-lg font-bold text-slate-800">{visa.name}</h3>
-            <p className="text-slate-500 text-sm font-medium">
+          <div className="space-y-1 min-w-0">
+            <h3 className="text-lg font-bold text-slate-800 break-words">{visa.name}</h3>
+            <p className="text-slate-500 text-sm font-medium break-words">
               Country: <span className="text-slate-800 font-bold">{visa.country?.name || 'N/A'}</span> &nbsp;|&nbsp; 
               Category: <span className="text-slate-800 font-bold">{visa.category?.name || 'N/A'}</span>
             </p>
-            <div className="flex gap-2 mt-2">
+            <div className="flex flex-wrap gap-2 mt-2">
               {visa.is_featured && <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-bold rounded-lg">Featured</span>}
               {visa.from_any_country && <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-bold rounded-lg">Global Applicants Allowed</span>}
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 break-words">
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Salary Range</p>
             <p className="text-sm font-semibold text-slate-800">

@@ -28,7 +28,7 @@ export default function StaffDetailPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/staff')} className="p-2 hover:bg-slate-100 rounded-full">
             <ArrowLeftIcon className="w-5 h-5 text-slate-500" />
@@ -38,8 +38,8 @@ export default function StaffDetailPage() {
             {staff.is_active && <CheckBadgeIcon className="w-6 h-6 text-green-500" title="Active" />}
           </h2>
         </div>
-        <div className="flex gap-2">
-          <Link to={`/staff/${id}/edit`} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-colors">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link to={`/staff/${id}/edit`} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-colors text-sm">
             <PencilSquareIcon className="w-4 h-4" /> Edit Profile
           </Link>
           <button 
@@ -49,7 +49,7 @@ export default function StaffDetailPage() {
               }
             }}
             disabled={deleteStaffMutation.isPending}
-            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-xl font-bold hover:bg-red-100 transition-colors disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 rounded-xl font-bold hover:bg-red-100 transition-colors text-sm disabled:opacity-50"
           >
             <TrashIcon className="w-4 h-4" /> {deleteStaffMutation.isPending ? 'Deleting...' : 'Delete'}
           </button>
@@ -58,8 +58,8 @@ export default function StaffDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-6">
-            <div className="flex items-start gap-6 border-b border-slate-100 pb-6">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 sm:p-6 space-y-6">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 border-b border-slate-100 pb-6 text-center sm:text-left">
               <div className="w-24 h-24 bg-slate-50 rounded-2xl flex items-center justify-center shrink-0 border border-slate-200 overflow-hidden">
                 {staff.photo ? (
                   <img src={staff.photo} alt="Photo" className="w-full h-full object-cover" />
@@ -67,12 +67,12 @@ export default function StaffDetailPage() {
                   <UserIcon className="w-8 h-8 text-slate-400" />
                 )}
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 min-w-0">
                 <span className="text-xs font-bold text-slate-400 font-mono tracking-wider">
                   {staff.employee_id}
                 </span>
-                <h3 className="text-lg font-bold text-slate-800">{staff.user?.full_name || staff.full_name || 'No Name'}</h3>
-                <p className="text-slate-500 text-sm font-medium">
+                <h3 className="text-lg font-bold text-slate-800 break-words">{staff.user?.full_name || staff.full_name || 'No Name'}</h3>
+                <p className="text-slate-500 text-sm font-medium break-words">
                   {staff.designation?.name || staff.designation || 'Representative'} &nbsp;|&nbsp; {staff.office?.branch_name || staff.office?.name || staff.office || 'Main Branch'}
                 </p>
                 <p className="text-slate-500 text-sm mt-1">Joined: {staff.joining_date}</p>
@@ -80,7 +80,7 @@ export default function StaffDetailPage() {
             </div>
 
             <h4 className="font-bold text-slate-800">Personal Information</h4>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 break-words">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Phone</p>
                 <p className="text-sm font-semibold text-slate-800">{staff.phone || 'N/A'}</p>
@@ -91,7 +91,7 @@ export default function StaffDetailPage() {
               </div>
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Email</p>
-                <p className="text-sm font-semibold text-slate-800">{staff.email || staff.user?.email || 'N/A'}</p>
+                <p className="text-sm font-semibold text-slate-800 break-all">{staff.email || staff.user?.email || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Date of Birth</p>
@@ -124,7 +124,7 @@ export default function StaffDetailPage() {
             </div>
 
             <h4 className="font-bold text-slate-800 border-t border-slate-100 pt-6 mt-6">Family & Identification</h4>
-            <div className="grid grid-cols-2 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 break-words">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Father's Name</p>
                 <p className="text-sm font-semibold text-slate-800">{staff.father_name || 'N/A'}</p>

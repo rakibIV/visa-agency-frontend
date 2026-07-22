@@ -178,22 +178,24 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
 
   // A4 Page Container styling wrapper
   const PageContainer = ({ children }) => (
-    <div className="print-page w-full max-w-[210mm] print:max-w-full print:w-full min-h-[297mm] print:min-h-[100vh] mx-auto bg-white mb-8 shadow-[0_0_15px_rgba(0,0,0,0.1)] print:shadow-none print:m-0 flex flex-col pt-8 pb-16 px-8 box-border relative overflow-hidden">
-      {/* Watermark */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] pointer-events-none z-0">
-         <h1 className="text-[100px] font-serif font-black uppercase tracking-[1rem] rotate-[-45deg] whitespace-nowrap text-center leading-none">{companyInfo?.company_name || 'Al Raiyan Group'}</h1>
+    <div className="w-full overflow-x-auto bg-slate-100 print:bg-transparent print:overflow-visible flex sm:justify-center">
+      <div className="print-page w-full min-w-[210mm] max-w-[210mm] print:max-w-full print:min-w-full print:w-full min-h-[297mm] print:min-h-[100vh] mx-auto bg-white mb-8 shadow-[0_0_15px_rgba(0,0,0,0.1)] print:shadow-none print:m-0 flex flex-col pt-8 pb-16 px-8 box-border relative overflow-hidden shrink-0">
+        {/* Watermark */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] pointer-events-none z-0">
+           <h1 className="text-[100px] font-serif font-black uppercase tracking-[1rem] rotate-[-45deg] whitespace-nowrap text-center leading-none">{companyInfo?.company_name || 'Al Raiyan Group'}</h1>
+        </div>
+        {/* Top-right illustration: absolute on the PAGE, not inside padding — goes flush to paper edge */}
+        <img
+          src={topIllustration}
+          alt=""
+          className="absolute top-0 right-0 w-52 opacity-90 pointer-events-none z-10"
+        />
+        {/* Content */}
+        <div className="page-inner relative z-10 flex-1 flex flex-col justify-between h-full w-full">
+          {children}
+        </div>
+        <DocumentFooter />
       </div>
-      {/* Top-right illustration: absolute on the PAGE, not inside padding — goes flush to paper edge */}
-      <img
-        src={topIllustration}
-        alt=""
-        className="absolute top-0 right-0 w-52 opacity-90 pointer-events-none z-10"
-      />
-      {/* Content */}
-      <div className="page-inner relative z-10 flex-1 flex flex-col justify-between h-full w-full">
-        {children}
-      </div>
-      <DocumentFooter />
     </div>
   );
 

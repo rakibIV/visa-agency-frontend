@@ -51,15 +51,16 @@ export default function RefundsPage() {
   return (
     <div className="max-w-screen-xl mx-auto space-y-6">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-800 flex items-center gap-2">
-            <ArrowUturnLeftIcon className="w-7 h-7 text-orange-500" />
-            Refund Management
-          </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            View rejected applicants and process refunds. By default shows rejected / refund-status applicants.
-          </p>
+      <div className="bg-gradient-to-r from-slate-900 via-orange-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+        <div className="relative z-10 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shrink-0 text-orange-400 shadow-inner">
+            <ArrowUturnLeftIcon className="w-7 h-7" />
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight">Refund Management</h1>
+            <p className="text-slate-300 text-xs sm:text-sm mt-0.5 font-medium">View rejected applicants and process financial refund claims.</p>
+          </div>
         </div>
       </div>
 

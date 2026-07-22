@@ -137,10 +137,8 @@ export default function MonthlySlotsPage() {
           </div>
         ) : (
           <>
-
-
-            {/* FULL TABLE VIEW (For all screens) */}
-            <div className="bg-white rounded-[2rem] shadow-card border border-navy-50 overflow-hidden">
+            {/* FULL TABLE VIEW */}
+            <div className="bg-white rounded-[2rem] shadow-card border border-navy-50 overflow-x-auto w-full">
               <table className="w-full min-w-[800px] text-left border-collapse">
                 <thead>
                   <tr className="bg-navy-900 text-white border-b border-navy-800">
@@ -212,7 +210,7 @@ export default function MonthlySlotsPage() {
                           )}
                         </td>
                       </tr>
-                    )
+                    );
                   })}
                 </tbody>
               </table>

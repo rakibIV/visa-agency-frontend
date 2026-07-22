@@ -112,7 +112,7 @@ export default function VisaUpdatesPage() {
             <p className="text-navy-500">No {filter !== 'ALL' ? filter.toLowerCase() : ''} decisions have been recorded for this month yet.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-[2rem] shadow-card border border-navy-50 overflow-hidden">
+          <div className="bg-white rounded-[2rem] shadow-card border border-navy-50 overflow-x-auto w-full">
             <table className="w-full min-w-[1200px] text-left border-collapse">
               <thead>
                 <tr className="bg-navy-900 text-white border-b border-navy-800">

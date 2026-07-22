@@ -156,9 +156,10 @@ export default function SubStaffAllocationsPage() {
             </div>
           </div>
 
-          {/* Table */}
+          {/* Table Container */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* DESKTOP TABLE VIEW */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left">
                 <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase text-xs font-bold tracking-wider">
                   <tr>
@@ -184,9 +185,92 @@ export default function SubStaffAllocationsPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* MOBILE CARD VIEW */}
+            <div className="block md:hidden divide-y divide-slate-100 p-2">
+              {subStaffs.map(subStaff => {
+                const allocation = allocations?.find(a => a.sub_staff === subStaff.id);
+                return (
+                  <MobileSubStaffCard
+                    key={subStaff.id}
+                    subStaff={subStaff}
+                    allocation={allocation}
+                    parentSlot={activeParentSlot}
+                    selectedMonth={selectedMonth}
+                    allocateSlotMutation={allocateSlotMutation}
+                  />
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function MobileSubStaffCard({ subStaff, allocation, parentSlot, selectedMonth, allocateSlotMutation }) {
+  const initialAmount = allocation ? allocation.allocated_slot : 0;
+  const [amount, setAmount] = useState(initialAmount);
+
+  useMemo(() => {
+    setAmount(initialAmount);
+  }, [initialAmount]);
+
+  const maxCanAllocate = parentSlot.remaining_slot + initialAmount;
+  const isDirty = amount !== initialAmount;
+
+  const handleSave = () => {
+    if (amount > maxCanAllocate) {
+      toast.error(`Cannot allocate more than ${maxCanAllocate} slots.`);
+      return;
+    }
+    allocateSlotMutation.mutate({
+      subStaffId: subStaff.id,
+      slotId: allocation?.id,
+      allocation_month: selectedMonth,
+      allocated_slot: Number(amount)
+    });
+  };
+
+  return (
+    <div className="p-4 space-y-3 bg-white">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="font-bold text-slate-800 text-sm">{subStaff.name}</div>
+          <div className="text-xs text-slate-400 mt-0.5">{subStaff.phone || 'No phone'}</div>
+        </div>
+        {subStaff.is_active ? (
+          <span className="bg-green-100 text-green-700 px-2.5 py-0.5 rounded-full text-[11px] font-bold">Active</span>
+        ) : (
+          <span className="bg-red-100 text-red-700 px-2.5 py-0.5 rounded-full text-[11px] font-bold">Inactive</span>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between pt-1 gap-2">
+        <span className="text-xs font-semibold text-slate-500">Allocated Slots</span>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min="0"
+            max={maxCanAllocate}
+            value={amount}
+            onChange={(e) => setAmount(Number(e.target.value))}
+            className="w-20 text-center font-bold text-blue-700 bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-sm"
+          />
+          <button
+            onClick={handleSave}
+            disabled={!isDirty || allocateSlotMutation.isPending || amount > maxCanAllocate || amount < 0}
+            className={`px-4 py-1.5 rounded-lg font-bold transition-all text-xs shadow-sm ${
+              isDirty && amount <= maxCanAllocate && amount >= 0
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+            }`}
+          >
+            {allocateSlotMutation.isPending && isDirty && allocateSlotMutation.variables?.subStaffId === subStaff.id ? '...' : 'Save'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

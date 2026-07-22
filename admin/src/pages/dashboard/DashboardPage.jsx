@@ -193,7 +193,7 @@ export default function DashboardPage() {
         {/* Left Column: Action Required */}
         <div className="lg:col-span-8 space-y-6">
           
-          <motion.div variants={container} initial="hidden" animate="show" className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-sm border border-slate-100">
+          <motion.div variants={container} initial="hidden" animate="show" className="bg-white/80 backdrop-blur-xl rounded-3xl p-4 sm:p-6 shadow-sm border border-slate-100">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
                 <h3 className="text-lg font-bold text-slate-800">Action Required</h3>
@@ -215,7 +215,7 @@ export default function DashboardPage() {
                   <motion.div 
                     variants={fadeUp}
                     key={app.id} 
-                    className="group flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 hover:shadow-sm transition-all"
+                    className="group flex items-center justify-between p-3 sm:p-3.5 rounded-2xl border border-slate-100 hover:border-blue-200 hover:bg-blue-50/50 hover:shadow-sm transition-all gap-2"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-500 font-black text-base shrink-0 group-hover:from-blue-100 group-hover:to-blue-200 group-hover:text-blue-700 transition-colors">
@@ -234,7 +234,7 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </div>
-                    <Link to={`/applicants/${app.id}`} className="shrink-0 text-xs font-bold text-slate-600 bg-white border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 hover:text-slate-900 shadow-sm transition-all">
+                    <Link to={`/applicants/${app.id}`} className="shrink-0 text-xs font-bold text-slate-600 bg-white border border-slate-200 px-3 sm:px-4 py-2 rounded-xl hover:bg-slate-50 hover:text-slate-900 shadow-sm transition-all">
                       Review
                     </Link>
                   </motion.div>
@@ -244,7 +244,7 @@ export default function DashboardPage() {
           </motion.div>
 
           {/* Pending Soft Applications */}
-          <motion.div variants={container} initial="hidden" animate="show" className="bg-white/80 backdrop-blur-xl rounded-3xl p-6 shadow-sm border border-slate-100 mt-6">
+          <motion.div variants={container} initial="hidden" animate="show" className="bg-white/80 backdrop-blur-xl rounded-3xl p-4 sm:p-6 shadow-sm border border-slate-100 mt-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
                 <h3 className="text-lg font-bold text-slate-800">Pending Soft Applications</h3>

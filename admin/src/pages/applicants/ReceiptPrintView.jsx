@@ -49,8 +49,9 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo }) {
           .print-portal { display: block !important; position: static !important; width: 100%; height: auto !important; overflow: visible !important; }
         }
       `}</style>
-      <div className="w-full max-w-[210mm] print:max-w-full print:w-full min-h-[297mm] print:min-h-[100vh] bg-white text-slate-900 shadow-xl print:shadow-none print:m-0 flex flex-col relative overflow-hidden"
-           style={{ pageBreakAfter: 'always', margin: '0 auto' }}>
+      <div className="w-full overflow-x-auto bg-slate-100 print:bg-transparent print:overflow-visible flex sm:justify-center">
+        <div className="w-full min-w-[210mm] max-w-[210mm] print:max-w-full print:min-w-full print:w-full min-h-[297mm] print:min-h-[100vh] bg-white text-slate-900 shadow-xl print:shadow-none print:m-0 flex flex-col relative overflow-hidden shrink-0"
+             style={{ pageBreakAfter: 'always', margin: '0 auto' }}>
       
       {/* Decorative corners */}
       <div className="absolute top-0 left-0 w-32 h-32 bg-blue-900 rounded-br-[100px] z-0"></div>
@@ -275,7 +276,8 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo }) {
             </div>
          </div>
       </div>
-    </div>
+        </div>
+      </div>
     </>
   );
 }

@@ -167,9 +167,10 @@ export default function CrudTable({
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div>
-          <table className="w-full text-left border-collapse">
+      {/* DESKTOP TABLE VIEW (md and up) */}
+      <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-left border-collapse min-w-max">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
                 {columns.map((col, idx) => (
@@ -251,6 +252,77 @@ export default function CrudTable({
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* MOBILE CARD VIEW (below md) */}
+      <div className="block md:hidden space-y-3">
+        {isLoading ? (
+          <div className="bg-white rounded-2xl p-6 text-center text-slate-500 text-sm border border-slate-100 shadow-sm">
+            Loading...
+          </div>
+        ) : error ? (
+          <div className="bg-white rounded-2xl p-6 text-center text-red-500 text-sm border border-slate-100 shadow-sm">
+            Error loading data.
+          </div>
+        ) : data?.length === 0 ? (
+          <div className="bg-white rounded-2xl p-6 text-center text-slate-500 text-sm border border-slate-100 shadow-sm">
+            No items found.
+          </div>
+        ) : (
+          data?.map((item, idx) => (
+            <div key={item.id || item.slug || idx} className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <div className="font-bold text-slate-800 text-sm min-w-0 break-words pr-2">
+                  {columns[0]?.render ? columns[0].render(item) : item[columns[0]?.accessor]}
+                </div>
+                {(enableView || !disableEdit || !disableDelete) && (
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {enableView && (
+                      <button
+                        onClick={() => handleView(item)}
+                        className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                        title="View"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </button>
+                    )}
+                    {!disableEdit && (
+                      <button
+                        onClick={() => handleEdit(item)}
+                        className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                        title="Edit"
+                      >
+                        <PencilSquareIcon className="w-4 h-4" />
+                      </button>
+                    )}
+                    {!disableDelete && (
+                      <button
+                        onClick={() => handleDelete(item.id || item.slug)}
+                        className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                        title="Delete"
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2 text-xs">
+                {columns.slice(1).map((col, cIdx) => (
+                  <div key={cIdx} className="flex justify-between items-start py-1 border-b border-slate-50 last:border-none gap-2">
+                    <span className="font-semibold text-slate-400 uppercase tracking-wider text-[10px] shrink-0 pt-0.5">{col.header}</span>
+                    <span className="font-medium text-slate-700 text-right min-w-0 break-words">
+                      {col.render ? col.render(item) : item[col.accessor]}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       <FormModal

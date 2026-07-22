@@ -345,7 +345,7 @@ export default function ApplicantFormPage() {
         </div>
       )}
 
-      <form className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-6">
+      <form className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-100 shadow-sm space-y-6">
         
         {/* STEP 1 */}
         {currentStep === 1 && (
