@@ -21,6 +21,7 @@ import SubStaffDetailPage from './pages/staff/SubStaffDetailPage';
 import SubStaffAllocationsPage from './pages/staff/SubStaffAllocationsPage';
 import SlotsPage from './pages/staff/SlotsPage';
 import CountriesConfigPage from './pages/config/CountriesConfigPage';
+import CurrenciesConfigPage from './pages/config/CurrenciesConfigPage';
 import CountryFormPage from './pages/config/CountryFormPage';
 import CountryDetailPage from './pages/config/CountryDetailPage';
 import VisasConfigPage from './pages/config/VisasConfigPage';
@@ -140,6 +141,10 @@ function App() {
               <Route
                 path="/config/countries"
                 element={<AdminLayout><CountriesConfigPage /></AdminLayout>}
+              />
+              <Route
+                path="/config/currencies"
+                element={<AdminLayout><CurrenciesConfigPage /></AdminLayout>}
               />
               <Route
                 path="/config/countries/new"

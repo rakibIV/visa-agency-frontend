@@ -104,6 +104,12 @@ export default function JobFormPage() {
     saveMutation.mutate(data);
   };
 
+  const { data: currenciesData } = useQuery({
+    queryKey: ['config-currencies'],
+    queryFn: () => api.get('/currencies/').then(r => r.data),
+  });
+  const currenciesList = currenciesData?.results ?? currenciesData ?? [];
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
@@ -141,10 +147,15 @@ export default function JobFormPage() {
             <input type="number" step="0.01" value={minimumSalary} onChange={e => setMinimumSalary(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl" />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Max Salary</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Max Salary &amp; Currency</label>
             <div className="flex gap-2">
               <input type="number" step="0.01" value={maximumSalary} onChange={e => setMaximumSalary(e.target.value)} className="flex-1 px-3 py-2 border border-slate-200 rounded-xl" />
-              <input type="text" value={currency} onChange={e => setCurrency(e.target.value)} className="w-20 px-3 py-2 border border-slate-200 rounded-xl text-center" placeholder="EUR" />
+              <select value={currency} onChange={e => setCurrency(e.target.value)} className="w-24 px-3 py-2 border border-slate-200 rounded-xl text-center bg-white">
+                <option value="EUR">EUR</option>
+                {currenciesList.map(c => (
+                  <option key={c.id} value={c.code}>{c.code}</option>
+                ))}
+              </select>
             </div>
           </div>
 

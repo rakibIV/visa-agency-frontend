@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { domToPng } from 'modern-screenshot';
+import jsPDF from 'jspdf';
 import {
   ArrowLeftIcon,
   UserIcon,
@@ -15,6 +17,7 @@ import {
   PrinterIcon,
   PencilSquareIcon,
   TrashIcon,
+  ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import AgreementPrintView from './AgreementPrintView';
@@ -40,6 +43,7 @@ export default function ApplicantDetailPage() {
   const [selectedRefundForPrint, setSelectedRefundForPrint] = useState(null);
   const [printType, setPrintType] = useState('all'); // 'all', 'form', 'tc', 'clauses'
   const [showBengali, setShowBengali] = useState(false);
+  const [editPaymentId, setEditPaymentId] = useState(null);
 
   // Payment Form State
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -127,6 +131,16 @@ export default function ApplicantDetailPage() {
   });
   const countryOptions = (countriesData || []).map(c => ({ label: c.name, value: c.id }));
 
+  const { data: currenciesData } = useQuery({
+    queryKey: ['config-currencies'],
+    queryFn: () => api.get('/currencies/').then(r => r.data),
+  });
+  const currenciesList = currenciesData?.results ?? currenciesData ?? [];
+  const getCurrencySymbol = (code) => {
+    const curr = currenciesList.find(c => c.code === code);
+    return curr?.symbol || code || '৳';
+  };
+
   // Mutation for adding payment
   const addPaymentMutation = useMutation({
     mutationFn: (newPayment) => api.post(`/applicants/${id}/payments/`, newPayment),
@@ -148,6 +162,40 @@ export default function ApplicantDetailPage() {
     },
   });
 
+  const editPaymentMutation = useMutation({
+    mutationFn: (updatedPayment) => api.patch(`/applicants/${id}/payments/${editPaymentId}/`, updatedPayment),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['applicant', id]);
+      setShowPaymentModal(false);
+      setPaymentAmount('');
+      setPaymentRemarks('');
+      setReference('');
+      setReceiptNumber('');
+      setPaymentError(null);
+      setEditPaymentId(null);
+      toast.success('Payment updated successfully!');
+    },
+    onError: (err) => {
+      const data = err?.response?.data;
+      const msg = data
+        ? Object.entries(data).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join(' | ')
+        : err.message || 'Unknown error';
+      setPaymentError(msg);
+    },
+  });
+
+  const handleEditPayment = (payment) => {
+    setEditPaymentId(payment.id);
+    setPaymentAmount(payment.amount);
+    setPaymentMethod(payment.payment_method || 'CASH');
+    setCurrency(payment.currency || 'BDT');
+    setPaymentDate(payment.payment_date || new Date().toISOString().split('T')[0]);
+    setPaymentRemarks(payment.note || payment.remarks || '');
+    setReference(payment.reference || '');
+    setReceiptNumber(payment.receipt_number || '');
+    setShowPaymentModal(true);
+  };
+
   // Mutation for adding/updating refund bank details
   const updateBankDetailsMutation = useMutation({
     mutationFn: (bankDetails) => api.post(`/applicants/${id}/refund-bank-detail/`, bankDetails),
@@ -157,6 +205,17 @@ export default function ApplicantDetailPage() {
     },
     onError: (err) => {
       toast.error('Failed to save refund destination details: ' + (err.response?.data?.detail || err.message));
+    }
+  });
+
+  const deletePaymentMutation = useMutation({
+    mutationFn: (paymentId) => api.delete(`/applicants/${id}/payments/${paymentId}/`),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['applicant', id]);
+      toast.success('Payment deleted successfully!');
+    },
+    onError: (err) => {
+      toast.error('Failed to delete payment: ' + (err.response?.data?.detail || err.message));
     }
   });
 
@@ -276,13 +335,15 @@ export default function ApplicantDetailPage() {
       {showPrintView && (
         <div className="fixed inset-0 bg-white z-[999] overflow-y-auto">
           <div className="p-4 bg-slate-100 print:hidden flex items-center justify-between border-b sticky top-0 z-50">
-            <span className="font-semibold text-slate-700">🖨️ Print Preview</span>
-            <div className="flex gap-3">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-800">🖨️ Agreement Print Preview</span>
+            </div>
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => window.print()}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition"
+                className="flex items-center gap-2 px-5 py-2.5 bg-blue-700 text-white rounded-xl text-sm font-bold hover:bg-blue-800 transition shadow-md"
               >
-                Print / Save as PDF
+                <PrinterIcon className="w-5 h-5" /> Save as PDF / Print
               </button>
               <button
                 onClick={() => setShowPrintView(false)}
@@ -292,7 +353,9 @@ export default function ApplicantDetailPage() {
               </button>
             </div>
           </div>
-          <AgreementPrintView applicant={applicant} templates={templates} type={printType} companyInfo={companyInfo} showBengali={showBengali} />
+          <div id="agreement-preview-content" className="p-4 flex justify-center">
+            <AgreementPrintView applicant={applicant} templates={templates} type={printType} companyInfo={companyInfo} showBengali={showBengali} />
+          </div>
         </div>
       )}
 
@@ -308,13 +371,15 @@ export default function ApplicantDetailPage() {
       {showReceiptPrintView && selectedPaymentForReceipt && (
         <div className="fixed inset-0 bg-white z-[999] overflow-y-auto">
           <div className="p-4 bg-slate-100 print:hidden flex items-center justify-between border-b sticky top-0 z-50">
-            <span className="font-semibold text-slate-700">🖨️ Receipt Print Preview</span>
-            <div className="flex gap-3">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-800">🖨️ Receipt Print Preview</span>
+            </div>
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => window.print()}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition"
+                className="flex items-center gap-2 px-5 py-2.5 bg-blue-700 text-white rounded-xl text-sm font-bold hover:bg-blue-800 transition shadow-md"
               >
-                Print / Save as PDF
+                <PrinterIcon className="w-5 h-5" /> Save as PDF / Print
               </button>
               <button
                 onClick={() => {
@@ -327,14 +392,16 @@ export default function ApplicantDetailPage() {
               </button>
             </div>
           </div>
-          <ReceiptPrintView applicant={applicant} payment={selectedPaymentForReceipt} companyInfo={companyInfo} />
+          <div id="receipt-preview-content" className="p-4 flex justify-center">
+            <ReceiptPrintView applicant={applicant} payment={selectedPaymentForReceipt} companyInfo={companyInfo} currenciesList={currenciesList} />
+          </div>
         </div>
       )}
 
       {/* Receipt Print portal */}
       {showReceiptPrintView && selectedPaymentForReceipt && createPortal(
         <div className="print-portal">
-          <ReceiptPrintView applicant={applicant} payment={selectedPaymentForReceipt} companyInfo={companyInfo} />
+          <ReceiptPrintView applicant={applicant} payment={selectedPaymentForReceipt} companyInfo={companyInfo} currenciesList={currenciesList} />
         </div>,
         document.body
       )}
@@ -343,13 +410,15 @@ export default function ApplicantDetailPage() {
       {showRefundPrintView && selectedRefundForPrint && (
         <div className="fixed inset-0 bg-white z-[999] overflow-y-auto">
           <div className="p-4 bg-slate-100 print:hidden flex items-center justify-between border-b sticky top-0 z-50">
-            <span className="font-semibold text-slate-700">🖨️ Refund Receipt Print Preview</span>
-            <div className="flex gap-3">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-800">🖨️ Refund Receipt Print Preview</span>
+            </div>
+            <div className="flex items-center gap-3">
               <button
                 onClick={() => window.print()}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition"
+                className="flex items-center gap-2 px-5 py-2.5 bg-blue-700 text-white rounded-xl text-sm font-bold hover:bg-blue-800 transition shadow-md"
               >
-                Print / Save as PDF
+                <PrinterIcon className="w-5 h-5" /> Save as PDF / Print
               </button>
               <button
                 onClick={() => {
@@ -362,14 +431,16 @@ export default function ApplicantDetailPage() {
               </button>
             </div>
           </div>
-          <RefundPrintView applicant={applicant} refund={selectedRefundForPrint} companyInfo={companyInfo} />
+          <div id="refund-preview-content" className="p-4 flex justify-center">
+            <RefundPrintView applicant={applicant} refund={selectedRefundForPrint} companyInfo={companyInfo} currenciesList={currenciesList} />
+          </div>
         </div>
       )}
 
       {/* Refund Print portal */}
       {showRefundPrintView && selectedRefundForPrint && createPortal(
         <div className="print-portal">
-          <RefundPrintView applicant={applicant} refund={selectedRefundForPrint} companyInfo={companyInfo} />
+          <RefundPrintView applicant={applicant} refund={selectedRefundForPrint} companyInfo={companyInfo} currenciesList={currenciesList} />
         </div>,
         document.body
       )}
@@ -665,18 +736,38 @@ export default function ApplicantDetailPage() {
                   {applicant.payments?.map((payment) => (
                     <tr key={payment.id} className="hover:bg-slate-50/50">
                       <td className="px-5 py-4 font-mono text-xs font-bold text-slate-500">{payment.receipt_number || `REC-${payment.id}`}</td>
-                      <td className="px-5 py-4 font-semibold text-slate-800">৳{Number(payment.amount).toLocaleString()}</td>
+                      <td className="px-5 py-4 font-semibold text-slate-800">{getCurrencySymbol(payment.currency)}{Number(payment.amount).toLocaleString()}</td>
                       <td className="px-5 py-4 text-slate-500">{payment.payment_date || '—'}</td>
                       <td className="px-5 py-4 capitalize text-slate-600">{payment.payment_method || '—'}</td>
                       <td className="px-5 py-4 text-slate-500">{payment.remarks || '—'}</td>
                       <td className="px-5 py-4">
-                        <button
-                          onClick={() => handlePrintReceipt(payment)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors"
-                          title="Download Receipt"
-                        >
-                          <PrinterIcon className="w-4 h-4" /> Receipt
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handlePrintReceipt(payment)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors"
+                            title="Download Receipt"
+                          >
+                            <PrinterIcon className="w-4 h-4" /> Receipt
+                          </button>
+                          <button
+                            onClick={() => handleEditPayment(payment)}
+                            className="p-1.5 text-slate-400 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                            title="Edit Payment"
+                          >
+                            <PencilSquareIcon className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if(window.confirm('Are you sure you want to delete this payment?')) {
+                                deletePaymentMutation.mutate(payment.id);
+                              }
+                            }}
+                            className="p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors"
+                            title="Delete Payment"
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -691,138 +782,152 @@ export default function ApplicantDetailPage() {
 
             {/* Modal for Payment Record Creation */}
             {showPaymentModal && (
-              <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-                  <h3 className="font-bold text-slate-800 text-lg">Record Payment</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Amount <span className="text-red-500">*</span></label>
-                      <input
-                        type="number"
-                        value={paymentAmount}
-                        onChange={(e) => setPaymentAmount(e.target.value)}
-                        placeholder="e.g. 50000"
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Currency</label>
-                      <select
-                        value={currency}
-                        onChange={(e) => setCurrency(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                      >
-                        <option value="BDT">BDT - Bangladeshi Taka</option>
-                        <option value="USD">USD - US Dollar</option>
-                        <option value="EUR">EUR - Euro</option>
-                        <option value="AED">AED - UAE Dirham</option>
-                        <option value="SAR">SAR - Saudi Riyal</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Payment Method</label>
-                      <select
-                        value={paymentMethod}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                      >
-                        <option value="CASH">Hand Cash</option>
-                        <option value="BANK">Bank Transfer</option>
-                        <option value="MOBILE_BANKING">Mobile Banking</option>
-                        <option value="CHEQUE">Cheque</option>
-                        <option value="ONLINE">Online Payment</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Installment Type</label>
-                      {isPaymentComplete ? (
-                        <div className="w-full px-3 py-2 border border-green-200 bg-green-50 rounded-xl text-sm text-green-700 font-semibold">
-                          ✓ All installments recorded
-                        </div>
-                      ) : (
-                        <>
-                          <input
-                            type="hidden"
-                            name="installment_type"
-                            value={nextInstallmentType}
-                          />
-                          <div className="w-full px-3 py-2 border border-blue-200 bg-blue-50 rounded-xl text-sm text-blue-700 font-semibold flex items-center justify-between">
-                            <span>{nextInstallmentLabel}</span>
-                            <span className="text-[10px] text-blue-400 font-normal">(Auto-determined)</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Payment Date</label>
-                      <input
-                        type="date"
-                        value={paymentDate}
-                        onChange={(e) => setPaymentDate(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Receipt No (Optional)</label>
-                      <input
-                        type="text"
-                        value={receiptNumber}
-                        onChange={(e) => setReceiptNumber(e.target.value)}
-                        placeholder="Auto-generated if empty"
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                      />
-                    </div>
-                    <div className="col-span-1 sm:col-span-2">
-                      <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Reference (Bank/Bkash TxID)</label>
-                      <input
-                        type="text"
-                        value={reference}
-                        onChange={(e) => setReference(e.target.value)}
-                        placeholder="TxID or Check Number"
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                      />
-                    </div>
-                    <div className="col-span-1 sm:col-span-2">
-                      <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Remarks</label>
-                      <textarea
-                        value={paymentRemarks}
-                        onChange={(e) => setPaymentRemarks(e.target.value)}
-                        placeholder="Any additional notes..."
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 h-16"
-                      />
-                    </div>
-                  </div>
-                  {/* Separate section for Applicant Profile update (only on 2nd payment) */}
-                  {nextInstallmentType === 'SECOND' && !isPaymentComplete && (
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 mt-2">
-                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Preferred Refund Method</label>
-                      <select
-                        value={preferredRefundMethod}
-                        onChange={(e) => setPreferredRefundMethod(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                      >
-                        <option value="BANK">Bank Transfer</option>
-                        <option value="CHEQUE">Cheque</option>
-                        <option value="CASH">Cash</option>
-                      </select>
-                      <p className="text-[10px] text-slate-400 mt-1">* This updates the applicant's profile for future refund processing.</p>
-                    </div>
-                  )}
-                  {/* Error display */}
-                  {paymentError && (
-                    <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                      ⚠ {paymentError}
-                    </div>
-                  )}
-                  <div className="flex gap-2 justify-end text-sm font-semibold">
+              <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+                <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl flex flex-col max-h-[90vh]">
+                  {/* Header */}
+                  <div className="flex items-center justify-between border-b pb-3 shrink-0">
+                    <h3 className="font-bold text-slate-800 text-lg">{editPaymentId ? 'Edit Payment' : 'Record Payment'}</h3>
                     <button
-                      onClick={() => { setShowPaymentModal(false); setPaymentError(null); }}
+                      onClick={() => { setShowPaymentModal(false); setPaymentError(null); setEditPaymentId(null); }}
+                      className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors text-lg font-bold leading-none"
+                      title="Close"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Body (scrollable) */}
+                  <div className="flex-1 overflow-y-auto py-4 pr-1 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Amount <span className="text-red-500">*</span></label>
+                        <input
+                          type="number"
+                          value={paymentAmount}
+                          onChange={(e) => setPaymentAmount(e.target.value)}
+                          placeholder="e.g. 50000"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Currency</label>
+                        <select
+                          value={currency}
+                          onChange={(e) => setCurrency(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        >
+                          {currenciesList.map(c => (
+                            <option key={c.id} value={c.code}>{c.code} - {c.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Payment Method</label>
+                        <select
+                          value={paymentMethod}
+                          onChange={(e) => setPaymentMethod(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        >
+                          <option value="CASH">Hand Cash</option>
+                          <option value="BANK">Bank Transfer</option>
+                          <option value="MOBILE_BANKING">Mobile Banking</option>
+                          <option value="CHEQUE">Cheque</option>
+                          <option value="ONLINE">Online Payment</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Installment Type</label>
+                        {isPaymentComplete ? (
+                          <div className="w-full px-3 py-2 border border-green-200 bg-green-50 rounded-xl text-sm text-green-700 font-semibold">
+                            ✓ All installments recorded
+                          </div>
+                        ) : (
+                          <>
+                            <input
+                              type="hidden"
+                              name="installment_type"
+                              value={nextInstallmentType}
+                            />
+                            <div className="w-full px-3 py-2 border border-blue-200 bg-blue-50 rounded-xl text-sm text-blue-700 font-semibold flex items-center justify-between">
+                              <span>{nextInstallmentLabel}</span>
+                              <span className="text-[10px] text-blue-400 font-normal">(Auto-determined)</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Payment Date</label>
+                        <input
+                          type="date"
+                          value={paymentDate}
+                          onChange={(e) => setPaymentDate(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Receipt No (Optional)</label>
+                        <input
+                          type="text"
+                          value={receiptNumber}
+                          onChange={(e) => setReceiptNumber(e.target.value)}
+                          placeholder="Auto-generated if empty"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                      </div>
+                      <div className="col-span-1 sm:col-span-2">
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Reference (Bank/Bkash TxID)</label>
+                        <input
+                          type="text"
+                          value={reference}
+                          onChange={(e) => setReference(e.target.value)}
+                          placeholder="TxID or Check Number"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                      </div>
+                      <div className="col-span-1 sm:col-span-2">
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Remarks</label>
+                        <textarea
+                          value={paymentRemarks}
+                          onChange={(e) => setPaymentRemarks(e.target.value)}
+                          placeholder="Any additional notes..."
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 h-16"
+                        />
+                      </div>
+                    </div>
+                    {/* Separate section for Applicant Profile update (only on 2nd payment) */}
+                    {nextInstallmentType === 'SECOND' && !isPaymentComplete && (
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 mt-2">
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Preferred Refund Method</label>
+                        <select
+                          value={preferredRefundMethod}
+                          onChange={(e) => setPreferredRefundMethod(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        >
+                          <option value="BANK">Bank Transfer</option>
+                          <option value="CHEQUE">Cheque</option>
+                          <option value="CASH">Cash</option>
+                        </select>
+                        <p className="text-[10px] text-slate-400 mt-1">* This updates the applicant's profile for future refund processing.</p>
+                      </div>
+                    )}
+                    {/* Error display */}
+                    {paymentError && (
+                      <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                        ⚠ {paymentError}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex gap-2 justify-end text-sm font-semibold pt-3 border-t shrink-0">
+                    <button
+                      onClick={() => { setShowPaymentModal(false); setPaymentError(null); setEditPaymentId(null); }}
                       className="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50"
                     >
                       Cancel
                     </button>
                     <button
-                      disabled={addPaymentMutation.isPending}
+                      disabled={addPaymentMutation.isPending || editPaymentMutation.isPending}
                       onClick={() => {
                         if (!paymentAmount) return setPaymentError('Amount is required.');
                         setPaymentError(null);
@@ -830,21 +935,27 @@ export default function ApplicantDetailPage() {
                           updateProfileMutation.mutate({ preferred_refund_method: preferredRefundMethod });
                         }
 
-                        addPaymentMutation.mutate({
-                          applicant: id,
+                        const payload = {
                           amount: Number(paymentAmount),
                           payment_method: paymentMethod,
                           currency: currency,
                           payment_date: paymentDate,
-                          installment_type: nextInstallmentType,
                           reference: reference,
                           receipt_number: receiptNumber,
                           note: paymentRemarks,
-                        });
+                        };
+
+                        if (editPaymentId) {
+                          editPaymentMutation.mutate(payload);
+                        } else {
+                          payload.installment_type = nextInstallmentType;
+                          payload.applicant = id;
+                          addPaymentMutation.mutate(payload);
+                        }
                       }}
                       className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      {addPaymentMutation.isPending ? 'Saving…' : 'Save'}
+                      {addPaymentMutation.isPending || editPaymentMutation.isPending ? 'Saving…' : editPaymentId ? 'Update Payment' : 'Save'}
                     </button>
                   </div>
                 </div>
@@ -1092,24 +1203,40 @@ export default function ApplicantDetailPage() {
 
             {/* Modal for Refund record creation */}
             {showRefundModal && (
-              <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-                  <h3 className="font-bold text-slate-800 text-lg">Generate Refund Record</h3>
-                  <p className="text-xs text-slate-400 leading-normal">
-                    This will automatically calculate the refundable balance based on the current payments list.
-                  </p>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Reason / Notes</label>
-                      <textarea
-                        value={refundRemarks}
-                        onChange={(e) => setRefundRemarks(e.target.value)}
-                        placeholder="e.g. Visa rejection refund"
-                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 h-20"
-                      />
+              <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+                <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl flex flex-col max-h-[90vh]">
+                  {/* Header */}
+                  <div className="flex items-center justify-between border-b pb-3 shrink-0">
+                    <h3 className="font-bold text-slate-800 text-lg">Generate Refund Record</h3>
+                    <button
+                      onClick={() => setShowRefundModal(false)}
+                      className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors text-lg font-bold leading-none"
+                      title="Close"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Body */}
+                  <div className="flex-1 overflow-y-auto py-4 pr-1 space-y-4">
+                    <p className="text-xs text-slate-400 leading-normal">
+                      This will automatically calculate the refundable balance based on the current payments list.
+                    </p>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Reason / Notes</label>
+                        <textarea
+                          value={refundRemarks}
+                          onChange={(e) => setRefundRemarks(e.target.value)}
+                          placeholder="e.g. Visa rejection refund"
+                          className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 h-20"
+                        />
+                      </div>
                     </div>
                   </div>
-                  <div className="flex gap-2 justify-end text-sm font-semibold">
+
+                  {/* Footer */}
+                  <div className="flex gap-2 justify-end text-sm font-semibold pt-3 border-t shrink-0">
                     <button
                       onClick={() => setShowRefundModal(false)}
                       className="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50"

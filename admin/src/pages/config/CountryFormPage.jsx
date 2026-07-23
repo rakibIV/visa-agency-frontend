@@ -100,6 +100,12 @@ export default function CountryFormPage() {
     saveMutation.mutate(fd);
   };
 
+  const { data: currenciesData } = useQuery({
+    queryKey: ['config-currencies'],
+    queryFn: () => api.get('/currencies/').then(r => r.data),
+  });
+  const currenciesList = currenciesData?.results ?? currenciesData ?? [];
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center gap-4">
@@ -120,7 +126,12 @@ export default function CountryFormPage() {
 
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Currency</label>
-            <input type="text" value={currency} onChange={e => setCurrency(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl" />
+            <select value={currency} onChange={e => setCurrency(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-white">
+              <option value="USD">USD</option>
+              {currenciesList.map(c => (
+                <option key={c.id} value={c.code}>{c.name} ({c.code})</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Language</label>

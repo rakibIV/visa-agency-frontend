@@ -81,6 +81,7 @@ const NAV_ITEMS = [
     icon: ClipboardDocumentListIcon,
     children: [
       { label: 'Countries', icon: GlobeAltIcon, to: '/config/countries' },
+      { label: 'Currencies', icon: BriefcaseIcon, to: '/config/currencies' },
       { label: 'Visa Categories', icon: TagIcon, to: '/config/visa-categories' },
       { label: 'Visas', icon: PaperAirplaneIcon, to: '/config/visas' },
       { label: 'Jobs', icon: BriefcaseIcon, to: '/config/jobs' },
