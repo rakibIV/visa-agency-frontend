@@ -89,8 +89,8 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo, curr
                   <h1 className="text-xs sm:text-sm font-black tracking-wider text-slate-900 uppercase font-serif leading-tight">
                     {companyInfo?.company_name || 'Al Raiyan Group'}
                   </h1>
-                  <p className="text-[8px] text-slate-600 font-bold tracking-widest uppercase mt-0.5 leading-tight">
-                    Global Visa Services
+                  <p className="text-[8px] text-slate-600 font-extrabold tracking-widest uppercase mt-0.5 leading-tight">
+                    مجموعة الريان
                   </p>
                   <p className="text-[8px] text-orange-600 font-bold tracking-widest uppercase mt-0.5 leading-tight">
                     Trust • Process • Success

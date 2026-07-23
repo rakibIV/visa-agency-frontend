@@ -31,6 +31,7 @@ import {
   ArrowPathIcon,
   TrashIcon,
 } from '@heroicons/react/24/outline';
+import logo from '../../assets/logo.png';
 import { useAuth } from '../../context/AuthContext';
 
 const NAV_ITEMS = [
@@ -270,16 +271,16 @@ export default function AdminLayout({ children }) {
         {/* Logo */}
         <div className={`flex items-center gap-3 px-4 py-4 border-b border-white/10 shrink-0 ${collapsed ? 'justify-center px-0' : ''}`}>
           <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-md overflow-hidden p-1">
-            {companyInfo?.company_logo ? (
-              <img src={companyInfo.company_logo.startsWith('http') ? companyInfo.company_logo : `https://res.cloudinary.com/prfvuhln/${companyInfo.company_logo}`} alt="Logo" className="w-full h-full object-contain" />
-            ) : (
-              <span className="text-blue-800 font-black text-sm tracking-tight">AR</span>
-            )}
+            <img 
+              src={companyInfo?.company_logo ? (companyInfo.company_logo.startsWith('http') ? companyInfo.company_logo : `https://res.cloudinary.com/prfvuhln/${companyInfo.company_logo}`) : logo} 
+              alt={companyInfo?.company_name || "Al Raiyan Group Logo"} 
+              className="w-full h-full object-contain" 
+            />
           </div>
           {!collapsed && (
-            <div className="overflow-hidden">
-              <p className="text-white font-bold text-sm leading-tight whitespace-nowrap">{companyInfo?.company_name || 'Al Raiyan Group'}</p>
-              <p className="text-blue-300/80 text-xs whitespace-nowrap">Management System</p>
+            <div className="overflow-hidden leading-tight">
+              <p className="text-white font-bold text-sm whitespace-nowrap">{companyInfo?.company_name || 'Al Raiyan Group'}</p>
+              <p className="text-amber-400 font-extrabold text-[11px] whitespace-nowrap">مجموعة الريان</p>
             </div>
           )}
         </div>
