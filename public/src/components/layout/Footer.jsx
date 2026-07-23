@@ -34,7 +34,7 @@ export default function Footer() {
     { to: '/', label: 'Home' },
     { to: '/countries', label: 'Destinations' },
     { to: '/visas', label: 'Visa Programs' },
-    { to: '/visa-updates', label: 'Latest Results' },
+    { to: '/visa-updates', label: 'Live Results' },
     { to: '/about', label: 'About Us' },
   ];
 

@@ -15,7 +15,7 @@ const primaryLinks = [
 ];
 
 const secondaryLinks = [
-  { to: '/visa-updates', label: 'Latest Results' },
+  { to: '/visa-updates', label: 'Live Results' },
   { to: '/monthly-slots', label: 'Staff Slots' },
   { to: '/notices', label: 'Notices' },
 ];

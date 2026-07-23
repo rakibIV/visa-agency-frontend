@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -7,6 +7,7 @@ import {
   FunnelIcon,
   ArrowPathIcon,
   UserIcon,
+  CalendarDaysIcon,
 } from '@heroicons/react/24/outline';
 
 const STATUS_STYLES = {
@@ -26,6 +27,13 @@ export default function ApplicantStatusUpdatePage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [page, setPage] = useState(1);
+  const [recentlyUpdated, setRecentlyUpdated] = useState({});
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000 * 60); // update every minute
+    return () => clearInterval(timer);
+  }, []);
 
   // Fetch all statuses for the filter dropdown
   const { data: statuses } = useQuery({
@@ -54,8 +62,12 @@ export default function ApplicantStatusUpdatePage() {
   // Mutation to quickly update an applicant's status
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, statusId }) => api.patch(`/applicants/${id}/change-status/`, { new_status: statusId, send_email: true }),
-    onSuccess: () => {
+    onSuccess: (res, variables) => {
       toast.success('Status updated successfully!');
+      setRecentlyUpdated((prev) => ({
+        ...prev,
+        [variables.id]: Date.now(),
+      }));
       queryClient.invalidateQueries(['applicants-status-update']);
       queryClient.invalidateQueries(['applicants']); // Also invalidate main applicants page
     },
@@ -65,6 +77,26 @@ export default function ApplicantStatusUpdatePage() {
   const handleStatusChange = (applicantId, newStatusId) => {
     if (!newStatusId) return;
     updateStatusMutation.mutate({ id: applicantId, statusId: newStatusId });
+  };
+
+  const getDaysInfo = (applicant) => {
+    if (recentlyUpdated[applicant.id]) {
+      return { days: 0, label: '0 Days Ago (Just Now)' };
+    }
+    const dateStr = applicant.updated_at || applicant.created_at;
+    if (!dateStr) return null;
+
+    const updatedAt = new Date(dateStr);
+    const diffTime = Math.max(0, now - updatedAt.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return { days: 0, label: '0 Days Ago (Today)' };
+    } else if (diffDays === 1) {
+      return { days: 1, label: '1 Day Ago' };
+    } else {
+      return { days: diffDays, label: `${diffDays} Days Ago` };
+    }
   };
 
   return (
@@ -126,61 +158,80 @@ export default function ApplicantStatusUpdatePage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {applicants.map((applicant, i) => (
-                  <motion.tr
-                    key={applicant.id}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    className="hover:bg-blue-50/30 transition-colors"
-                  >
-                    <td className="px-5 py-4 font-mono text-xs text-slate-500 font-semibold">
-                      {applicant.application_id || `#${applicant.id?.slice(0, 8)}`}
-                    </td>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
-                          {applicant.photo ? (
-                            <img src={applicant.photo} alt={applicant.full_name} className="w-full h-full object-cover" />
+                {applicants.map((applicant, i) => {
+                  const dayInfo = getDaysInfo(applicant);
+
+                  return (
+                    <motion.tr
+                      key={applicant.id}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.04 }}
+                      className="hover:bg-blue-50/30 transition-colors"
+                    >
+                      <td className="px-5 py-4 font-mono text-xs text-slate-500 font-semibold">
+                        {applicant.application_id || `#${applicant.id?.slice(0, 8)}`}
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
+                            {applicant.photo ? (
+                              <img src={applicant.photo} alt={applicant.full_name} className="w-full h-full object-cover" />
+                            ) : (
+                              <UserIcon className="w-4 h-4 text-blue-600" />
+                            )}
+                          </div>
+                          <div>
+                            <Link to={`/applicants/${applicant.id}`} className="font-bold text-slate-800 hover:text-blue-700 hover:underline">
+                              {applicant.full_name}
+                            </Link>
+                            <p className="text-xs text-slate-400">{applicant.phone_number}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 font-mono text-slate-600 font-semibold">{applicant.passport_number}</td>
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-bold ${STATUS_STYLES[applicant.status_name?.toLowerCase()] || STATUS_STYLES.pending}`}>
+                          {applicant.status_name || 'Pending'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 relative">
+                        <div className="flex items-center gap-3">
+                          {updateStatusMutation.isPending && updateStatusMutation.variables?.id === applicant.id ? (
+                            <div className="flex items-center gap-2 text-blue-600 text-xs font-bold">
+                              <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                              Updating...
+                            </div>
                           ) : (
-                            <UserIcon className="w-4 h-4 text-blue-600" />
+                            <select
+                              value={applicant.status || ''}
+                              onChange={(e) => handleStatusChange(applicant.id, e.target.value)}
+                              className="w-full max-w-[200px] border border-slate-200 rounded-lg py-1.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="" disabled>Select Status...</option>
+                              {statuses?.map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                              ))}
+                            </select>
+                          )}
+
+                          {dayInfo && (
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border shadow-sm shrink-0 whitespace-nowrap ${
+                              dayInfo.days === 0
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 ring-1 ring-emerald-100'
+                                : dayInfo.days <= 7
+                                ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                : 'bg-slate-50 text-slate-600 border-slate-200'
+                            }`}>
+                              <CalendarDaysIcon className="w-3.5 h-3.5" />
+                              {dayInfo.label}
+                            </span>
                           )}
                         </div>
-                        <div>
-                          <Link to={`/applicants/${applicant.id}`} className="font-bold text-slate-800 hover:text-blue-700 hover:underline">
-                            {applicant.full_name}
-                          </Link>
-                          <p className="text-xs text-slate-400">{applicant.phone_number}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 font-mono text-slate-600 font-semibold">{applicant.passport_number}</td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-bold ${STATUS_STYLES[applicant.status_name?.toLowerCase()] || STATUS_STYLES.pending}`}>
-                        {applicant.status_name || 'Pending'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 relative">
-                       {updateStatusMutation.isPending && updateStatusMutation.variables?.id === applicant.id ? (
-                         <div className="flex items-center gap-2 text-blue-600 text-xs font-bold">
-                           <ArrowPathIcon className="w-4 h-4 animate-spin" />
-                           Updating...
-                         </div>
-                       ) : (
-                        <select
-                          value={applicant.status || ''}
-                          onChange={(e) => handleStatusChange(applicant.id, e.target.value)}
-                          className="w-full max-w-[200px] border border-slate-200 rounded-lg py-1.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="" disabled>Select Status...</option>
-                          {statuses?.map(s => (
-                            <option key={s.id} value={s.id}>{s.name}</option>
-                          ))}
-                        </select>
-                       )}
-                    </td>
-                  </motion.tr>
-                ))}
+                      </td>
+                    </motion.tr>
+                  );
+                })}
                 {applicants.length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-12 text-center text-slate-400">

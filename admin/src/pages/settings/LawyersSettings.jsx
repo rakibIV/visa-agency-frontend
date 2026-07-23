@@ -26,6 +26,7 @@ export default function LawyersSettings() {
       columns={[
         { header: 'Name', accessor: 'name' },
         { header: 'Email', accessor: 'email' },
+        { header: 'Address', accessor: 'address' },
         { header: 'Country', accessor: 'country_name' },
         { 
           header: 'Status', 
@@ -41,6 +42,7 @@ export default function LawyersSettings() {
         { name: 'name', label: 'Lawyer Name', type: 'text', required: true },
         { name: 'email', label: 'Email', type: 'email', required: true },
         { name: 'phone', label: 'Phone', type: 'text' },
+        { name: 'address', label: 'Office Address', type: 'textarea', required: false, rows: 2 },
         { name: 'country', label: 'Country', type: 'select', required: false, options: countryOptions },
         { name: 'smtp_password', label: 'SMTP App Password', type: 'password', required: false },
         { name: 'is_default', label: 'Is Default Lawyer', type: 'checkbox' },

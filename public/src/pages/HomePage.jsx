@@ -32,7 +32,7 @@ import designServiceImg from '../assets/residency.jpg';
 import handshakeImg from '../assets/Handshake.jpg';
 
 export default function HomePage() {
-  const USE_NEW_WATERDROP_HERO = true; // Toggle to true to use the new waterdrop hero section
+  const USE_NEW_WATERDROP_HERO = false; // Toggle to true to use the new waterdrop hero section
 
   const { data: countries, isLoading: isLoadingCountries } = useQuery({
     queryKey: ['countries'],
@@ -288,13 +288,13 @@ export default function HomePage() {
                 viewport={{ once: true }}
                 className="relative rounded-3xl overflow-hidden min-h-[320px] sm:min-h-[380px] lg:h-full flex flex-col justify-end p-6 sm:p-8 lg:p-10 bg-navy-950"
               >
-                <img 
-                  src={services[0].image} 
-                  alt={services[0].title} 
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                <img
+                  src={services[0].image}
+                  alt={services[0].title}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/60 to-transparent" />
-                
+
                 <div className="relative z-10">
                   <div className="w-12 h-12 bg-white/15 backdrop-blur-md rounded-xl flex items-center justify-center text-white mb-4 border border-white/20 shadow-sm">
                     {services[0].icon}
@@ -319,13 +319,13 @@ export default function HomePage() {
                     transition={{ delay: (i + 1) * 0.1 }}
                     className="relative rounded-3xl overflow-hidden min-h-[260px] sm:min-h-[280px] lg:h-full flex flex-col justify-end p-6 bg-navy-950"
                   >
-                    <img 
-                      src={service.image} 
-                      alt={service.title} 
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                    <img
+                      src={service.image}
+                      alt={service.title}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-navy-950 via-navy-950/70 to-transparent" />
-                    
+
                     <div className="relative z-10">
                       <div className="w-10 h-10 bg-white/15 backdrop-blur-md rounded-lg flex items-center justify-center text-white mb-3 border border-white/20 shadow-sm">
                         {service.icon}

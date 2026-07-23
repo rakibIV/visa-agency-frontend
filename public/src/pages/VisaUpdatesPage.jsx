@@ -33,6 +33,12 @@ export default function VisaUpdatesPage() {
   const filteredUpdates = useMemo(() => {
     if (!updates) return [];
     if (filter === 'ALL') return updates;
+    if (filter === 'APPROVED') {
+      return updates.filter(u => u.status?.toUpperCase().includes('APPROV'));
+    }
+    if (filter === 'REJECTED') {
+      return updates.filter(u => u.status?.toUpperCase().includes('REJECT'));
+    }
     return updates.filter(u => u.status?.toUpperCase() === filter);
   }, [updates, filter]);
 
@@ -130,7 +136,7 @@ export default function VisaUpdatesPage() {
               <tbody className="divide-y divide-navy-50/50">
                 <AnimatePresence>
                   {filteredUpdates.map((update, index) => {
-                    const isApproved = update.status?.toUpperCase() === 'APPROVED';
+                    const isApproved = update.status?.toUpperCase().includes('APPROV');
                     const rowBg = index % 2 === 0 ? "bg-white" : "bg-[#fbfcfd]";
                     
                     return (
@@ -149,20 +155,7 @@ export default function VisaUpdatesPage() {
                           </div>
                         </td>
                         <td className="py-4 px-6">
-                          <div className="flex items-center gap-4">
-                            {update.photo ? (
-                              <img 
-                                src={update.photo} 
-                                alt="Applicant" 
-                                className="w-10 h-10 rounded-xl object-cover border border-navy-100 shadow-sm"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 rounded-xl bg-navy-50 flex items-center justify-center text-navy-300 font-bold text-xl font-heading border border-navy-100 shadow-sm">
-                                {update.applicant_name?.charAt(0) || 'A'}
-                              </div>
-                            )}
-                            <div className="font-bold text-navy-900 text-[14px] whitespace-nowrap">{update.applicant_name}</div>
-                          </div>
+                          <div className="font-bold text-navy-900 text-[14px] whitespace-nowrap">{update.applicant_name}</div>
                         </td>
                         <td className="py-4 px-6">
                           <div className="font-bold text-navy-700 text-[13px]">{update.application_id}</div>

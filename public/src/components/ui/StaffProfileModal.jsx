@@ -52,6 +52,12 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
         public_phone: data.profile?.phone,
         public_whatsapp: data.profile?.whatsapp,
         office_name: data.profile?.office,
+        father_name: data.profile?.father_name || '',
+        passport_number: data.profile?.passport_number || '',
+        date_of_birth: data.profile?.date_of_birth || '',
+        joining_date: data.profile?.joining_date || '',
+        gender: data.profile?.gender || '',
+        nationality: data.profile?.nationality || '',
         current_month_slot: data.slot_summary ? {
           used_slot: data.slot_summary.current_month_used_slot || 0,
           total_slot: data.slot_summary.current_month_total_slot || 0,
@@ -294,7 +300,44 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
                 </div>
 
                 {/* Bottom Stats Section */}
-                <div className="px-6 sm:px-8 pb-8 bg-white relative z-10">
+                <div className="px-6 sm:px-8 pb-8 bg-white relative z-10 space-y-6">
+                  {/* Personal Information */}
+                  <motion.div 
+                    whileHover={{ y: -2 }}
+                    className="group"
+                  >
+                    <div className="bg-navy-900 text-white text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-t-xl flex items-center gap-2 group-hover:bg-accent-600 transition-colors duration-300">
+                      <svg className="w-3.5 h-3.5 text-accent-400 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
+                      Personal Details
+                    </div>
+                    <div className="bg-navy-50/50 group-hover:bg-navy-50 border border-navy-100 border-t-0 rounded-b-xl p-4 text-xs grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 transition-colors duration-300">
+                      <div className="flex justify-between items-center py-1 border-b border-navy-100 border-dashed hover:bg-white hover:px-2 -mx-2 px-2 rounded transition-all">
+                        <span className="text-navy-500 font-bold uppercase tracking-wider text-[10px]">Father's Name</span>
+                        <span className="font-bold text-navy-900">{profile.father_name || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-navy-100 border-dashed hover:bg-white hover:px-2 -mx-2 px-2 rounded transition-all">
+                        <span className="text-navy-500 font-bold uppercase tracking-wider text-[10px]">Passport No</span>
+                        <span className="font-bold text-navy-900 font-mono">{profile.passport_number || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-navy-100 border-dashed hover:bg-white hover:px-2 -mx-2 px-2 rounded transition-all">
+                        <span className="text-navy-500 font-bold uppercase tracking-wider text-[10px]">Date of Birth</span>
+                        <span className="font-bold text-navy-900">{profile.date_of_birth || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-navy-100 border-dashed hover:bg-white hover:px-2 -mx-2 px-2 rounded transition-all">
+                        <span className="text-navy-500 font-bold uppercase tracking-wider text-[10px]">Joining Date</span>
+                        <span className="font-bold text-navy-900">{profile.joining_date || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-navy-100 border-dashed hover:bg-white hover:px-2 -mx-2 px-2 rounded transition-all">
+                        <span className="text-navy-500 font-bold uppercase tracking-wider text-[10px]">Gender</span>
+                        <span className="font-bold text-navy-900 capitalize">{profile.gender || 'N/A'}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1 border-b border-navy-100 border-dashed hover:bg-white hover:px-2 -mx-2 px-2 rounded transition-all">
+                        <span className="text-navy-500 font-bold uppercase tracking-wider text-[10px]">Nationality</span>
+                        <span className="font-bold text-navy-900">{profile.nationality || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </motion.div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {/* Performance Metrics */}
                     <motion.div 

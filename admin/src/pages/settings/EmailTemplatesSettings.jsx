@@ -29,7 +29,7 @@ export default function EmailTemplatesSettings() {
           type: 'textarea', 
           required: true, 
           rows: 6,
-          helpText: 'Available Variables:\n{{ applicant_name }}, {{ applicant_id }}, {{ passport_number }}, {{ visa }}, {{ country }}, {{ staff }}, {{ current_status }}'
+          helpText: 'Available Variables:\n{{ applicant_name }}, {{ applicant_id }}, {{ father_name }}, {{ nid }}, {{ passport_number }}, {{ job }}, {{ visa }}, {{ country }}, {{ lawyer_name }}, {{ lawyer_address }}, {{ staff }}, {{ current_status }}'
         },
         { name: 'is_active', label: 'Active Template', type: 'checkbox' },
       ]}
