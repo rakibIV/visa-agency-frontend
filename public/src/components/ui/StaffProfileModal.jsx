@@ -158,7 +158,7 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
                     <img src={logoImg} alt="Default Logo" className="h-14 sm:h-16 object-contain z-10" />
                   )}
                   <div className="text-[10px] sm:text-xs font-bold text-navy-600 uppercase tracking-[0.2em] mt-2 z-10">
-                    {companyInfo?.company_name || 'Global Visa Services'}
+                    {companyInfo?.company_name || 'Al Raiyan Group | مجموعة الريان'}
                   </div>
                   <div className="text-[9px] font-bold text-accent-600 uppercase tracking-widest mt-1 z-10">
                     Trust • Process • Success

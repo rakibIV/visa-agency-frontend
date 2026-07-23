@@ -59,8 +59,8 @@ export default function AboutPage() {
               AL-RAIYAN GROUP
             </h1>
             
-            <p className="display-md font-heading text-navy-300 font-light mb-10 max-w-2xl mx-auto">
-              Global Visa Services
+            <p className="display-md font-heading text-navy-300 font-bold mb-10 max-w-2xl mx-auto">
+              مجموعة الريان
             </p>
 
             <div className="inline-flex items-center gap-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-8 py-3 text-white font-semibold text-sm sm:text-base tracking-wide shadow-2xl">
