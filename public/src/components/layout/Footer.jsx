@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../api/client';
-import logo from '../../assets/logo.png';
+import logoReverse from '../../assets/logo reverse version.png';
 
 export default function Footer() {
   const { data: company } = useQuery({
@@ -110,11 +110,15 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 lg:gap-8 mb-12">
           {/* Brand */}
           <div className="lg:col-span-4">
-            <Link to="/" className="flex items-center gap-2.5 mb-5">
-              <img src={logo} alt="Logo" className="h-10 w-auto" />
+            <Link to="/" className="flex items-center gap-3 mb-5">
+              <img src={logoReverse} alt={company?.company_name || "Al Raiyan Group"} className="h-12 w-auto object-contain" />
               <div>
-                <span className="text-lg font-extrabold tracking-tight font-heading">ARG Visa</span>
-                <span className="block text-[10px] font-bold text-accent-500 uppercase tracking-[0.15em]">Agency</span>
+                <span className="text-lg font-black tracking-tight font-heading text-white block">
+                  {company?.company_name || 'Al Raiyan Group'}
+                </span>
+                <span className="block text-xs font-extrabold text-accent-500 tracking-wider">
+                  مجموعة الريان
+                </span>
               </div>
             </Link>
             <p className="text-navy-400 text-sm leading-relaxed mb-6 pr-4 max-w-sm">
@@ -224,7 +228,7 @@ export default function Footer() {
         <div className="h-px bg-white/10 mb-6" />
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-navy-500">
-            © {currentYear} {company?.company_name || 'ARG Visa Agency'}. All rights reserved.
+            © {currentYear} {company?.company_name || 'Al Raiyan Group | مجموعة الريان'}. All rights reserved.
           </p>
           <div className="flex items-center gap-5">
             <Link to="/about" className="text-xs text-navy-500 hover:text-white transition-colors">Privacy Policy</Link>

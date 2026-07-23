@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../api/client';
 import logo from '../../assets/logo.png';
+import logoReverse from '../../assets/logo reverse version.png';
 
 const primaryLinks = [
   { to: '/', label: 'Home' },
@@ -69,13 +70,17 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5 shrink-0">
-              <img src={logo} alt="Logo" className="h-9 lg:h-10 w-auto" />
-              <div className="leading-none">
-                <span className={`text-base font-extrabold tracking-tight font-heading block transition-colors ${showSolid ? 'text-navy-900' : 'text-white'}`}>
-                  ARG Visa
+              <img 
+                src={showSolid ? logo : logoReverse} 
+                alt={company?.company_name || "Al Raiyan Group Logo"} 
+                className="h-10 lg:h-12 w-auto object-contain transition-all duration-300" 
+              />
+              <div className="leading-tight">
+                <span className={`text-sm lg:text-base font-black tracking-tight font-heading block transition-colors ${showSolid ? 'text-navy-900' : 'text-white'}`}>
+                  {company?.company_name || 'Al Raiyan Group'}
                 </span>
-                <span className="block text-[10px] font-bold text-accent-500 uppercase tracking-[0.15em]">
-                  Agency
+                <span className="block text-[11px] font-extrabold text-accent-500 tracking-wider">
+                  مجموعة الريان
                 </span>
               </div>
             </Link>

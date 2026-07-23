@@ -84,7 +84,7 @@ export default function MonthlySlotsPage() {
             )}
             <div className="flex flex-col text-center md:text-left justify-center">
               <h2 className="text-xl md:text-2xl font-black text-navy-900 uppercase tracking-wide">
-                {companyInfo?.company_name || 'Global Visa Services'}
+                {companyInfo?.company_name || 'Al Raiyan Group | مجموعة الريان'}
               </h2>
               {(companyInfo?.email || companyInfo?.phone) && (
                 <div className="text-xs font-semibold text-navy-500 mt-1 flex flex-wrap items-center justify-center md:justify-start gap-3">

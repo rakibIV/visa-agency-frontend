@@ -273,12 +273,12 @@ export default function AdminLayout({ children }) {
             {companyInfo?.company_logo ? (
               <img src={companyInfo.company_logo.startsWith('http') ? companyInfo.company_logo : `https://res.cloudinary.com/prfvuhln/${companyInfo.company_logo}`} alt="Logo" className="w-full h-full object-contain" />
             ) : (
-              <span className="text-blue-800 font-black text-sm tracking-tight">VA</span>
+              <span className="text-blue-800 font-black text-sm tracking-tight">AR</span>
             )}
           </div>
           {!collapsed && (
             <div className="overflow-hidden">
-              <p className="text-white font-bold text-sm leading-tight whitespace-nowrap">{companyInfo?.company_name || 'Visa Agency'}</p>
+              <p className="text-white font-bold text-sm leading-tight whitespace-nowrap">{companyInfo?.company_name || 'Al Raiyan Group'}</p>
               <p className="text-blue-300/80 text-xs whitespace-nowrap">Management System</p>
             </div>
           )}
