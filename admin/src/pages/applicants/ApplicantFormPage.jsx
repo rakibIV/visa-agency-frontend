@@ -51,6 +51,7 @@ export default function ApplicantFormPage() {
   const [selectedLawyerId, setSelectedLawyerId] = useState('');
   const [defaultStatusId, setDefaultStatusId] = useState('');
   const [selectedStatusId, setSelectedStatusId] = useState('');
+  const [sendEmailOnStatusChange, setSendEmailOnStatusChange] = useState(true);
 
   const [error, setError] = useState('');
 
@@ -105,8 +106,7 @@ export default function ApplicantFormPage() {
         setSelectedStatusId(applicant.status?.id || applicant.status);
       }
       if (applicant.lawyer) setSelectedLawyerId(applicant.lawyer?.id || applicant.lawyer);
-      
-
+      setSendEmailOnStatusChange(applicant.send_email_on_status_change ?? true);
     }
   }, [applicant, isEdit]);
 
@@ -277,6 +277,7 @@ export default function ApplicantFormPage() {
     if (remarks) fd.append('remarks', remarks);
     if (selectedSlotId) fd.append('slot', selectedSlotId);
     if (selectedLawyerId) fd.append('lawyer', selectedLawyerId);
+    fd.append('send_email_on_status_change', sendEmailOnStatusChange);
 
     const profileData = {
       gender,
@@ -542,6 +543,21 @@ export default function ApplicantFormPage() {
               </div>
             </div>
 
+            <div className="pt-2">
+              <label className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100/80 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={sendEmailOnStatusChange}
+                  onChange={(e) => setSendEmailOnStatusChange(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 border-slate-300"
+                />
+                <div>
+                  <span className="text-xs font-bold text-slate-800 block">Send Email Notifications on Status Change</span>
+                  <span className="text-[11px] text-slate-400 font-medium block">If enabled, status updates for this applicant will automatically send email notifications.</span>
+                </div>
+              </label>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className={labelCls}>Assign Staff <span className="text-red-500">*</span></label>
@@ -561,7 +577,11 @@ export default function ApplicantFormPage() {
                 <label className={labelCls}>Assign Lawyer</label>
                 <select value={selectedLawyerId} onChange={e => setSelectedLawyerId(e.target.value)} className={`${inputCls} bg-white`}>
                   <option value="">— Default System Email —</option>
-                  {lawyers?.map(l => <option key={l.id} value={l.id}>{l.name} ({l.env_key})</option>)}
+                  {lawyers?.map(l => (
+                    <option key={l.id} value={l.id}>
+                      {l.name} {l.country_name ? `(${l.country_name})` : ''} ({l.env_key})
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

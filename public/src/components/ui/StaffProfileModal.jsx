@@ -16,6 +16,9 @@ import AssignmentIndIcon from '@mui/icons-material/AssignmentInd';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import HourglassTopIcon from '@mui/icons-material/HourglassTop';
 import CancelIcon from '@mui/icons-material/Cancel';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import QrCode2Icon from '@mui/icons-material/QrCode2';
+import { QRCodeSVG } from 'qrcode.react';
 import logoImg from '../../assets/logo.png';
 
 const getImageUrl = (url) => {
@@ -61,6 +64,8 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
         photo: data.profile?.photo,
         name: data.profile?.full_name || data.profile?.name || staffName || '',
         designation: data.profile?.designation,
+        monthly_rank: data.profile?.monthly_rank,
+        yearly_rank: data.profile?.yearly_rank,
         public_bio: data.profile?.public_bio,
         languages: data.profile?.languages,
         public_email: data.profile?.email,
@@ -98,6 +103,27 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
   const companyLogo = getImageUrl(companyInfo?.company_logo) || logoImg;
   const companySig = getImageUrl(companyInfo?.company_signature);
   const staffSig = getImageUrl(profile?.signature);
+
+  const qrCodeValue = profile ? `OFFICIAL VERIFIED PERSONNEL CREDENTIAL
+---------------------------------------
+Name: ${profile.name}
+Employee ID: ${employeeId}
+Designation: ${profile.designation || 'N/A'}
+Office: ${profile.office_name || 'N/A'}
+${profile.monthly_rank ? `Monthly Rank: #${profile.monthly_rank}\n` : ''}${profile.yearly_rank ? `Yearly Rank: #${profile.yearly_rank}\n` : ''}Phone: ${profile.public_phone || 'N/A'}
+Email: ${profile.public_email || 'N/A'}
+
+CURRENT MONTH SLOTS:
+- Total Allocated: ${profile.current_month_slot?.total_slot || 0}
+- Used Slots: ${profile.current_month_slot?.used_slot || 0}
+
+LIFETIME ACHIEVEMENTS:
+- Approved Visas: ${profile.lifetime_stats?.approved_visas || 0}
+- Processing Cases: ${profile.lifetime_stats?.processing_visas || 0}
+- Rejected Cases: ${profile.lifetime_stats?.rejected_visas || 0}
+- Total Slots Used: ${profile.lifetime_stats?.total_used_slots || 0}
+---------------------------------------
+Verified by ${companyInfo?.company_name || 'Al Raiyan Group'}` : '';
 
   return (
     <AnimatePresence>
@@ -286,9 +312,11 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
                   {/* Right: Info & Contact Strip */}
                   <div className="flex-1 text-center sm:text-left space-y-4 w-full">
                     <div>
-                      <div className="inline-flex items-center gap-1.5 bg-navy-50 text-navy-800 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-2 border border-navy-200">
-                        <BadgeIcon style={{ fontSize: 14 }} className="text-navy-600" />
-                        <span>{profile.designation || 'Staff Personnel'}</span>
+                      <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-2">
+                        <div className="inline-flex items-center gap-1.5 bg-navy-50 text-navy-800 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border border-navy-200">
+                          <BadgeIcon style={{ fontSize: 14 }} className="text-navy-600" />
+                          <span>{profile.designation || 'Staff Personnel'}</span>
+                        </div>
                       </div>
                       <h2 className="text-2xl sm:text-3xl font-black text-navy-900 font-heading tracking-tight leading-tight">
                         {profile.name}
@@ -385,96 +413,147 @@ export default function StaffProfileModal({ isOpen, onClose, staffName }) {
                     </div>
                   </div>
 
-                  {/* SLOTS & PERFORMANCE STATS */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    
-                    {/* Monthly & Lifetime Slot Allocations */}
-                    <div className="bg-navy-900 text-white p-5 rounded-2xl shadow-md relative overflow-hidden flex flex-col justify-between space-y-4">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-gold-500/10 rounded-full blur-2xl pointer-events-none" />
-                      
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-gold-400 flex items-center gap-1.5">
-                          <CalendarMonthIcon style={{ fontSize: 16 }} />
-                          Current Month Slot
-                        </span>
-                        <span className="text-xs font-mono font-bold bg-white/10 px-2.5 py-0.5 rounded-md border border-white/15">
-                          {profile.current_month_slot?.used_slot || 0} / {profile.current_month_slot?.total_slot || 0}
-                        </span>
-                      </div>
-
-                      {/* Progress Bar */}
-                      <div>
-                        <div className="w-full h-2.5 bg-navy-950 rounded-full overflow-hidden p-0.5 border border-white/10">
-                          <div
-                            className="h-full bg-gradient-to-r from-gold-500 to-amber-400 rounded-full transition-all duration-500"
-                            style={{
-                              width: `${
-                                profile.current_month_slot?.total_slot
-                                  ? Math.min(
-                                      100,
-                                      Math.round(
-                                        (profile.current_month_slot.used_slot /
-                                          profile.current_month_slot.total_slot) *
-                                          100
-                                      )
-                                    )
-                                  : 0
-                              }%`
-                            }}
-                          />
-                        </div>
-                        <div className="flex justify-between items-center text-[10px] text-navy-200 mt-1.5 font-medium">
-                          <span>
-                            {profile.current_month_slot?.total_slot
-                              ? `${Math.round(
-                                  (profile.current_month_slot.used_slot /
-                                    profile.current_month_slot.total_slot) *
-                                    100
-                                )}% Utilized`
-                              : 'No Slots Allocated'}
-                          </span>
-                          <span>Lifetime: {profile.lifetime_stats?.total_used_slots || 0} Slots</span>
-                        </div>
-                      </div>
-
-                      {profile.languages?.length > 0 && (
-                        <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
-                          <span className="text-navy-300 font-medium">Languages</span>
-                          <span className="font-bold text-white">{profile.languages.join(', ')}</span>
-                        </div>
-                      )}
+                  {/* OFFICIAL QR VERIFICATION BAR */}
+                  <div className="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center gap-5">
+                    <div className="p-2.5 bg-slate-50 rounded-2xl shrink-0 shadow-sm border border-slate-200 flex items-center justify-center">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrCodeValue)}`}
+                        alt="Official Personnel QR Code"
+                        className="w-28 h-28 sm:w-32 sm:h-32 object-contain rounded-md"
+                      />
                     </div>
 
-                    {/* Visa Case Statistics */}
-                    <div className="bg-white p-5 rounded-2xl border border-navy-100 shadow-sm space-y-3">
-                      <h4 className="text-[11px] font-bold uppercase tracking-wider text-navy-500 flex items-center gap-1.5">
-                        <BusinessIcon style={{ fontSize: 16 }} className="text-navy-700" />
-                        Visa Track Record
+                    <div className="space-y-1.5 text-center sm:text-left flex-1 min-w-0">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-800 text-[10px] font-extrabold uppercase tracking-wider border border-blue-200">
+                        <QrCode2Icon style={{ fontSize: 14 }} className="text-blue-600" />
+                        <span>Official Digital Verification</span>
+                      </div>
+                      <h4 className="text-base font-bold text-slate-900 font-heading">
+                        Scan Personnel QR Credential
                       </h4>
+                      <p className="text-xs text-slate-600 leading-relaxed font-medium">
+                        Scan this secure QR code using any smartphone camera to instantly verify personal details, current month slots, and lifetime achievements.
+                      </p>
+                    </div>
+                  </div>
 
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between p-2.5 bg-emerald-50/80 rounded-xl border border-emerald-100">
-                          <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
-                            <CheckCircleIcon style={{ fontSize: 16 }} className="text-emerald-600" />
-                            Approved Visas
+                  {/* SLOTS & PERFORMANCE STATS */}
+                  <div className="space-y-4">
+                    {/* Top Row: Current Month Slots & Visa Track Record */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      
+                      {/* Short Compact Current Month Slot Card */}
+                      <div className="bg-navy-900 text-white p-4 rounded-2xl shadow-sm relative overflow-hidden flex flex-col justify-between space-y-3">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-gold-500/10 rounded-full blur-xl pointer-events-none" />
+                        
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-gold-400 flex items-center gap-1.5">
+                            <CalendarMonthIcon style={{ fontSize: 15 }} />
+                            Current Month Slot
                           </span>
-                          <span className="font-black text-emerald-900 text-sm">{profile.lifetime_stats?.approved_visas || 0}</span>
+                          <span className="text-xs font-mono font-bold bg-white/10 px-2.5 py-0.5 rounded-md border border-white/15">
+                            {profile.current_month_slot?.used_slot || 0} / {profile.current_month_slot?.total_slot || 0}
+                          </span>
                         </div>
 
-                        <div className="flex items-center justify-between p-2.5 bg-amber-50/80 rounded-xl border border-amber-100">
-                          <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
-                            <HourglassTopIcon style={{ fontSize: 16 }} className="text-gold-600" />
-                            Processing Cases
-                          </span>
-                          <span className="font-black text-amber-900 text-sm">{profile.lifetime_stats?.processing_visas || 0}</span>
+                        {/* Progress Bar */}
+                        <div>
+                          <div className="w-full h-2 bg-navy-950 rounded-full overflow-hidden p-0.5 border border-white/10">
+                            <div
+                              className="h-full bg-gradient-to-r from-gold-500 to-amber-400 rounded-full transition-all duration-500"
+                              style={{
+                                width: `${
+                                  profile.current_month_slot?.total_slot
+                                    ? Math.min(
+                                        100,
+                                        Math.round(
+                                          (profile.current_month_slot.used_slot /
+                                            profile.current_month_slot.total_slot) *
+                                            100
+                                        )
+                                      )
+                                    : 0
+                                }%`
+                              }}
+                            />
+                          </div>
+                          <div className="flex justify-between items-center text-[10px] text-navy-200 mt-1 font-medium">
+                            <span>
+                              {profile.current_month_slot?.total_slot
+                                ? `${Math.round(
+                                    (profile.current_month_slot.used_slot /
+                                      profile.current_month_slot.total_slot) *
+                                      100
+                                  )}% Utilized`
+                                : 'No Slots Allocated'}
+                            </span>
+                            <span>Lifetime: {profile.lifetime_stats?.total_used_slots || 0} Slots</span>
+                          </div>
                         </div>
 
-                        <div className="flex items-center justify-between p-2.5 bg-rose-50/80 rounded-xl border border-rose-100">
-                          <span className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
-                            <CancelIcon style={{ fontSize: 16 }} className="text-accent-600" />
-                            Rejected Cases
-                          </span>
-                          <span className="font-black text-rose-900 text-sm">{profile.lifetime_stats?.rejected_visas || 0}</span>
+                        {/* STAFF RANKS POSITIONED DIRECTLY UNDER CURRENT MONTH SLOTS */}
+                        {(profile.monthly_rank || profile.yearly_rank) && (
+                          <div className="pt-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs">
+                            {profile.monthly_rank && (
+                              <div className="flex items-center gap-1.5">
+                                <EmojiEventsIcon style={{ fontSize: 15 }} className="text-gold-400" />
+                                <span className="text-gold-300 font-semibold text-[11px]">Monthly Rank:</span>
+                                <span className="font-black text-white bg-gold-500/20 px-2 py-0.5 rounded-md border border-gold-500/30 text-xs">
+                                  #{profile.monthly_rank}
+                                </span>
+                              </div>
+                            )}
+                            {profile.yearly_rank && (
+                              <div className="flex items-center gap-1.5">
+                                <EmojiEventsIcon style={{ fontSize: 15 }} className="text-blue-300" />
+                                <span className="text-blue-200 font-semibold text-[11px]">Yearly Rank:</span>
+                                <span className="font-black text-white bg-blue-500/20 px-2 py-0.5 rounded-md border border-blue-500/30 text-xs">
+                                  #{profile.yearly_rank}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {profile.languages?.length > 0 && (
+                          <div className="pt-1.5 border-t border-white/10 flex items-center justify-between text-xs">
+                            <span className="text-navy-300 font-medium">Languages</span>
+                            <span className="font-bold text-white">{profile.languages.join(', ')}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Visa Case Statistics */}
+                      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-navy-100 shadow-sm space-y-3">
+                        <h4 className="text-[11px] font-bold uppercase tracking-wider text-navy-500 flex items-center gap-1.5">
+                          <BusinessIcon style={{ fontSize: 16 }} className="text-navy-700" />
+                          Visa Track Record
+                        </h4>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between p-2 bg-emerald-50/80 rounded-xl border border-emerald-100">
+                            <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                              <CheckCircleIcon style={{ fontSize: 16 }} className="text-emerald-600" />
+                              Approved Visas
+                            </span>
+                            <span className="font-black text-emerald-900 text-sm">{profile.lifetime_stats?.approved_visas || 0}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between p-2 bg-amber-50/80 rounded-xl border border-amber-100">
+                            <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                              <HourglassTopIcon style={{ fontSize: 16 }} className="text-gold-600" />
+                              Processing Cases
+                            </span>
+                            <span className="font-black text-amber-900 text-sm">{profile.lifetime_stats?.processing_visas || 0}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between p-2 bg-rose-50/80 rounded-xl border border-rose-100">
+                            <span className="text-xs font-bold text-rose-900 flex items-center gap-1.5">
+                              <CancelIcon style={{ fontSize: 16 }} className="text-accent-600" />
+                              Rejected Cases
+                            </span>
+                            <span className="font-black text-rose-900 text-sm">{profile.lifetime_stats?.rejected_visas || 0}</span>
+                          </div>
                         </div>
                       </div>
                     </div>

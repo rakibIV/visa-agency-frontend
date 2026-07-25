@@ -122,7 +122,7 @@ export default function SendEmailPage() {
               <option value="">System Default (Admin / Fallback)</option>
               {lawyers?.filter(l => l.is_active).map(l => (
                 <option key={l.id} value={l.id}>
-                  {l.name} - {l.email}
+                  {l.name} {l.country_name ? `(${l.country_name})` : ''} - {l.email}
                 </option>
               ))}
             </select>

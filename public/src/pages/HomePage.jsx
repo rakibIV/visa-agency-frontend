@@ -54,6 +54,11 @@ export default function HomePage() {
     queryFn: () => api.get('/visa-categories/').then(r => r.data.results ?? r.data),
   });
 
+  const { data: appStats } = useQuery({
+    queryKey: ['public-applicant-statistics'],
+    queryFn: () => api.get('/public/applicant-statistics/').then(r => r.data),
+  });
+
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [activeReview, setActiveReview] = useState(0);
 
@@ -77,6 +82,8 @@ export default function HomePage() {
   const featuredCountries = countries?.filter(c => c.is_active)?.slice(0, 6) || [];
   const activeReviews = reviews?.filter(r => r.is_active)?.slice(0, 5) || [];
   const recentUpdates = updates?.slice(0, 8) || [];
+
+  const totalApplicantsCount = appStats?.total ? `${appStats.total}+` : '15k+';
 
   const services = [
     { title: 'Work Visa Programs', description: 'Secure your global career with comprehensive work permit assistance for top destinations.', image: workServiceImg, icon: <WorkIcon /> },
@@ -148,7 +155,7 @@ export default function HomePage() {
                 className="mt-16 flex flex-wrap items-center lg:justify-start justify-center gap-6 sm:gap-10"
               >
                 {[
-                  { value: '15k+', label: 'Applicants Served' },
+                  { value: totalApplicantsCount, label: 'Applicants Served' },
                   { value: '98%', label: 'Success Rate' },
                   { value: '50+', label: 'Countries' },
                   { value: '10+', label: 'Years Experience' },
@@ -237,7 +244,7 @@ export default function HomePage() {
               className="mt-16 flex flex-wrap items-center justify-center gap-6 sm:gap-10"
             >
               {[
-                { value: '15k+', label: 'Applicants Served' },
+                { value: totalApplicantsCount, label: 'Applicants Served' },
                 { value: '98%', label: 'Success Rate' },
                 { value: '50+', label: 'Countries' },
                 { value: '10+', label: 'Years Experience' },

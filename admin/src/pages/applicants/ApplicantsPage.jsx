@@ -118,6 +118,7 @@ export default function ApplicantsPage() {
               <table className="w-full text-sm whitespace-nowrap">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100">
+                    <th className="px-4 py-3.5 text-center text-xs font-bold text-slate-400 uppercase tracking-wider w-12">SL</th>
                     {['App ID', 'Applicant', 'Passport', 'Visa / Destination', 'Status', 'Assigned Staff'].map((h) => (
                       <th key={h} className="px-5 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">{h}</th>
                     ))}
@@ -132,6 +133,9 @@ export default function ApplicantsPage() {
                       transition={{ delay: i * 0.04 }}
                       className="hover:bg-blue-50/30 transition-colors"
                     >
+                      <td className="px-4 py-4 text-xs font-bold text-slate-400 text-center font-mono">
+                        {(page - 1) * 20 + i + 1}
+                      </td>
                       <td className="px-5 py-4 font-mono text-xs text-slate-500 font-semibold">
                         {applicant.application_id || `#${applicant.id?.slice(0, 8)}`}
                       </td>
@@ -199,7 +203,7 @@ export default function ApplicantsPage() {
                           {applicant.full_name}
                         </Link>
                         <span className="text-[11px] font-mono text-slate-400 font-semibold">
-                          ID: {applicant.application_id || `#${applicant.id?.slice(0, 8)}`}
+                          SL: {(page - 1) * 20 + i + 1} &nbsp;|&nbsp; ID: {applicant.application_id || `#${applicant.id?.slice(0, 8)}`}
                         </span>
                       </div>
                     </div>

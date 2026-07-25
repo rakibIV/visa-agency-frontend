@@ -121,6 +121,24 @@ export default function StaffDetailPage() {
                   {staff.is_public ? `Active (${staff.public_slug})` : 'Disabled'}
                 </p>
               </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Monthly Rank</p>
+                <p className="text-sm font-semibold text-slate-800">
+                  {staff.monthly_rank ? `#${staff.monthly_rank}` : 'Not Set'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Yearly Rank</p>
+                <p className="text-sm font-semibold text-slate-800">
+                  {staff.yearly_rank ? `#${staff.yearly_rank}` : 'Not Set'}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Manual Visa Boosts</p>
+                <p className="text-sm font-semibold text-slate-800">
+                  +{staff.fake_approved_count || 0} Approved / +{staff.fake_rejected_count || 0} Rejected
+                </p>
+              </div>
             </div>
 
             <h4 className="font-bold text-slate-800 border-t border-slate-100 pt-6 mt-6">Family & Identification</h4>

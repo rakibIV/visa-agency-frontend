@@ -58,36 +58,10 @@ const QUICK_ACTIONS = [
 ];
 
 export default function DashboardPage() {
-  // Fetch all statuses to identify approved/rejected UUIDs
-  const { data: statuses } = useQuery({
-    queryKey: ['dash-statuses'],
-    queryFn: () => api.get('/application-statuses/').then(r => r.data.results ?? r.data),
-    staleTime: 1000 * 60 * 15,
-  });
-
-  const approvedId = statuses?.find(s => s.slug === 'approved' || s.name?.toLowerCase() === 'approved')?.id;
-  const rejectedId = statuses?.find(s => s.slug?.includes('reject') || s.name?.toLowerCase().includes('reject'))?.id;
-
-  // Total applicants
-  const { data: allData, isLoading: loadingAll } = useQuery({
-    queryKey: ['dash-total'],
-    queryFn: () => api.get('/applicants/', { params: { page_size: 1 } }).then(r => r.data),
-    staleTime: 1000 * 60 * 3,
-  });
-
-  // Approved count
-  const { data: approvedData, isLoading: loadingApproved } = useQuery({
-    queryKey: ['dash-approved', approvedId],
-    queryFn: () => api.get('/applicants/', { params: { status: approvedId, page_size: 1 } }).then(r => r.data),
-    enabled: !!approvedId,
-    staleTime: 1000 * 60 * 3,
-  });
-
-  // Rejected count
-  const { data: rejectedData, isLoading: loadingRejected } = useQuery({
-    queryKey: ['dash-rejected', rejectedId],
-    queryFn: () => api.get('/applicants/', { params: { status: rejectedId, page_size: 1 } }).then(r => r.data),
-    enabled: !!rejectedId,
+  // Combined statistics (Real + Fake live results)
+  const { data: appStats, isLoading: loadingStats } = useQuery({
+    queryKey: ['dash-applicant-statistics'],
+    queryFn: () => api.get('/public/applicant-statistics/').then(r => r.data),
     staleTime: 1000 * 60 * 3,
   });
 
@@ -118,25 +92,22 @@ export default function DashboardPage() {
     staleTime: 1000 * 60 * 3,
   });
 
-  const monthApprovedCount = currentMonthResults?.filter(r => r.status_name?.toLowerCase().includes('approve'))?.length || 0;
-  const monthRejectedCount = currentMonthResults?.filter(r => r.status_name?.toLowerCase().includes('reject'))?.length || 0;
+  const monthApprovedCount = currentMonthResults?.filter(r => r.status_name?.toLowerCase().includes('approve') || r.status?.toLowerCase().includes('approve'))?.length || 0;
+  const monthRejectedCount = currentMonthResults?.filter(r => r.status_name?.toLowerCase().includes('reject') || r.status?.toLowerCase().includes('reject'))?.length || 0;
   const monthSlotsPreview = currentMonthSlots?.slice(0, 3) || [];
 
-  const total = loadingAll ? '...' : (allData?.count ?? allData?.length ?? '—');
-  const approved = loadingApproved || !approvedId ? '—' : (approvedData?.count ?? approvedData?.length ?? 0);
-  const rejected = loadingRejected || !rejectedId ? '—' : (rejectedData?.count ?? rejectedData?.length ?? 0);
+  const total = loadingStats ? '...' : (appStats?.total ?? '—');
+  const approved = loadingStats ? '...' : (appStats?.approved ?? 0);
+  const rejected = loadingStats ? '...' : (appStats?.rejected ?? 0);
+  const inProgress = loadingStats ? '...' : (appStats?.processing ?? 0);
 
-  // In progress = total - approved - rejected
-  let inProgress = '—';
-  if (typeof total === 'number' && typeof approved === 'number' && typeof rejected === 'number') {
-    inProgress = total - approved - rejected;
-  }
+  const realCountSub = appStats ? `${appStats.real_total} real + ${appStats.fake_total} fake` : 'Total applicants';
 
   const stats = [
-    { label: 'Total Applicants', value: total, sub: 'All time registrations', Icon: UsersIcon, bg: 'bg-blue-500', iconColor: 'text-blue-600', to: '/applicants' },
-    { label: 'Visa Approved', value: approved, sub: 'Successfully completed', Icon: CheckBadgeIcon, bg: 'bg-emerald-500', iconColor: 'text-emerald-600', to: approvedId ? `/applicants?status=${approvedId}` : '/applicants' },
-    { label: 'Visa Rejected', value: rejected, sub: 'Final rejection status', Icon: XCircleIcon, bg: 'bg-red-500', iconColor: 'text-red-600', to: rejectedId ? `/applicants?status=${rejectedId}` : '/applicants' },
-    { label: 'In Progress', value: inProgress, sub: 'Currently processing', Icon: ClockIcon, bg: 'bg-amber-500', iconColor: 'text-amber-500', to: '/applicants' },
+    { label: 'Total Applicants', value: total, sub: realCountSub, Icon: UsersIcon, bg: 'bg-blue-500', iconColor: 'text-blue-600', to: '/applicants' },
+    { label: 'Visa Approved', value: approved, sub: `${appStats?.real_approved ?? 0} real + ${appStats?.fake_approved ?? 0} fake`, Icon: CheckBadgeIcon, bg: 'bg-emerald-500', iconColor: 'text-emerald-600', to: '/applicants' },
+    { label: 'Visa Rejected', value: rejected, sub: `${appStats?.real_rejected ?? 0} real + ${appStats?.fake_rejected ?? 0} fake`, Icon: XCircleIcon, bg: 'bg-red-500', iconColor: 'text-red-600', to: '/applicants' },
+    { label: 'In Progress', value: inProgress, sub: `${appStats?.real_processing ?? 0} real + ${appStats?.fake_processing ?? 0} fake`, Icon: ClockIcon, bg: 'bg-amber-500', iconColor: 'text-amber-500', to: '/applicants' },
   ];
 
   const storedUser = localStorage.getItem('user');

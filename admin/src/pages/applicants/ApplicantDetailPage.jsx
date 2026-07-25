@@ -17,6 +17,7 @@ import {
   PencilSquareIcon,
   TrashIcon,
   ArrowDownTrayIcon,
+  EnvelopeIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import AgreementPrintView from './AgreementPrintView';
@@ -130,6 +131,18 @@ export default function ApplicantDetailPage() {
     onError: (err) => {
       console.error('Profile update error:', err?.response?.data || err.message);
     },
+  });
+
+  // Mutation for toggling status change email setting
+  const toggleStatusEmailMutation = useMutation({
+    mutationFn: (newValue) => api.patch(`/applicants/${id}/`, { send_email_on_status_change: newValue }),
+    onSuccess: (res, newValue) => {
+      queryClient.invalidateQueries(['applicant', id]);
+      toast.success(newValue ? 'Status update email notifications TURNED ON!' : 'Status update email notifications TURNED OFF!');
+    },
+    onError: (err) => {
+      toast.error('Failed to update email setting: ' + (err.response?.data?.detail || err.message));
+    }
   });
 
   const { data: countriesData } = useQuery({
@@ -544,12 +557,59 @@ export default function ApplicantDetailPage() {
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap md:flex-col justify-end items-start md:items-end gap-2 text-sm">
-          <div className="text-slate-500">
-            Payment Plan: <span className="font-bold text-slate-800">{applicant.payment_plan_installments} Installments</span>
+        <div className="flex flex-col sm:flex-row md:flex-col justify-between items-start md:items-end gap-3 text-sm shrink-0">
+          <div className="flex items-center gap-3 bg-slate-50 px-3.5 py-2 rounded-xl border border-slate-200">
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <EnvelopeIcon className="w-4 h-4 text-blue-600" />
+                Status Change Email
+                {toggleStatusEmailMutation.isPending && (
+                  <span className="inline-flex items-center gap-1 text-[10px] text-blue-600 font-bold ml-1 animate-pulse">
+                    <ArrowPathRoundedSquareIcon className="w-3 h-3 animate-spin text-blue-600" />
+                    Updating...
+                  </span>
+                )}
+              </span>
+              <span className="text-[11px] text-slate-400 font-medium">
+                {toggleStatusEmailMutation.isPending
+                  ? 'Saving email setting...'
+                  : (applicant.send_email_on_status_change ?? true)
+                  ? 'Sends email on status update'
+                  : 'No email sent on status update'}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleStatusEmailMutation.mutate(!(applicant.send_email_on_status_change ?? true))}
+              disabled={toggleStatusEmailMutation.isPending}
+              className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                toggleStatusEmailMutation.isPending
+                  ? 'bg-blue-200 cursor-wait opacity-80'
+                  : (applicant.send_email_on_status_change ?? true)
+                  ? 'bg-emerald-600'
+                  : 'bg-slate-300'
+              }`}
+              title="Toggle automatic email dispatch on status change"
+            >
+              <span
+                className={`pointer-events-none flex items-center justify-center h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                  (applicant.send_email_on_status_change ?? true) ? 'translate-x-5' : 'translate-x-0'
+                }`}
+              >
+                {toggleStatusEmailMutation.isPending && (
+                  <span className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                )}
+              </span>
+            </button>
           </div>
-          <div className="text-slate-500">
-            Slot: <span className="font-semibold text-slate-700">{applicant.slot_month ? new Date(applicant.slot_month).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) : 'Not Assigned'}</span>
+
+          <div className="flex flex-wrap md:flex-col items-start md:items-end gap-1 text-xs text-slate-500">
+            <div>
+              Payment Plan: <span className="font-bold text-slate-800">{applicant.payment_plan_installments} Installments</span>
+            </div>
+            <div>
+              Slot: <span className="font-semibold text-slate-700">{applicant.slot_month ? new Date(applicant.slot_month).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }) : 'Not Assigned'}</span>
+            </div>
           </div>
         </div>
       </div>
