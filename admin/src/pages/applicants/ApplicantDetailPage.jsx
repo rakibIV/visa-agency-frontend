@@ -637,7 +637,7 @@ export default function ApplicantDetailPage() {
                 <span className="text-slate-400">Visa</span>
                 <span className="text-slate-700 font-semibold">{applicant.visa_name || '—'}</span>
                 <span className="text-slate-400">Target Job (Primary)</span>
-                <span className="text-slate-700 font-semibold">{applicant.job?.title || applicant.job_name || applicant.job || '—'}</span>
+                <span className="text-slate-700 font-semibold">{applicant.job?.title || applicant.job_name || (typeof applicant.job === 'string' && !applicant.job.includes('-') ? applicant.job : '—')}</span>
                 <span className="text-slate-400">Target Job (Secondary)</span>
                 <span className="text-slate-700 font-semibold">{applicant.secondary_job_name || '—'}</span>
                 <span className="text-slate-400">Status</span>

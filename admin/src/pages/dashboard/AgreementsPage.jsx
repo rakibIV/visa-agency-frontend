@@ -90,70 +90,53 @@ export default function AgreementsPage() {
               <tr className="bg-slate-50 border-b border-slate-100">
                 <th className="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Applicant</th>
                 <th className="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Visa / Job</th>
-                <th className="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Agreement Status</th>
                 <th className="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan="4" className="px-5 py-8 text-center text-sm text-slate-400">Loading records...</td>
+                  <td colSpan="3" className="px-5 py-8 text-center text-sm text-slate-400">Loading records...</td>
                 </tr>
               ) : applicants?.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="px-5 py-12 text-center">
+                  <td colSpan="3" className="px-5 py-12 text-center">
                     <DocumentIcon className="w-12 h-12 text-slate-200 mx-auto mb-3" />
                     <p className="text-slate-500 font-medium">No records found</p>
                     <p className="text-sm text-slate-400 mt-1">Search for an applicant to view their agreements.</p>
                   </td>
                 </tr>
               ) : (
-                applicants?.map((app) => {
-                  // We assume app.agreement exists if an agreement is generated
-                  const hasAgreement = !!app.agreement;
-
-                  return (
-                    <tr key={app.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          {app.photo ? (
-                            <img src={app.photo} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200" />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-sm">
-                              {app.full_name?.charAt(0)}
-                            </div>
-                          )}
-                          <div>
-                            <p className="text-sm font-bold text-slate-800">{app.full_name}</p>
-                            <p className="text-xs text-slate-500">{app.application_id} • {app.passport_number}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-5 py-4">
-                        <p className="text-sm text-slate-700 font-medium">{app.visa_name || '—'}</p>
-                      </td>
-                      <td className="px-5 py-4">
-                        {hasAgreement ? (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100">
-                            Generated
-                          </span>
+                applicants?.map((app) => (
+                  <tr key={app.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        {app.photo ? (
+                          <img src={app.photo} alt="" className="w-10 h-10 rounded-full object-cover border border-slate-200" />
                         ) : (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 text-slate-500">
-                            Pending Payment
-                          </span>
+                          <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-sm">
+                            {app.full_name?.charAt(0)}
+                          </div>
                         )}
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <Link
-                          to={`/applicants/${app.id}`}
-                          className="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-emerald-600 hover:border-emerald-200 transition-colors shadow-sm"
-                        >
-                          View & Print
-                        </Link>
-                      </td>
-                    </tr>
-                  )
-                })
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">{app.full_name}</p>
+                          <p className="text-xs text-slate-500">{app.application_id} • {app.passport_number}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <p className="text-sm text-slate-700 font-medium">{app.visa_name || '—'}</p>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <Link
+                        to={`/applicants/${app.id}`}
+                        className="inline-flex items-center justify-center px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-emerald-600 hover:border-emerald-200 transition-colors shadow-sm"
+                      >
+                        View & Print
+                      </Link>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>

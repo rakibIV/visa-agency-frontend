@@ -3,6 +3,14 @@ import topIllustration from '../../assets/top-illustration.png';
 import companyLogo from '../../assets/logo.png';
 
 export default function AgreementPrintView({ applicant, templates = [], type, companyInfo, showBengali = false }) {
+  React.useEffect(() => {
+    const originalTitle = document.title;
+    const name = applicant?.full_name || 'Applicant';
+    document.title = `Agreement - ${name}`;
+    return () => {
+      document.title = originalTitle;
+    };
+  }, [applicant]);
   // Page visibility toggles
   const showCover = type === 'all' || type === 'form';
   const showTemplate1Part1 = type === 'all' || type === 'tc';
@@ -188,9 +196,13 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
   const PageContainer = ({ children }) => (
     <div className="w-full overflow-x-auto bg-slate-100 print:bg-transparent print:overflow-visible flex sm:justify-center">
       <div className="print-page w-full min-w-[8.5in] max-w-[8.5in] print:max-w-full print:min-w-full print:w-full min-h-[11in] print:min-h-[100vh] mx-auto bg-white mb-8 shadow-[0_0_15px_rgba(0,0,0,0.1)] print:shadow-none print:m-0 flex flex-col pt-8 pb-16 px-8 box-border relative overflow-hidden shrink-0">
-        {/* Watermark */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] pointer-events-none z-0">
-           <h1 className="text-[100px] font-serif font-black uppercase tracking-[1rem] rotate-[-45deg] whitespace-nowrap text-center leading-none">{companyInfo?.company_name || 'Al Raiyan Group'}</h1>
+        {/* Company Logo PNG Watermark (Layered at z-30 with mix-blend-multiply) */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] h-[380px] flex items-center justify-center opacity-15 mix-blend-multiply pointer-events-none z-30">
+          <img
+            src={companyInfo?.company_logo || companyLogo}
+            alt="Watermark Logo"
+            className="w-full h-full object-contain"
+          />
         </div>
         {/* Top-right illustration: absolute on the PAGE, not inside padding — goes flush to paper edge */}
         <img

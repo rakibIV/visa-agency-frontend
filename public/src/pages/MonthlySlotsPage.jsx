@@ -7,21 +7,42 @@ import GroupIcon from '@mui/icons-material/Group';
 import StaffProfileModal from '../components/ui/StaffProfileModal';
 import logoImg from '../assets/logo.png';
 
-const getCountryFlag = (country) => {
-  if (!country) return '🌍';
-  const c = country.toLowerCase();
-  if (c.includes('saudi') || c.includes('ksa')) return '🇸🇦';
-  if (c.includes('arab emirates') || c.includes('uae') || c.includes('dubai')) return '🇦🇪';
-  if (c.includes('egypt')) return '🇪🇬';
-  if (c.includes('qatar')) return '🇶🇦';
-  if (c.includes('bangladesh')) return '🇧🇩';
-  if (c.includes('pakistan')) return '🇵🇰';
-  if (c.includes('india')) return '🇮🇳';
-  if (c.includes('kuwait')) return '🇰🇼';
-  if (c.includes('oman')) return '🇴🇲';
-  if (c.includes('bahrain')) return '🇧🇭';
-  return '🌍';
+const getCountryFlagCode = (country) => {
+  if (!country) return null;
+  const c = country.toLowerCase().trim();
+
+  if (c.includes('saudi') || c.includes('ksa')) return 'sa';
+  if (c.includes('united arab emirates') || c.includes('emirates') || c.includes('uae') || c.includes('dubai') || c.includes('abu dhabi')) return 'ae';
+  if (c.includes('qatar')) return 'qa';
+  if (c.includes('kuwait')) return 'kw';
+  if (c.includes('bahrain')) return 'bh';
+  if (c.includes('oman')) return 'om';
+  if (c.includes('bangladesh') || c === 'bd') return 'bd';
+  if (c.includes('india') || c === 'ind' || c === 'in') return 'in';
+  if (c.includes('pakistan') || c === 'pak' || c === 'pk') return 'pk';
+  if (c.includes('sri lanka') || c.includes('lanka') || c === 'lk') return 'lk';
+  if (c.includes('malaysia') || c === 'my') return 'my';
+  if (c.includes('singapore') || c === 'sg') return 'sg';
+  if (c.includes('thailand') || c.includes('thai') || c === 'th') return 'th';
+
+  return null;
 };
+
+function CountryFlag({ country }) {
+  const code = getCountryFlagCode(country);
+  if (!code) {
+    return <span className="text-base leading-none">🌍</span>;
+  }
+  return (
+    <img
+      src={`https://flagcdn.com/w40/${code}.png`}
+      srcSet={`https://flagcdn.com/w80/${code}.png 2x`}
+      alt={country || 'Country Flag'}
+      className="w-5 h-3.5 object-cover rounded-[2px] shadow-xs"
+      loading="lazy"
+    />
+  );
+}
 
 export default function MonthlySlotsPage() {
   const { data: slots, isLoading } = useQuery({
@@ -177,8 +198,8 @@ export default function MonthlySlotsPage() {
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-white shadow-sm border border-navy-50 flex items-center justify-center text-lg leading-none">
-                              {getCountryFlag(slot.nationality)}
+                            <div className="w-8 h-8 rounded-full bg-white shadow-sm border border-navy-50 flex items-center justify-center text-lg leading-none overflow-hidden">
+                              <CountryFlag country={slot.nationality} />
                             </div>
                             <span className="font-semibold text-navy-700 text-sm">{slot.nationality || 'N/A'}</span>
                           </div>
