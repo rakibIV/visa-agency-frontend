@@ -10,14 +10,22 @@ export default function FormModal({
   onSubmit,
   isLoading = false,
   isViewOnly = false,
+  onFormChange,
 }) {
   const [formData, setFormData] = useState({});
   const [imagePreviews, setImagePreviews] = useState({});
 
   useEffect(() => {
     if (isOpen) {
-      setFormData(initialData || {});
+      const data = initialData ? { ...initialData } : {};
+      fields.forEach((field) => {
+        if (field.type === 'select' && data[field.name] && typeof data[field.name] === 'object') {
+          data[field.name] = data[field.name].id || data[field.name];
+        }
+      });
+      setFormData(data);
       setImagePreviews({});
+      if (onFormChange) onFormChange(data);
     }
   }, [isOpen, initialData]);
 
@@ -38,10 +46,24 @@ export default function FormModal({
       }
     }
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : type === 'file' ? (files?.[0] || null) : value,
-    }));
+    const val = type === 'checkbox' ? checked : type === 'file' ? (files?.[0] || null) : value;
+
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: val,
+      };
+      if (name === 'visa' && prev.visa !== val) {
+        updated.job = '';
+      }
+      if (onFormChange) onFormChange(updated);
+      return updated;
+    });
+
+    const targetField = fields.find(f => f.name === name);
+    if (targetField?.onChange) {
+      targetField.onChange(val);
+    }
   };
 
   return (
@@ -67,7 +89,7 @@ export default function FormModal({
                     name={field.name}
                     checked={formData[field.name] || false}
                     onChange={handleChange}
-                    disabled={isViewOnly || field.disabled}
+                    disabled={isViewOnly || (typeof field.disabled === 'function' ? field.disabled(formData) : field.disabled)}
                     className="w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <span className="text-sm font-semibold text-slate-700">{field.label}</span>
@@ -83,7 +105,7 @@ export default function FormModal({
                       value={formData[field.name] || ''}
                       onChange={handleChange}
                       required={field.required}
-                      disabled={isViewOnly || field.disabled}
+                      disabled={isViewOnly || (typeof field.disabled === 'function' ? field.disabled(formData) : field.disabled)}
                       rows={field.rows || 3}
                       className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors text-slate-800 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     />
@@ -93,11 +115,11 @@ export default function FormModal({
                       value={formData[field.name] || ''}
                       onChange={handleChange}
                       required={field.required}
-                      disabled={isViewOnly || field.disabled}
+                      disabled={isViewOnly || (typeof field.disabled === 'function' ? field.disabled(formData) : field.disabled)}
                       className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-colors text-slate-800 font-medium text-sm appearance-none disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <option value="">Select {field.label}</option>
-                      {field.options?.map((opt) => (
+                      <option value="">{field.placeholder || `Select ${field.label}`}</option>
+                      {(typeof field.options === 'function' ? field.options(formData) : field.options)?.map((opt) => (
                         <option key={opt.value} value={opt.value}>
                           {opt.label}
                         </option>
@@ -110,7 +132,7 @@ export default function FormModal({
                         name={field.name}
                         value={field.type === 'file' ? undefined : formData[field.name] || ''}
                         onChange={handleChange}
-                        required={field.required}
+                        required={field.type === 'file' && (initialData?.[field.name] || typeof formData[field.name] === 'string') ? false : field.required}
                         disabled={isViewOnly || field.disabled}
                         min={field.min}
                         max={field.max}
@@ -122,33 +144,25 @@ export default function FormModal({
                         }
                         accept={field.accept}
                       />
-                      {field.type === 'file' && field.accept?.includes('image') && (imagePreviews[field.name] || (initialData && typeof initialData[field.name] === 'string')) ? (
-                        <div className="mt-3">
-                          <span className="text-slate-500 text-xs font-bold uppercase mb-2 block">Image Preview:</span>
-                          <img 
-                            src={imagePreviews[field.name] || initialData[field.name]} 
-                            alt="Preview" 
-                            className="w-32 h-20 object-cover rounded-xl border border-slate-200 shadow-sm" 
-                          />
-                        </div>
-                      ) : field.type === 'file' && initialData && initialData[field.name] && typeof initialData[field.name] === 'string' && (
-                        <div className="mt-2 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between">
-                          <div className="flex items-center gap-2 overflow-hidden">
-                            <svg className="w-5 h-5 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            <span className="text-sm font-semibold text-blue-900 truncate">
-                              {initialData[field.name].split('/').pop()}
+                      {field.type === 'file' && (imagePreviews[field.name] || (initialData && typeof initialData[field.name] === 'string' && initialData[field.name]) || (typeof formData[field.name] === 'string' && formData[field.name])) && (
+                        <div className="mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center gap-4">
+                          <div className="w-16 h-14 bg-slate-900 rounded-lg flex items-center justify-center p-1 border border-slate-200 overflow-hidden shrink-0">
+                            <img 
+                              src={imagePreviews[field.name] || (typeof formData[field.name] === 'string' ? formData[field.name] : initialData?.[field.name])} 
+                              alt="Preview" 
+                              className="max-h-full max-w-full object-contain" 
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="text-xs font-bold text-slate-800 block">
+                              {imagePreviews[field.name] ? 'New File Selected' : 'Current Saved Image'}
+                            </span>
+                            <span className="text-[11px] text-slate-500 font-medium block mt-0.5 leading-snug">
+                              {imagePreviews[field.name] 
+                                ? 'This new image will replace the current logo upon saving.' 
+                                : 'Leave file field empty if you want to keep this current logo.'}
                             </span>
                           </div>
-                          <a 
-                            href={initialData[field.name]} 
-                            target="_blank" 
-                            rel="noreferrer" 
-                            className="text-xs font-bold bg-white px-3 py-1.5 rounded-lg text-blue-600 hover:bg-blue-600 hover:text-white transition-colors border border-blue-200 hover:border-blue-600 shadow-sm"
-                          >
-                            View File
-                          </a>
                         </div>
                       )}
                     </div>

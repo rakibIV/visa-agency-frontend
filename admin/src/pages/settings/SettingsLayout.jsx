@@ -7,11 +7,15 @@ import {
   IdentificationIcon,
   ScaleIcon,
   Cog6ToothIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  PhotoIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 
 const SETTINGS_NAV = [
   { label: 'Company Info', to: '/settings/company', icon: BuildingOfficeIcon, desc: 'Branding, contact info & details' },
+  { label: 'Company Logos & Assets', to: '/settings/logos', icon: PhotoIcon, desc: 'Primary logo, signature & variations' },
+  { label: 'Important Notes', to: '/settings/important-notes', icon: DocumentTextIcon, desc: 'Receipt note templates & presets' },
   { label: 'Offices / Branches', to: '/settings/offices', icon: MapPinIcon, desc: 'Manage agency branch locations' },
   { label: 'Staff Designations', to: '/settings/designations', icon: IdentificationIcon, desc: 'Job titles and roles' },
   { label: 'Application Statuses', to: '/settings/statuses', icon: QueueListIcon, desc: 'Workflow status definitions' },

@@ -19,6 +19,7 @@ export default function CrudTable({
   disableDelete = false,
   enableView = false,
   enableSearch = false,
+  onFormChange,
 }) {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -229,10 +230,11 @@ export default function CrudTable({
                         {!disableEdit && (
                           <button
                             onClick={() => handleEdit(item)}
-                            className="inline-flex items-center p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors cursor-pointer border border-blue-200/60 shadow-xs"
                             title="Edit"
                           >
-                            <PencilSquareIcon className="w-4 h-4" />
+                            <PencilSquareIcon className="w-3.5 h-3.5" />
+                            <span>Edit</span>
                           </button>
                         )}
                         {!disableDelete && (
@@ -292,10 +294,11 @@ export default function CrudTable({
                     {!disableEdit && (
                       <button
                         onClick={() => handleEdit(item)}
-                        className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors cursor-pointer border border-blue-200/60"
                         title="Edit"
                       >
-                        <PencilSquareIcon className="w-4 h-4" />
+                        <PencilSquareIcon className="w-3.5 h-3.5" />
+                        <span>Edit</span>
                       </button>
                     )}
                     {!disableDelete && (
@@ -334,6 +337,7 @@ export default function CrudTable({
         onSubmit={handleSubmit}
         isLoading={mutationCreate.isPending || mutationUpdate.isPending}
         isViewOnly={isViewOnly}
+        onFormChange={onFormChange}
       />
     </div>
   );

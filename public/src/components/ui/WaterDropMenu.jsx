@@ -19,7 +19,7 @@ const menuItems = [
   { id: 3, num: '03', title: 'Destinations', path: '/countries', icon: <PublicIcon /> },
   { id: 4, num: '04', title: 'Visas', path: '/visas', icon: <AssignmentIcon /> },
   { id: 5, num: '05', title: 'Staff Slots', path: '/monthly-slots', icon: <EventAvailableIcon /> },
-  { id: 6, num: '06', title: 'Latest Results', path: '/latest-results', icon: <TrendingUpIcon /> },
+  { id: 6, num: '06', title: 'Latest Results', path: '/visa-updates', icon: <TrendingUpIcon /> },
   { id: 7, num: '07', title: 'Notices', path: '/notices', icon: <NotificationsIcon /> },
   { id: 8, num: '08', title: 'Contact', path: '/contact', icon: <PhoneIcon /> },
   { id: 9, num: '09', title: 'Track Your Application', path: '/status-check', icon: <SendIcon /> },
@@ -41,7 +41,7 @@ export default function WaterDropMenu() {
   };
 
   return (
-    <motion.div 
+    <motion.div
       variants={container}
       initial="hidden"
       animate="show"
@@ -55,33 +55,33 @@ export default function WaterDropMenu() {
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
             className="w-full"
           >
-            <Link 
+            <Link
               to={item.path}
               className="relative flex items-center justify-between w-full h-[65px] sm:h-[75px] rounded-full overflow-hidden group drop-shadow-[0_10px_15px_rgba(0,0,0,0.2)] hover:drop-shadow-[0_15px_25px_rgba(0,0,0,0.3)] transition-all duration-300"
             >
               {/* Background Pill Image */}
-              <img 
-                src={waterDropsImg} 
-                alt="Menu Button Background" 
-                className="absolute inset-0 w-full h-full object-fill z-0 pointer-events-none group-hover:brightness-110 transition-all duration-300" 
+              <img
+                src={waterDropsImg}
+                alt="Menu Button Background"
+                className="absolute inset-0 w-full h-full object-fill z-0 pointer-events-none group-hover:brightness-110 transition-all duration-300"
               />
-    
+
               {/* Absolute content overlays */}
-              
+
               {/* Left Number */}
               <div className="absolute left-0 top-0 bottom-0 w-[22%] flex items-center justify-center z-10">
                 <span className="text-white text-3xl sm:text-4xl font-black font-sans drop-shadow-md tracking-tighter group-hover:scale-110 transition-transform duration-300">
                   {item.num}
                 </span>
               </div>
-    
+
               {/* Title */}
               <div className="absolute left-[33%] top-0 bottom-0 flex items-center z-10">
                 <span className="text-[#0a2373] text-[18px] sm:text-[21px] font-black font-sans tracking-tight leading-none drop-shadow-[0_1px_1px_rgba(255,255,255,0.8)] group-hover:text-accent-600 transition-colors duration-300">
                   {item.title}
                 </span>
               </div>
-              
+
               {/* Right Icon */}
               {/* We position it over the circular dark blue part of the image */}
               <div className="absolute right-0 top-0 bottom-0 aspect-square flex items-center justify-center z-10 pr-2">

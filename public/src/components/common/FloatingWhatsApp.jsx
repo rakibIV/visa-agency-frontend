@@ -1,6 +1,24 @@
 import { useQuery } from '@tanstack/react-query';
 import api from '../../api/client';
 
+function formatWhatsAppUrl(rawUrl, companyWhatsapp, companyPhone) {
+  const target = rawUrl || companyWhatsapp || companyPhone;
+  if (!target) return null;
+
+  const str = String(target).trim();
+  if (!str) return null;
+
+  if (str.startsWith('http://') || str.startsWith('https://')) {
+    return str;
+  }
+  if (str.startsWith('wa.me/') || str.startsWith('api.whatsapp.com/')) {
+    return `https://${str}`;
+  }
+
+  const digits = str.replace(/[^0-9]/g, '');
+  return digits ? `https://wa.me/${digits}` : null;
+}
+
 export default function FloatingWhatsApp() {
   const { data: company } = useQuery({
     queryKey: ['company-info'],
@@ -15,8 +33,11 @@ export default function FloatingWhatsApp() {
     queryFn: () => api.get('/social-links/').then(r => r.data.results ?? r.data),
   });
 
-  const whatsappLink = socialLinks?.find(s => s.platform?.toLowerCase() === 'whatsapp' && s.is_active)?.url 
-    || (company?.phone ? `https://wa.me/${company.phone.replace(/[^0-9+]/g, '')}` : null);
+  const foundSocial = socialLinks?.find(s => 
+    (s.platform?.toLowerCase() === 'whatsapp' || s.platform_name?.toLowerCase() === 'whatsapp') && s.is_active
+  );
+
+  const whatsappLink = formatWhatsAppUrl(foundSocial?.url, company?.whatsapp, company?.phone);
 
   if (!whatsappLink) return null;
 

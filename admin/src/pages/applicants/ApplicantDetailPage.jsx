@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { domToPng } from 'modern-screenshot';
-import jsPDF from 'jspdf';
+
 import {
   ArrowLeftIcon,
   UserIcon,
@@ -54,6 +53,7 @@ export default function ApplicantDetailPage() {
   const [currency, setCurrency] = useState('BDT');
   const [reference, setReference] = useState('');
   const [receiptNumber, setReceiptNumber] = useState('');
+  const [importantNote, setImportantNote] = useState('');
   const [paymentError, setPaymentError] = useState(null);
 
   // Refund Form State
@@ -75,6 +75,13 @@ export default function ApplicantDetailPage() {
     queryKey: ['applicant', id],
     queryFn: () => api.get(`/applicants/${id}/`).then((r) => r.data),
     staleTime: 1000 * 60 * 5,
+  });
+
+  // Fetch preset important notes for payment creation
+  const { data: importantNotePresets } = useQuery({
+    queryKey: ['important-notes-presets'],
+    queryFn: () => api.get('/important-notes/').then(r => r.data.results ?? r.data),
+    staleTime: 1000 * 60 * 10,
   });
 
   useEffect(() => {
@@ -141,6 +148,8 @@ export default function ApplicantDetailPage() {
     return curr?.symbol || code || '৳';
   };
 
+
+
   // Mutation for adding payment
   const addPaymentMutation = useMutation({
     mutationFn: (newPayment) => api.post(`/applicants/${id}/payments/`, newPayment),
@@ -184,16 +193,47 @@ export default function ApplicantDetailPage() {
     },
   });
 
+  const handleOpenAddPayment = () => {
+    console.log('[ApplicantDetailPage] handleOpenAddPayment triggered');
+    try {
+      setEditPaymentId(null);
+      setPaymentAmount('');
+      setPaymentRemarks('');
+      setReference('');
+      setReceiptNumber('');
+      setPaymentError(null);
+      const presetsList = Array.isArray(importantNotePresets)
+        ? importantNotePresets
+        : (importantNotePresets?.results && Array.isArray(importantNotePresets.results))
+          ? importantNotePresets.results
+          : [];
+      const defaultPreset = presetsList.find(n => n.is_default) || presetsList[0];
+      const noteToSet = defaultPreset?.content || companyInfo?.money_receipt_important_note || "If the Visa Application has been officially submitted but the visa is not approved, and the candidate's overseas assignment is not completed within timeframe, refund shall be processed as per signed agreement clauses upon written request.";
+      setImportantNote(noteToSet);
+      setShowPaymentModal(true);
+      console.log('[ApplicantDetailPage] showPaymentModal set to TRUE');
+    } catch (err) {
+      console.error('[ApplicantDetailPage] Error in handleOpenAddPayment:', err);
+    }
+  };
+
   const handleEditPayment = (payment) => {
-    setEditPaymentId(payment.id);
-    setPaymentAmount(payment.amount);
-    setPaymentMethod(payment.payment_method || 'CASH');
-    setCurrency(payment.currency || 'BDT');
-    setPaymentDate(payment.payment_date || new Date().toISOString().split('T')[0]);
-    setPaymentRemarks(payment.note || payment.remarks || '');
-    setReference(payment.reference || '');
-    setReceiptNumber(payment.receipt_number || '');
-    setShowPaymentModal(true);
+    console.log('[ApplicantDetailPage] handleEditPayment triggered with payment:', payment);
+    try {
+      setEditPaymentId(payment.id);
+      setPaymentAmount(payment.amount);
+      setPaymentMethod(payment.payment_method || 'CASH');
+      setCurrency(payment.currency || 'BDT');
+      setPaymentDate(payment.payment_date || new Date().toISOString().split('T')[0]);
+      setPaymentRemarks(payment.note || payment.remarks || '');
+      setReference(payment.reference || '');
+      setReceiptNumber(payment.receipt_number || '');
+      setImportantNote(payment.important_note || companyInfo?.money_receipt_important_note || "If the Visa Application has been officially submitted but the visa is not approved, and the candidate's overseas assignment is not completed within timeframe, refund shall be processed as per signed agreement clauses upon written request.");
+      setShowPaymentModal(true);
+      console.log('[ApplicantDetailPage] handleEditPayment set showPaymentModal to TRUE');
+    } catch (err) {
+      console.error('[ApplicantDetailPage] Error in handleEditPayment:', err);
+    }
   };
 
   // Mutation for adding/updating refund bank details
@@ -467,9 +507,9 @@ export default function ApplicantDetailPage() {
           <Link to={`/applicants/${id}/edit`} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-colors text-sm shrink-0">
             <PencilSquareIcon className="w-4 h-4 shrink-0" /> Edit Profile
           </Link>
-          <button 
+          <button
             onClick={() => {
-              if(window.confirm('Are you sure you want to delete this applicant? This action can be undone from the deleted applicants page.')) {
+              if (window.confirm('Are you sure you want to delete this applicant? This action can be undone from the deleted applicants page.')) {
                 deleteApplicantMutation.mutate();
               }
             }}
@@ -713,8 +753,14 @@ export default function ApplicantDetailPage() {
               <h3 className="font-bold text-slate-800 text-base">Payment Logs</h3>
               {!isPaymentComplete && (
                 <button
-                  onClick={() => setShowPaymentModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-xl text-sm font-semibold shadow hover:bg-blue-800 transition-colors"
+                  type="button"
+                  onClick={(e) => {
+                    console.log('[ApplicantDetailPage] Add Payment Record button CLICKED');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleOpenAddPayment();
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-xl text-sm font-semibold shadow hover:bg-blue-800 transition-colors cursor-pointer relative z-10"
                 >
                   <PlusIcon className="w-4 h-4" />
                   Add Payment Record
@@ -750,15 +796,21 @@ export default function ApplicantDetailPage() {
                             <PrinterIcon className="w-4 h-4" /> Receipt
                           </button>
                           <button
-                            onClick={() => handleEditPayment(payment)}
-                            className="p-1.5 text-slate-400 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                            type="button"
+                            onClick={(e) => {
+                              console.log('[ApplicantDetailPage] Edit Payment button CLICKED for payment:', payment);
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleEditPayment(payment);
+                            }}
+                            className="p-1.5 text-slate-400 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors cursor-pointer"
                             title="Edit Payment"
                           >
                             <PencilSquareIcon className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => {
-                              if(window.confirm('Are you sure you want to delete this payment?')) {
+                              if (window.confirm('Are you sure you want to delete this payment?')) {
                                 deletePaymentMutation.mutate(payment.id);
                               }
                             }}
@@ -781,8 +833,8 @@ export default function ApplicantDetailPage() {
             </div>
 
             {/* Modal for Payment Record Creation */}
-            {showPaymentModal && (
-              <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+            {showPaymentModal && createPortal(
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 overflow-y-auto">
                 <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-2xl flex flex-col max-h-[90vh]">
                   {/* Header */}
                   <div className="flex items-center justify-between border-b pb-3 shrink-0">
@@ -842,17 +894,12 @@ export default function ApplicantDetailPage() {
                             ✓ All installments recorded
                           </div>
                         ) : (
-                          <>
-                            <input
-                              type="hidden"
-                              name="installment_type"
-                              value={nextInstallmentType}
-                            />
-                            <div className="w-full px-3 py-2 border border-blue-200 bg-blue-50 rounded-xl text-sm text-blue-700 font-semibold flex items-center justify-between">
-                              <span>{nextInstallmentLabel}</span>
-                              <span className="text-[10px] text-blue-400 font-normal">(Auto-determined)</span>
-                            </div>
-                          </>
+                          <input
+                            type="text"
+                            readOnly
+                            value={nextInstallmentLabel}
+                            className="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded-xl text-sm text-slate-600 font-medium"
+                          />
                         )}
                       </div>
                       <div>
@@ -891,6 +938,36 @@ export default function ApplicantDetailPage() {
                           onChange={(e) => setPaymentRemarks(e.target.value)}
                           placeholder="Any additional notes..."
                           className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 h-16"
+                        />
+                      </div>
+                      <div className="col-span-1 sm:col-span-2">
+                        <div className="flex items-center justify-between mb-1.5 gap-2">
+                          <label className="block text-xs font-bold text-orange-800 uppercase">
+                            Important Note (Printed on Receipt)
+                          </label>
+                          {importantNotePresets && importantNotePresets.length > 0 && (
+                            <select
+                              onChange={(e) => {
+                                const selected = importantNotePresets.find(n => n.id === e.target.value);
+                                if (selected) setImportantNote(selected.content);
+                              }}
+                              defaultValue=""
+                              className="text-[11px] bg-orange-100/70 hover:bg-orange-100 border border-orange-200 rounded-lg px-2 py-1 text-orange-900 font-bold focus:outline-none cursor-pointer"
+                            >
+                              <option value="" disabled>Select Preset Note Template...</option>
+                              {importantNotePresets.map((preset) => (
+                                <option key={preset.id} value={preset.id}>
+                                  {preset.title} {preset.is_default ? '(Default)' : ''}
+                                </option>
+                              ))}
+                            </select>
+                          )}
+                        </div>
+                        <textarea
+                          value={importantNote}
+                          onChange={(e) => setImportantNote(e.target.value)}
+                          placeholder="Select a preset note template above or type custom note..."
+                          className="w-full px-3 py-2 border border-orange-200 bg-orange-50/30 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-orange-500/20 h-20 leading-relaxed font-medium"
                         />
                       </div>
                     </div>
@@ -943,6 +1020,7 @@ export default function ApplicantDetailPage() {
                           reference: reference,
                           receipt_number: receiptNumber,
                           note: paymentRemarks,
+                          important_note: importantNote,
                         };
 
                         if (editPaymentId) {
@@ -959,7 +1037,8 @@ export default function ApplicantDetailPage() {
                     </button>
                   </div>
                 </div>
-              </div>
+              </div>,
+              document.body
             )}
           </div>
         )}

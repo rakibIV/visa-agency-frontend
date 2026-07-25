@@ -17,7 +17,15 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
   const getVisibleClauses = (template) => {
     if (!template || !template.clauses) return [];
     let clauses = [...template.clauses].sort((a, b) => a.clause_number - b.clause_number);
+    const countryName = (applicant?.country?.name || applicant?.visa_name || '').toLowerCase();
+    const isSaudi = countryName.includes('saudi');
+
     return clauses.filter(c => {
+      // Clause 15 of Template 1 is strictly hidden for Saudi Arabia applicants
+      if (template.sequence === 1 && c.clause_number === 15 && isSaudi) {
+        return false;
+      }
+
       if (c.visibility_mode === 'INCLUDE') {
         return c.countries?.includes(applicant?.country?.id);
       }

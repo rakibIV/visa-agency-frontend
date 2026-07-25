@@ -34,6 +34,8 @@ import SlotsConfigPage from './pages/config/SlotsConfigPage';
 import SettingsLayout from './pages/settings/SettingsLayout';
 import ProfilePage from './pages/settings/ProfilePage';
 import CompanySettings from './pages/settings/CompanySettings';
+import LogosSettings from './pages/settings/LogosSettings';
+import ImportantNotesSettings from './pages/settings/ImportantNotesSettings';
 import OfficesSettings from './pages/settings/OfficesSettings';
 import DesignationsSettings from './pages/settings/DesignationsSettings';
 import ApplicationStatusSettings from './pages/settings/ApplicationStatusSettings';
@@ -240,6 +242,8 @@ function App() {
               />
               <Route path="/settings" element={<AdminLayout><SettingsLayout /></AdminLayout>}>
                 <Route path="company" element={<CompanySettings />} />
+                <Route path="logos" element={<LogosSettings />} />
+                <Route path="important-notes" element={<ImportantNotesSettings />} />
                 <Route path="offices" element={<OfficesSettings />} />
                 <Route path="designations" element={<DesignationsSettings />} />
                 <Route path="statuses" element={<ApplicationStatusSettings />} />

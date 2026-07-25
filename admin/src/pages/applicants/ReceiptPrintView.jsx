@@ -243,7 +243,7 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo, curr
                   <InformationCircleIcon className="w-3.5 h-3.5 shrink-0" /> IMPORTANT NOTE
                 </h4>
                 <p className="text-[7.5px] text-slate-700 text-justify leading-snug">
-                  If the Visa Application has been officially submitted but the visa is not approved, and the candidate&apos;s overseas assignment is not completed through {companyInfo?.company_name || 'Al-Raiyan Group'} within timeframe, refund shall be processed as per signed agreement clauses upon written request.
+                  {payment.important_note || companyInfo?.money_receipt_important_note || `If the Visa Application has been officially submitted but the visa is not approved, and the candidate's overseas assignment is not completed through ${companyInfo?.company_name || 'Al-Raiyan Group'} within timeframe, refund shall be processed as per signed agreement clauses upon written request.`}
                 </p>
               </div>
 

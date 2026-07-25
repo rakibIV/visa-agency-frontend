@@ -12,8 +12,16 @@ export default function CompanySettings() {
       columns={[
         { header: 'Company Name', accessor: 'company_name' },
         { header: 'Phone', accessor: 'phone' },
-        { header: 'WhatsApp', accessor: 'whatsapp' },
         { header: 'Email', accessor: 'email' },
+        { 
+          header: 'Default Important Note', 
+          accessor: 'money_receipt_important_note',
+          render: (item) => (
+            <p className="text-xs text-slate-600 max-w-xs truncate font-medium">
+              {item.money_receipt_important_note || '—'}
+            </p>
+          )
+        },
       ]}
       formFields={[
         { name: 'company_name', label: 'Company Name', type: 'text', required: true },
@@ -23,6 +31,7 @@ export default function CompanySettings() {
         { name: 'website', label: 'Website URL', type: 'text' },
         { name: 'company_logo', label: 'Company Logo', type: 'file', accept: 'image/*' },
         { name: 'company_signature', label: 'Company Signature', type: 'file', accept: 'image/*' },
+        { name: 'money_receipt_important_note', label: 'Default Money Receipt Important Note', type: 'textarea', rows: 3 },
         { name: 'address', label: 'Address', type: 'textarea' },
         { name: 'about', label: 'About Us', type: 'textarea' },
         { name: 'mission', label: 'Mission', type: 'textarea' },

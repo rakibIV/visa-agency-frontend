@@ -32,7 +32,7 @@ import designServiceImg from '../assets/residency.jpg';
 import handshakeImg from '../assets/Handshake.jpg';
 
 export default function HomePage() {
-  const USE_NEW_WATERDROP_HERO = false; // Toggle to true to use the new waterdrop hero section
+  const USE_NEW_WATERDROP_HERO = true; // Toggle to true to use the new waterdrop hero section
 
   const { data: countries, isLoading: isLoadingCountries } = useQuery({
     queryKey: ['countries'],
