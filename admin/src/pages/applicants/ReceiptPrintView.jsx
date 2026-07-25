@@ -1,4 +1,6 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import api from '../../api/client';
 import topIllustration from '../../assets/top-illustration.png';
 import companyLogo from '../../assets/logo.png';
 import { UserIcon, IdentificationIcon, PhoneIcon, EnvelopeIcon, CreditCardIcon, InformationCircleIcon, MapPinIcon, GlobeAltIcon, UserCircleIcon, QrCodeIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
@@ -54,8 +56,8 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo, curr
   const eurAmount = Number(payment.euro_amount) || 0;
   const dbExchangeRate = Number(payment.exchange_rate) || 0;
 
-  const eurRatio = dbExchangeRate > 0 
-    ? dbExchangeRate 
+  const eurRatio = dbExchangeRate > 0
+    ? dbExchangeRate
     : (paidAmount > 0 ? eurAmount / paidAmount : 0.00711);
 
   const displayExchangeRate = eurRatio > 0 ? (1 / eurRatio).toFixed(2) : '140.69';
@@ -69,14 +71,42 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo, curr
   // Format Country, Visa, and Job
   const countryDisplayName = (typeof applicant?.country === 'object' ? applicant?.country?.name : applicant?.country) || applicant?.country_name || 'N/A';
   const visaDisplayName = applicant?.visa_name || (typeof applicant?.visa === 'object' ? applicant?.visa?.name : applicant?.visa) || 'N/A';
-  const jobDisplayName = 
-    applicant?.job_name || 
-    (typeof applicant?.job === 'object' ? applicant?.job?.title || applicant?.job?.name : null) || 
-    (typeof applicant?.job === 'string' && !applicant?.job.includes('-') ? applicant?.job : null) || 
+  const primaryJobDisplayName =
+    applicant?.job_name ||
+    (typeof applicant?.job === 'object' ? applicant?.job?.title || applicant?.job?.name : null) ||
+    (typeof applicant?.job === 'string' && !applicant?.job.includes('-') ? applicant?.job : null) ||
     'N/A';
+
+  const secondaryJobDisplayName =
+    applicant?.secondary_job_name ||
+    (typeof applicant?.secondary_job === 'object' ? applicant?.secondary_job?.title || applicant?.secondary_job?.name : null) ||
+    (typeof applicant?.secondary_job === 'string' && !applicant?.secondary_job.includes('-') ? applicant?.secondary_job : null) ||
+    '';
 
   const receiptNo = payment.receipt_number || payment.id || 'N/A';
   const paymentDate = payment.payment_date ? new Date(payment.payment_date).toLocaleDateString('en-GB') : 'N/A';
+  
+  // Fetch company logos directly if companyInfo.logos is not yet in cache
+  const { data: companyLogosList } = useQuery({
+    queryKey: ['company-logos-list'],
+    queryFn: () => api.get('/company-logos/').then(r => r.data.results ?? r.data).catch(() => []),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const allLogos = Array.isArray(companyInfo?.logos) && companyInfo.logos.length ? companyInfo.logos : (companyLogosList || []);
+  const sideBySideLogoObj = allLogos.find(
+    (l) => l.title?.toLowerCase().includes('side') || l.serial_number === 3
+  );
+
+  const getLogoUrl = (img) => {
+    if (!img) return null;
+    if (typeof img === 'string') {
+      return img.startsWith('http') ? img : `https://res.cloudinary.com/prfvuhln/${img}`;
+    }
+    return null;
+  };
+
+  const headerLogoUrl = getLogoUrl(sideBySideLogoObj?.image) || getLogoUrl(companyInfo?.company_logo) || companyLogo;
 
   // Construct Plain Text for QR Code Scanning
   const qrPlainText = [
@@ -91,19 +121,20 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo, curr
     `Passport No: ${applicant.passport_number || 'N/A'}`,
     `Destination Country: ${countryDisplayName}`,
     `Visa Scheme: ${visaDisplayName}`,
-    `Job Title / Position: ${jobDisplayName}`,
+    `Primary Job (1st Choice): ${primaryJobDisplayName}`,
+    secondaryJobDisplayName ? `Secondary Job (2nd Choice): ${secondaryJobDisplayName}` : '',
     ``,
-    `--- PAYMENT DETAILS ---`,
-    `Installment: ${getOrdinal(payment.installment_type)} Installment`,
-    `Amount Paid: ${paidCurrencySymbol} ${paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${paidCurrencyName})`,
-    `Euro Equivalent: € ${eurAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} EUR`,
-    `Exchange Rate: 1 EUR = ${paidCurrency} ${displayExchangeRate}`,
-    `Payment Method: ${payment.payment_method?.replace('_', ' ').toUpperCase() || 'CASH'}`,
-    `Purpose: ${payment.remarks || 'Visa Processing Fee'}`,
+    `--- PAYMENT SUMMARY ---`,
+    `Paid Amount: ${paidCurrencySymbol} ${paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (${paidCurrency})`,
+    `Equivalent Euros: € ${eurAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })} EUR`,
+    `Exchange Rate: 1 EUR = ${displayExchangeRate} BDT`,
+    `Payment Method: ${payment.payment_method || 'CASH'}`,
+    payment.transaction_id ? `Transaction / Ref ID: ${payment.transaction_id}` : '',
+    `Payment Type: ${getOrdinal(payment.payment_type)} Installment (${payment.payment_type})`,
+    `Issued By: ${payment.received_by_name || applicant.assigned_staff_name || 'System Admin'}`,
     ``,
-    `--- VERIFICATION ---`,
-    `Status: VERIFIED OFFICIAL RECEIPT`
-  ].join('\n');
+    `=== VERIFIED BY AL RAIYAN GROUP ===`
+  ].filter(Boolean).join('\n');
 
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrPlainText)}`;
 
@@ -112,7 +143,7 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo, curr
       <style>{`
         @media print {
           @page { size: A5 landscape; margin: 0 !important; }
-          html { font-size: 11px !important; }
+          html { font-size: 13px !important; }
           html, body { width: 210mm !important; height: 148mm !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
           body > *:not(.print-portal) { display: none !important; }
           .print-portal { display: block !important; position: static !important; width: 210mm !important; height: 148mm !important; overflow: hidden !important; }
@@ -138,38 +169,34 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo, curr
             />
           </div>
 
-          <div className="relative z-10 flex-1 flex flex-col px-4 py-2 print:px-4 print:py-1.5 h-full justify-between box-border">
+          <div className="relative z-10 flex-1 flex flex-col px-4 py-2.5 print:px-4 print:py-2 h-full justify-between box-border">
 
             {/* 1. Header Section */}
             <div className="flex justify-between items-center mb-2 relative z-20 pb-1.5 border-b border-slate-200/80">
-              <div className="flex items-center gap-3 w-[40%]">
-                <img src={companyInfo?.company_logo || companyLogo} alt="Logo" className="w-10 h-10 object-contain drop-shadow-xs shrink-0" />
-                <div className="min-w-0">
-                  <h1 className="text-sm font-black tracking-wider text-slate-900 uppercase font-serif leading-tight">
-                    {companyInfo?.company_name || 'Al Raiyan Group'}
-                  </h1>
-                  <p className="text-[8.5px] text-slate-500 font-bold tracking-widest uppercase mt-0.5 leading-tight">
-                    مجموعة الريان • Official Agency
-                  </p>
-                </div>
+              <div className="flex items-center w-[40%]">
+                <img
+                  src={headerLogoUrl}
+                  alt={sideBySideLogoObj?.title || companyInfo?.company_name || "Side by Side Logo"}
+                  className="h-12 sm:h-14 max-w-[260px] sm:max-w-[300px] object-contain object-left drop-shadow-xs"
+                />
               </div>
 
               <div className="flex flex-col items-center justify-center text-center">
-                <h1 className="text-base sm:text-lg font-black text-slate-900 tracking-wider whitespace-nowrap leading-tight uppercase font-serif">
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-wider whitespace-nowrap leading-tight uppercase font-serif">
                   MONEY <span className="text-blue-900">RECEIPT</span>
                 </h1>
-                <p className="text-[7.5px] text-amber-600 font-bold uppercase tracking-widest mt-0.5">
+                <p className="text-[9.5px] text-amber-600 font-bold uppercase tracking-widest mt-0.5">
                   ★ OFFICIAL FINANCIAL DOCUMENT ★
                 </p>
               </div>
 
               {/* Clean Simple Receipt Metadata */}
               <div className="flex flex-col items-end justify-center text-right w-[35%] z-20">
-                <div className="text-[9px] text-slate-600 font-medium">
-                  Receipt No: <strong className="font-mono font-bold text-xs text-slate-900">{receiptNo}</strong>
+                <div className="text-xs text-slate-600 font-bold">
+                  Receipt No: <strong className="font-mono font-black text-sm text-slate-900">{receiptNo}</strong>
                 </div>
-                <div className="text-[9px] text-slate-500 font-medium mt-0.5">
-                  Date: <strong className="font-mono text-slate-800 font-semibold">{paymentDate}</strong>
+                <div className="text-xs text-slate-500 font-semibold mt-0.5">
+                  Date: <strong className="font-mono text-slate-800 font-bold">{paymentDate}</strong>
                 </div>
               </div>
             </div>
@@ -178,40 +205,47 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo, curr
             <div className="bg-slate-50/50 border border-slate-200/90 rounded-xl p-2.5 mb-2 grid grid-cols-12 gap-3 items-center shadow-2xs">
               {/* Applicant Info Column */}
               <div className="col-span-6 border-r border-slate-200/80 pr-2">
-                <p className="text-[8px] text-slate-500 font-bold tracking-wider uppercase mb-0.5">RECEIVED WITH THANKS FROM</p>
-                <h2 className="text-sm font-black text-slate-900 uppercase font-serif tracking-wide leading-tight truncate">
+                <p className="text-[9.5px] text-slate-500 font-black tracking-wider uppercase mb-0.5">RECEIVED WITH THANKS FROM</p>
+                <h2 className="text-base font-black text-slate-900 uppercase font-serif tracking-wide leading-tight truncate">
                   {applicant.full_name}
                 </h2>
-                <div className="flex items-center gap-3 text-[9px] text-slate-600 mt-1 font-medium">
-                  <span>Passport: <strong className="text-slate-900 font-mono">{applicant.passport_number || 'N/A'}</strong></span>
-                  <span>Nationality: <strong className="text-slate-900">{applicant.profile?.nationality || 'Bangladesh'}</strong></span>
+                <div className="flex items-center gap-4 text-xs text-slate-700 mt-1 font-semibold">
+                  <span>Passport: <strong className="text-slate-900 font-mono font-bold">{applicant.passport_number || 'N/A'}</strong></span>
+                  <span>Nationality: <strong className="text-slate-900 font-bold">{applicant.profile?.nationality || 'Bangladesh'}</strong></span>
                 </div>
               </div>
 
               {/* Destination & Application Column */}
               <div className="col-span-6 pl-1">
-                <p className="text-[8px] text-slate-500 font-bold tracking-wider uppercase mb-0.5">DESTINATION COUNTRY &amp; VISA SCHEME</p>
-                <h2 className="text-sm font-black text-blue-900 uppercase tracking-wide leading-tight truncate">
+                <p className="text-[9.5px] text-slate-500 font-black tracking-wider uppercase mb-0.5">DESTINATION COUNTRY &amp; VISA SCHEME</p>
+                <h2 className="text-base font-black text-blue-900 uppercase tracking-wide leading-tight truncate">
                   {countryDisplayName}
                 </h2>
-                <div className="flex items-center gap-3 text-[9px] text-slate-600 mt-1 font-medium truncate">
-                  <span className="truncate">Visa: <strong className="text-slate-900">{visaDisplayName}</strong></span>
-                  <span className="truncate">Job: <strong className="text-slate-900">{jobDisplayName}</strong></span>
+                <div className="space-y-0.5 text-xs text-slate-700 mt-1 font-semibold leading-tight">
+                  <div className="truncate">Visa: <strong className="text-slate-900 font-bold">{visaDisplayName}</strong></div>
+                  <div className="truncate">
+                    1st Job: <strong className="text-slate-900 font-bold">{primaryJobDisplayName}</strong>
+                    {secondaryJobDisplayName && secondaryJobDisplayName !== 'N/A' && (
+                      <span className="ml-2 text-slate-500 font-semibold">
+                        2nd Job: <strong className="text-slate-900 font-bold">{secondaryJobDisplayName}</strong>
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* 3. Middle Section: Financial Details (Left) + Digital Verification QR (Right) */}
             <div className="grid grid-cols-12 gap-2.5 mb-2 items-stretch">
-              
+
               {/* Left: Financial Breakdown (col-span-8) */}
               <div className="col-span-8 border border-slate-200/90 rounded-xl p-2.5 bg-white/40 shadow-2xs flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/60 mb-1.5">
-                    <span className="text-[9px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                      <CreditCardIcon className="w-3.5 h-3.5 text-blue-900" /> PAYMENT BREAKDOWN
+                    <span className="text-xs font-black text-slate-600 uppercase tracking-wider flex items-center gap-1">
+                      <CreditCardIcon className="w-4 h-4 text-blue-900" /> PAYMENT BREAKDOWN
                     </span>
-                    <span className="bg-blue-50/90 text-blue-900 border border-blue-200 text-[8.5px] font-bold px-2 py-0.5 rounded-full capitalize">
+                    <span className="bg-blue-50/90 text-blue-900 border border-blue-200 text-xs font-black px-2.5 py-0.5 rounded-full capitalize">
                       {payment.payment_method?.replace('_', ' ') || 'Cash'} • {getOrdinal(payment.installment_type)} Installment
                     </span>
                   </div>
@@ -219,34 +253,34 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo, curr
                   {/* Main Amount Display */}
                   <div className="flex items-baseline justify-between bg-slate-50/60 border border-slate-200/80 rounded-lg px-3 py-1.5 mb-1.5">
                     <div>
-                      <span className="text-[9px] text-slate-500 font-semibold block">Paid Amount</span>
-                      <span className="text-base font-black text-slate-900 font-mono tracking-tight">
+                      <span className="text-[10px] text-slate-500 font-bold block uppercase">Paid Amount</span>
+                      <span className="text-xl font-black text-slate-900 font-mono tracking-tight">
                         {paidCurrencySymbol} {paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
-                      <span className="text-[9px] text-slate-500 ml-1">({paidCurrency})</span>
+                      <span className="text-xs text-slate-500 font-bold ml-1">({paidCurrency})</span>
                     </div>
 
                     <div className="text-right">
-                      <span className="text-[8.5px] text-slate-500 font-semibold block">Euro Equivalent</span>
-                      <span className="bg-emerald-50/90 text-emerald-900 border border-emerald-200 text-xs font-black px-2 py-0.5 rounded font-mono inline-block">
+                      <span className="text-[10px] text-slate-500 font-bold block uppercase">Euro Equivalent</span>
+                      <span className="bg-emerald-50/90 text-emerald-900 border border-emerald-200 text-xs sm:text-sm font-black px-2.5 py-0.5 rounded font-mono inline-block">
                         € {eurAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EUR
                       </span>
                     </div>
                   </div>
 
                   {/* Words & Details */}
-                  <div className="space-y-1 text-[9px] text-slate-700">
+                  <div className="space-y-1 text-xs text-slate-800">
                     <div className="flex items-baseline">
-                      <span className="w-24 text-slate-500 font-semibold shrink-0">In Words (Paid):</span>
-                      <span className="font-medium text-slate-900 italic">{amountInWordsPaid}</span>
+                      <span className="w-24 text-slate-500 font-bold shrink-0">In Words (Paid):</span>
+                      <span className="font-semibold text-slate-900 italic">{amountInWordsPaid}</span>
                     </div>
                     <div className="flex items-baseline">
-                      <span className="w-24 text-slate-500 font-semibold shrink-0">In Words (EUR):</span>
-                      <span className="font-medium text-slate-900 italic">{amountInWordsEUR}</span>
+                      <span className="w-24 text-slate-500 font-bold shrink-0">In Words (EUR):</span>
+                      <span className="font-semibold text-slate-900 italic">{amountInWordsEUR}</span>
                     </div>
-                    <div className="flex items-center justify-between text-[8.5px] text-slate-500 border-t border-slate-200/60 pt-1 mt-1">
-                      <span>Purpose: <strong className="text-slate-800 font-semibold">{payment.remarks || 'Visa Processing Fee'}</strong></span>
-                      <span>Rate: <strong className="text-slate-800 font-mono">1 EUR = {paidCurrency} {displayExchangeRate}</strong></span>
+                    <div className="flex items-center justify-between text-[10px] text-slate-600 border-t border-slate-200/60 pt-1 mt-1 font-semibold">
+                      <span>Purpose: <strong className="text-slate-900 font-bold">{payment.remarks || 'Visa Processing Fee'}</strong></span>
+                      <span>Rate: <strong className="text-slate-900 font-mono font-bold">1 EUR = {paidCurrency} {displayExchangeRate}</strong></span>
                     </div>
                   </div>
                 </div>
@@ -254,20 +288,20 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo, curr
 
               {/* Right: Digital Verification Card (col-span-4) */}
               <div className="col-span-4 border border-slate-200/90 rounded-xl bg-slate-50/50 p-2 flex flex-col items-center justify-center text-center shadow-2xs relative">
-                <div className="flex items-center gap-1 text-[8.5px] font-extrabold text-slate-700 uppercase tracking-wider mb-1.5">
-                  <ShieldCheckIcon className="w-3.5 h-3.5 text-blue-900" /> DIGITAL VERIFICATION
+                <div className="flex items-center gap-1 text-[10px] font-black text-slate-800 uppercase tracking-wider mb-1">
+                  <ShieldCheckIcon className="w-4 h-4 text-blue-900" /> DIGITAL VERIFICATION
                 </div>
-                <div className="w-[72px] h-[72px] bg-white p-1 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-center mb-1 relative z-40">
+                <div className="w-[82px] h-[82px] bg-white p-1 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-center mb-1 relative z-40">
                   <img
                     src={qrCodeUrl}
                     alt="Scan Receipt QR"
                     className="w-full h-full object-contain"
                   />
                 </div>
-                <span className="bg-slate-900 text-white text-[7.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-2xs mt-0.5">
+                <span className="bg-slate-900 text-white text-[8.5px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-2xs mt-0.5">
                   SCAN TO VERIFY
                 </span>
-                <p className="text-[7px] text-slate-500 mt-1 leading-tight px-1">
+                <p className="text-[8px] text-slate-500 font-semibold mt-1 leading-tight px-1">
                   Scan QR code for instant plain text official receipt details.
                 </p>
               </div>
@@ -276,63 +310,73 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo, curr
             {/* 4. Lower Section: Paid By Details, Note & Signature Fields */}
             <div className="grid grid-cols-12 gap-2.5 items-stretch mb-1">
               {/* Paid By & Terms (col-span-4) */}
-              <div className="col-span-4 border border-slate-200/90 rounded-xl p-2 bg-slate-50/50 flex flex-col justify-between shadow-2xs">
+              <div className="col-span-4 border border-slate-200/90 rounded-xl p-2.5 bg-slate-50/50 flex flex-col justify-between shadow-2xs">
                 <div>
-                  <h4 className="text-[8.5px] font-extrabold text-slate-800 uppercase tracking-wider mb-1 flex items-center gap-1">
-                    <UserIcon className="w-3 h-3 text-blue-900" /> PAID BY DETAILS
+                  <h4 className="text-[10px] font-black text-slate-800 uppercase tracking-wider mb-1 flex items-center gap-1">
+                    <UserIcon className="w-3.5 h-3.5 text-blue-900" /> PAID BY DETAILS
                   </h4>
-                  <div className="space-y-0.5 text-[8.5px] text-slate-700">
-                    <div><span className="text-slate-500">Name:</span> <strong className="text-slate-900">{applicant.full_name}</strong></div>
-                    <div><span className="text-slate-500">Father:</span> <strong className="text-slate-900">{applicant.profile?.father_name || 'N/A'}</strong></div>
-                    <div><span className="text-slate-500">NID:</span> <strong className="text-slate-900 font-mono">{applicant.nid_number || 'N/A'}</strong></div>
+                  <div className="space-y-0.5 text-xs text-slate-800 font-medium">
+                    <div><span className="text-slate-500 font-semibold">Name:</span> <strong className="text-slate-900 font-bold">{applicant.full_name}</strong></div>
+                    <div><span className="text-slate-500 font-semibold">Father:</span> <strong className="text-slate-900 font-bold">{applicant.profile?.father_name || 'N/A'}</strong></div>
+                    <div><span className="text-slate-500 font-semibold">NID:</span> <strong className="text-slate-900 font-mono font-bold">{applicant.nid_number || 'N/A'}</strong></div>
                   </div>
                 </div>
-                <p className="text-[7px] text-slate-500 leading-tight italic mt-1 border-t border-slate-200/60 pt-1">
-                  I agree to the terms and conditions of the signed agreement including refund policy.
-                </p>
               </div>
 
               {/* Important Note (col-span-3) */}
-              <div className="col-span-3 border border-amber-200/80 bg-amber-50/40 rounded-xl p-2 flex flex-col justify-between shadow-2xs">
-                <h4 className="text-[8px] font-extrabold text-amber-900 uppercase tracking-wider mb-0.5 flex items-center gap-1">
-                  <InformationCircleIcon className="w-3 h-3 text-amber-700" /> IMPORTANT NOTE
+              <div className="col-span-3 border border-amber-200/80 bg-amber-50/40 rounded-xl p-2.5 flex flex-col justify-between shadow-2xs">
+                <h4 className="text-[10px] font-black text-amber-900 uppercase tracking-wider mb-1 flex items-center gap-1">
+                  <InformationCircleIcon className="w-3.5 h-3.5 text-amber-700" /> IMPORTANT NOTE
                 </h4>
-                <p className="text-[7.5px] text-slate-700 leading-tight text-justify flex-1">
+                <p className="text-[9px] text-slate-800 font-semibold leading-tight text-justify flex-1">
                   {payment.important_note || companyInfo?.money_receipt_important_note || `Refunds for unapproved visa applications shall be processed strictly as per signed agreement clauses upon official written request.`}
                 </p>
               </div>
 
               {/* Official Signature Fields (col-span-5: 2 spacious side-by-side signature areas) */}
-              <div className="col-span-5 border border-slate-200/90 rounded-xl p-2 bg-white/40 flex items-end gap-3 justify-between shadow-2xs">
+              <div className="col-span-5 border border-slate-200/90 rounded-xl p-2.5 bg-white/40 flex items-stretch gap-4 justify-between shadow-2xs">
                 {/* Applicant Signature */}
-                <div className="flex-1 flex flex-col justify-end text-center h-full min-h-[50px]">
+                <div className="flex-1 flex flex-col justify-between text-center min-h-[55px]">
                   <div className="flex-1" />
-                  <div className="w-full border-t border-slate-400 pt-1">
-                    <p className="text-[8px] font-bold text-slate-800 leading-tight">Applicant Signature</p>
+                  <div className="w-full border-t-2 border-slate-700 pt-1">
+                    <p className="text-[11px] font-black text-slate-900 uppercase tracking-wider leading-tight">Applicant Signature</p>
+                    <p className="text-[8px] text-slate-400 mt-0.5 font-medium">Date: ___ / ___ / ______</p>
                   </div>
                 </div>
 
                 {/* Authorized Representative & Seal */}
-                <div className="flex-1 flex flex-col justify-end text-center h-full min-h-[50px]">
+                <div className="flex-1 flex flex-col justify-between text-center min-h-[55px]">
                   <div className="flex-1" />
-                  <div className="w-full border-t border-slate-400 pt-1">
-                    <p className="text-[8px] font-bold text-slate-800 leading-tight">Authorized Signature &amp; Seal</p>
+                  <div className="w-full border-t-2 border-slate-700 pt-1">
+                    <p className="text-[11px] font-black text-slate-900 uppercase tracking-wider leading-tight">Authorized Signature &amp; Seal</p>
+                    <p className="text-[8px] text-slate-400 mt-0.5 font-medium">Date: ___ / ___ / ______</p>
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* Separate Declaration Strip Outside the Boxes */}
+            <div className="flex items-center gap-2.5 px-1 py-1 my-0.5 z-20">
+              <span
+                style={{ width: '15px', height: '15px', border: '2px solid #0f172a' }}
+                className="bg-white shrink-0 inline-block rounded-xs"
+              />
+              <p className="text-[9px] text-slate-900 font-black leading-tight">
+                I agree to the terms and conditions of the signed agreement including the refund policy.
+              </p>
+            </div>
+
             {/* 5. Footer Banner */}
-            <div className="bg-slate-900 text-white py-1.5 px-4 text-[8px] font-medium flex items-center justify-between z-20 shrink-0 rounded-b-lg print:rounded-none">
+            <div className="bg-slate-900 text-white py-1.5 px-4 text-[9.5px] font-bold flex items-center justify-between z-20 shrink-0 rounded-b-lg print:rounded-none">
               <div className="flex items-center gap-1">
-                <MapPinIcon className="w-3 h-3 text-amber-400 shrink-0" /> Head Office: {companyInfo?.address || 'Kingdom of Saudi Arabia (KSA)'}
+                <MapPinIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" /> Head Office: {companyInfo?.address || 'Kingdom of Saudi Arabia (KSA)'}
               </div>
-              <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-4 shrink-0">
                 <span className="flex items-center gap-1">
-                  <EnvelopeIcon className="w-3 h-3 text-amber-400 shrink-0" /> {companyInfo?.email || 'alraiyangroup333@gmail.com'}
+                  <EnvelopeIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" /> {companyInfo?.email || 'alraiyangroup333@gmail.com'}
                 </span>
                 <span className="flex items-center gap-1">
-                  <GlobeAltIcon className="w-3 h-3 text-amber-400 shrink-0" /> {companyInfo?.website || 'al-raiyangroup.com'}
+                  <GlobeAltIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" /> {companyInfo?.website || 'al-raiyangroup.com'}
                 </span>
               </div>
             </div>

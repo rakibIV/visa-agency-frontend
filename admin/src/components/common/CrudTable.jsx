@@ -38,6 +38,7 @@ export default function CrudTable({
     onSuccess: () => {
       toast.success('Item created successfully!');
       queryClient.invalidateQueries([queryKey]);
+      queryClient.invalidateQueries(['company-info']);
       queryClient.invalidateQueries(['admin-notifications']);
       setIsModalOpen(false);
     },
@@ -51,6 +52,7 @@ export default function CrudTable({
     onSuccess: () => {
       toast.success('Item updated successfully!');
       queryClient.invalidateQueries([queryKey]);
+      queryClient.invalidateQueries(['company-info']);
       queryClient.invalidateQueries(['admin-notifications']);
       setIsModalOpen(false);
     },
@@ -58,6 +60,7 @@ export default function CrudTable({
       toast.error(parseApiError(err));
     },
   });
+
 
   const mutationDelete = useMutation({
     mutationFn: (id) => api.delete(`${endpoint}${id}/`),

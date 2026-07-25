@@ -39,6 +39,20 @@ export default function LogosSettings() {
 
   const handleFileChange = (fieldName, file) => {
     if (!file) return;
+    if (fieldName === 'company_signature' && file.type.startsWith('image/')) {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        if (img.width !== 300 || img.height !== 80) {
+          toast.error(`Company signature image must be exactly 300x80 pixels. Uploaded image is ${img.width}x${img.height} pixels.`);
+          return;
+        }
+        setSelectedFiles(prev => ({ ...prev, [fieldName]: file }));
+        setPreviews(prev => ({ ...prev, [fieldName]: objectUrl }));
+      };
+      img.src = objectUrl;
+      return;
+    }
     setSelectedFiles(prev => ({ ...prev, [fieldName]: file }));
     if (file.type.startsWith('image/')) {
       setPreviews(prev => ({ ...prev, [fieldName]: URL.createObjectURL(file) }));

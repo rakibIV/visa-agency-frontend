@@ -118,7 +118,7 @@ export default function ApplicantDetailPage() {
   const { data: companyInfo } = useQuery({
     queryKey: ['company-info'],
     queryFn: () => api.get('/companies/').then((r) => r.data.results?.[0] ?? r.data?.[0]),
-    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+    staleTime: 1000 * 60 * 5,
   });
 
   // Mutation for updating applicant profile (preferred refund method only)
@@ -136,12 +136,24 @@ export default function ApplicantDetailPage() {
   // Mutation for toggling status change email setting
   const toggleStatusEmailMutation = useMutation({
     mutationFn: (newValue) => api.patch(`/applicants/${id}/`, { send_email_on_status_change: newValue }),
+    onMutate: async (newValue) => {
+      await queryClient.cancelQueries({ queryKey: ['applicant', id] });
+      const previousApplicant = queryClient.getQueryData(['applicant', id]);
+      queryClient.setQueryData(['applicant', id], (old) => old ? { ...old, send_email_on_status_change: newValue } : old);
+      return { previousApplicant };
+    },
     onSuccess: (res, newValue) => {
-      queryClient.invalidateQueries(['applicant', id]);
+      queryClient.setQueryData(['applicant', id], (old) => old ? { ...old, send_email_on_status_change: newValue } : old);
       toast.success(newValue ? 'Status update email notifications TURNED ON!' : 'Status update email notifications TURNED OFF!');
     },
-    onError: (err) => {
+    onError: (err, newValue, context) => {
+      if (context?.previousApplicant) {
+        queryClient.setQueryData(['applicant', id], context.previousApplicant);
+      }
       toast.error('Failed to update email setting: ' + (err.response?.data?.detail || err.message));
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['applicant', id] });
     }
   });
 
@@ -317,6 +329,22 @@ export default function ApplicantDetailPage() {
       toast.error('Failed to delete applicant: ' + (err.response?.data?.detail || err.message));
     }
   });
+
+  const resetApplicantMutation = useMutation({
+    mutationFn: () => api.post(`/applicants/${id}/reset/`),
+    onSuccess: () => {
+      toast.success('Applicant profile reset successfully! Financials & agreements cleared.');
+      queryClient.removeQueries();
+      queryClient.invalidateQueries();
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
+    },
+    onError: (err) => {
+      toast.error('Failed to reset applicant profile: ' + (err.response?.data?.detail || err.message));
+    }
+  });
+
 
   if (isLoading) {
     return (
@@ -517,6 +545,20 @@ export default function ApplicantDetailPage() {
           <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase shrink-0 ${getStatusColor(applicant.status?.slug)}`}>
             {applicant.status?.name || 'Unknown'}
           </span>
+          {(applicant.status?.name?.toLowerCase().includes('reject') || applicant.status?.slug?.toLowerCase().includes('reject') || applicant.status_name?.toLowerCase().includes('reject')) && (
+            <button
+              onClick={() => {
+                if (window.confirm('⚠️ WARNING: Are you sure you want to reset this applicant profile? This will permanently DELETE all payments, money receipts, refunds, and signed agreements for this applicant, and reset their status back to the initial stage.')) {
+                  resetApplicantMutation.mutate();
+                }
+              }}
+              disabled={resetApplicantMutation.isPending}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold shadow-md shadow-amber-500/20 transition-all text-sm disabled:opacity-50 shrink-0 cursor-pointer"
+            >
+              <ArrowPathRoundedSquareIcon className={`w-4 h-4 ${resetApplicantMutation.isPending ? 'animate-spin' : ''}`} />
+              {resetApplicantMutation.isPending ? 'Resetting...' : 'Reset Profile'}
+            </button>
+          )}
           <Link to={`/applicants/${id}/edit`} className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-colors text-sm shrink-0">
             <PencilSquareIcon className="w-4 h-4 shrink-0" /> Edit Profile
           </Link>
@@ -571,9 +613,7 @@ export default function ApplicantDetailPage() {
                 )}
               </span>
               <span className="text-[11px] text-slate-400 font-medium">
-                {toggleStatusEmailMutation.isPending
-                  ? 'Saving email setting...'
-                  : (applicant.send_email_on_status_change ?? true)
+                {(applicant.send_email_on_status_change ?? true)
                   ? 'Sends email on status update'
                   : 'No email sent on status update'}
               </span>
@@ -583,12 +623,10 @@ export default function ApplicantDetailPage() {
               onClick={() => toggleStatusEmailMutation.mutate(!(applicant.send_email_on_status_change ?? true))}
               disabled={toggleStatusEmailMutation.isPending}
               className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                toggleStatusEmailMutation.isPending
-                  ? 'bg-blue-200 cursor-wait opacity-80'
-                  : (applicant.send_email_on_status_change ?? true)
+                (applicant.send_email_on_status_change ?? true)
                   ? 'bg-emerald-600'
                   : 'bg-slate-300'
-              }`}
+              } ${toggleStatusEmailMutation.isPending ? 'opacity-70 cursor-wait' : ''}`}
               title="Toggle automatic email dispatch on status change"
             >
               <span
@@ -597,7 +635,7 @@ export default function ApplicantDetailPage() {
                 }`}
               >
                 {toggleStatusEmailMutation.isPending && (
-                  <span className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  <span className="w-2.5 h-2.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                 )}
               </span>
             </button>

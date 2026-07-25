@@ -601,13 +601,15 @@ Verified by ${companyInfo?.company_name || 'Al Raiyan Group'}` : '';
                     <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
                       {/* Staff Member Signature */}
                       {staffSig && (
-                        <div className="flex flex-col items-center bg-white p-3 rounded-2xl border border-navy-200 shadow-sm min-w-[130px]">
-                          <img
-                            src={staffSig}
-                            alt="Staff Digital Signature"
-                            className="h-12 max-w-[140px] object-contain"
-                          />
-                          <span className="text-[9px] font-bold uppercase tracking-wider text-navy-500 mt-1 border-t border-navy-100 pt-1 w-full text-center">
+                        <div className="flex flex-col items-center bg-white p-2.5 sm:p-3 rounded-2xl border border-navy-200 shadow-xs min-w-[150px]">
+                          <div className="w-[150px] sm:w-[170px] h-[40px] sm:h-[45px] flex items-center justify-center overflow-hidden">
+                            <img
+                              src={staffSig}
+                              alt="Personnel Digital Signature"
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-navy-500 mt-1.5 border-t border-navy-100 pt-1 w-full text-center">
                             Personnel Signature
                           </span>
                         </div>
@@ -615,19 +617,21 @@ Verified by ${companyInfo?.company_name || 'Al Raiyan Group'}` : '';
 
                       {/* Company Signature / Official Seal */}
                       {companySig ? (
-                        <div className="flex flex-col items-center bg-white p-3 rounded-2xl border border-navy-200 shadow-sm min-w-[140px]">
-                          <img
-                            src={companySig}
-                            alt="Company Official Signature"
-                            className="h-12 max-w-[150px] object-contain"
-                          />
-                          <span className="text-[9px] font-bold uppercase tracking-wider text-gold-600 font-bold mt-1 border-t border-navy-100 pt-1 w-full text-center">
-                            Official Company Seal
+                        <div className="flex flex-col items-center bg-white p-2.5 sm:p-3 rounded-2xl border border-navy-200 shadow-xs min-w-[160px]">
+                          <div className="w-[150px] sm:w-[170px] h-[40px] sm:h-[45px] flex items-center justify-center overflow-hidden">
+                            <img
+                              src={companySig}
+                              alt="Company Official Signature"
+                              className="w-full h-full object-contain"
+                            />
+                          </div>
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-gold-600 mt-1.5 border-t border-navy-100 pt-1 w-full text-center">
+                            Authorized Agency Signature
                           </span>
                         </div>
                       ) : (
-                        <div className="flex flex-col items-center bg-white p-3.5 rounded-2xl border border-navy-200 shadow-sm min-w-[140px] text-center">
-                          <div className="w-10 h-10 rounded-full bg-navy-50 text-gold-500 flex items-center justify-center font-black text-lg border border-navy-200">
+                        <div className="flex flex-col items-center bg-white p-3 rounded-2xl border border-navy-200 shadow-xs min-w-[150px] text-center">
+                          <div className="w-9 h-9 rounded-full bg-navy-50 text-gold-500 flex items-center justify-center font-black text-base border border-navy-200">
                             ✓
                           </div>
                           <span className="text-[9px] font-bold uppercase tracking-wider text-navy-700 mt-1 border-t border-navy-100 pt-1 w-full text-center">

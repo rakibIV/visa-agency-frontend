@@ -10,6 +10,7 @@ import {
   ChevronRightIcon,
   PhotoIcon,
   DocumentTextIcon,
+  BanknotesIcon,
 } from '@heroicons/react/24/outline';
 
 const SETTINGS_NAV = [
@@ -18,6 +19,7 @@ const SETTINGS_NAV = [
   { label: 'Important Notes', to: '/settings/important-notes', icon: DocumentTextIcon, desc: 'Receipt note templates & presets' },
   { label: 'Offices / Branches', to: '/settings/offices', icon: MapPinIcon, desc: 'Manage agency branch locations' },
   { label: 'Staff Designations', to: '/settings/designations', icon: IdentificationIcon, desc: 'Job titles and roles' },
+  { label: 'System Currencies', to: '/settings/currencies', icon: BanknotesIcon, desc: 'Manage transaction currencies & symbols' },
   { label: 'Application Statuses', to: '/settings/statuses', icon: QueueListIcon, desc: 'Workflow status definitions' },
   { label: 'Applicant Tags', to: '/settings/tags', icon: TagIcon, desc: 'Color tags for organization' },
   { label: 'Lawyers', to: '/settings/lawyers', icon: ScaleIcon, desc: 'Legal representatives & partners' },

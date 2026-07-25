@@ -41,7 +41,28 @@ export default function FormModal({
     
     if (type === 'file' && files?.[0]) {
       const file = files[0];
+      const targetField = fields.find(f => f.name === name);
       if (file.type.startsWith('image/')) {
+        if (targetField?.requiredWidth || targetField?.requiredHeight) {
+          const img = new Image();
+          const objectUrl = URL.createObjectURL(file);
+          img.onload = () => {
+            if (
+              (targetField.requiredWidth && img.width !== targetField.requiredWidth) ||
+              (targetField.requiredHeight && img.height !== targetField.requiredHeight)
+            ) {
+              alert(`Image dimensions must be exactly ${targetField.requiredWidth}x${targetField.requiredHeight} pixels. Uploaded image is ${img.width}x${img.height} pixels.`);
+              e.target.value = '';
+              setImagePreviews(prev => ({ ...prev, [name]: null }));
+              setFormData(prev => ({ ...prev, [name]: null }));
+              return;
+            }
+            setImagePreviews(prev => ({ ...prev, [name]: objectUrl }));
+            setFormData(prev => ({ ...prev, [name]: file }));
+          };
+          img.src = objectUrl;
+          return;
+        }
         setImagePreviews(prev => ({ ...prev, [name]: URL.createObjectURL(file) }));
       }
     }

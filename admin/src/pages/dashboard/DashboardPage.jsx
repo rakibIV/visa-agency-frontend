@@ -1,6 +1,8 @@
-import { motion } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   UsersIcon,
   CheckBadgeIcon,
@@ -10,9 +12,11 @@ import {
   CalendarDaysIcon,
   ArrowUturnLeftIcon,
   DocumentTextIcon,
-  ChartBarIcon,
   ChevronRightIcon,
-  CalendarIcon
+  CalendarIcon,
+  ChatBubbleLeftEllipsisIcon,
+  ClipboardDocumentListIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 
@@ -58,17 +62,21 @@ const QUICK_ACTIONS = [
 ];
 
 export default function DashboardPage() {
-  // Combined statistics (Real + Fake live results)
+  const queryClient = useQueryClient();
+  const [selectedMessage, setSelectedMessage] = useState(null);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+
+  // Combined statistics
   const { data: appStats, isLoading: loadingStats } = useQuery({
     queryKey: ['dash-applicant-statistics'],
     queryFn: () => api.get('/public/applicant-statistics/').then(r => r.data),
     staleTime: 1000 * 60 * 3,
   });
 
-  // Recent Applicants (for Action Required)
+  // Recent Applicants
   const { data: recentApplicants } = useQuery({
     queryKey: ['dash-recent'],
-    queryFn: () => api.get('/applicants/', { params: { page_size: 6 } }).then(r => r.data.results ?? r.data),
+    queryFn: () => api.get('/applicants/', { params: { page_size: 5 } }).then(r => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 3,
   });
 
@@ -77,6 +85,20 @@ export default function DashboardPage() {
     queryKey: ['dash-pending-requests'],
     queryFn: () => api.get('/application-requests/', { params: { status: 'PENDING', page_size: 5 } }).then(r => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 3,
+  });
+
+  // New Messages (General queries from public frontend)
+  const { data: recentMessages } = useQuery({
+    queryKey: ['dash-recent-messages'],
+    queryFn: () => api.get('/contact-us/', { params: { page_size: 5 } }).then(r => r.data.results ?? r.data),
+    staleTime: 1000 * 60 * 3,
+  });
+
+  // Admin Notification Counts
+  const { data: notificationCounts } = useQuery({
+    queryKey: ['admin-notifications'],
+    queryFn: () => api.get('/admin-notifications/').then(r => r.data),
+    refetchInterval: 30000,
   });
 
   // Current Month Data
@@ -90,6 +112,36 @@ export default function DashboardPage() {
     queryKey: ['dash-current-month-slots'],
     queryFn: () => api.get('/public/staff-slots/current-month/').then(r => r.data).catch(() => []),
     staleTime: 1000 * 60 * 3,
+  });
+
+  // Mutation for updating contact message status
+  const messageMutation = useMutation({
+    mutationFn: ({ id, is_read }) => api.patch(`/contact-us/${id}/`, { is_read }),
+    onSuccess: (_, variables) => {
+      toast.success(variables.is_read ? 'Marked as read' : 'Marked as unread');
+      queryClient.invalidateQueries(['dash-recent-messages']);
+      queryClient.invalidateQueries(['admin-notifications']);
+      queryClient.invalidateQueries(['website-contact-us']);
+      if (selectedMessage) {
+        setSelectedMessage(prev => prev ? { ...prev, is_read: variables.is_read } : null);
+      }
+    },
+    onError: () => toast.error('Failed to update message status'),
+  });
+
+  // Mutation for updating soft application request status
+  const requestMutation = useMutation({
+    mutationFn: ({ id, status }) => api.patch(`/application-requests/${id}/`, { status }),
+    onSuccess: (_, variables) => {
+      toast.success(`Request status updated to ${variables.status}`);
+      queryClient.invalidateQueries(['dash-pending-requests']);
+      queryClient.invalidateQueries(['admin-notifications']);
+      queryClient.invalidateQueries(['application-requests']);
+      if (selectedRequest) {
+        setSelectedRequest(prev => prev ? { ...prev, status: variables.status } : null);
+      }
+    },
+    onError: () => toast.error('Failed to update request status'),
   });
 
   const monthApprovedCount = currentMonthResults?.filter(r => r.status_name?.toLowerCase().includes('approve') || r.status?.toLowerCase().includes('approve'))?.length || 0;
@@ -113,10 +165,13 @@ export default function DashboardPage() {
   const storedUser = localStorage.getItem('user');
   const username = storedUser ? JSON.parse(storedUser).username : 'Admin';
 
+  const unreadMessagesCount = notificationCounts?.unread_messages ?? (recentMessages?.filter(m => !m.is_read)?.length || 0);
+  const pendingLeadsCount = notificationCounts?.pending_requests ?? (pendingRequests?.length || 0);
+
   return (
     <div className="space-y-6 max-w-[1400px] mx-auto min-h-full pb-8">
       {/* Hero Greeting Section */}
-      <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-[#0d1f4e] via-[#1a3673] to-[#244b9e] p-8 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-[#0d1f4e] via-[#1a3673] to-[#244b9e] p-6 sm:p-8 text-white shadow-xl">
         <div className="absolute top-0 right-0 w-80 h-80 bg-white opacity-5 blur-[100px] rounded-full pointer-events-none transform translate-x-1/3 -translate-y-1/3"></div>
         <div className="absolute bottom-0 left-0 w-56 h-56 bg-blue-400 opacity-10 blur-[80px] rounded-full pointer-events-none transform -translate-x-1/4 translate-y-1/4"></div>
         
@@ -124,31 +179,36 @@ export default function DashboardPage() {
           <div>
             <motion.h1 
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-              className="text-3xl md:text-4xl font-black tracking-tight mb-2"
+              className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight mb-2"
             >
               Welcome back, <span className="text-blue-300">{username}</span> 👋
             </motion.h1>
             <motion.p 
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-blue-100/80 text-base font-medium max-w-xl"
+              className="text-blue-100/80 text-sm sm:text-base font-medium max-w-xl"
             >
-              Here's an overview of your agency's performance and pending tasks today. Keep up the great work!
+              Here's an overview of your agency's performance and pending tasks today.
             </motion.p>
           </div>
           
-          {/* Current Month Highlights Card inside Hero */}
+          {/* Hero Highlights */}
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.4, delay: 0.2 }}
-            className="flex gap-4 p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 shrink-0"
+            className="grid grid-cols-2 sm:flex items-center gap-3 sm:gap-4 p-3.5 sm:p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 shrink-0"
           >
             <div>
-              <p className="text-xs text-blue-200 font-medium uppercase tracking-wider mb-1">Month Approvals</p>
-              <p className="text-2xl font-bold text-white">{monthApprovedCount}</p>
+              <p className="text-[10px] sm:text-xs text-blue-200 font-medium uppercase tracking-wider mb-0.5">Month Approvals</p>
+              <p className="text-xl sm:text-2xl font-bold text-white">{monthApprovedCount}</p>
             </div>
-            <div className="w-px bg-white/20"></div>
+            <div className="hidden sm:block w-px h-8 bg-white/20"></div>
             <div>
-              <p className="text-xs text-blue-200 font-medium uppercase tracking-wider mb-1">Month Rejections</p>
-              <p className="text-2xl font-bold text-white">{monthRejectedCount}</p>
+              <p className="text-[10px] sm:text-xs text-blue-200 font-medium uppercase tracking-wider mb-0.5">Pending Soft Apps</p>
+              <p className="text-xl sm:text-2xl font-bold text-amber-300">{pendingLeadsCount}</p>
+            </div>
+            <div className="hidden sm:block w-px h-8 bg-white/20"></div>
+            <div>
+              <p className="text-[10px] sm:text-xs text-blue-200 font-medium uppercase tracking-wider mb-0.5">Unread Messages</p>
+              <p className="text-xl sm:text-2xl font-bold text-rose-300">{unreadMessagesCount}</p>
             </div>
           </motion.div>
         </div>
@@ -161,9 +221,10 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Left Column: Action Required */}
+        {/* Left Column */}
         <div className="lg:col-span-8 space-y-6">
           
+          {/* Action Required */}
           <motion.div variants={container} initial="hidden" animate="show" className="bg-white/80 backdrop-blur-xl rounded-3xl p-4 sm:p-6 shadow-sm border border-slate-100">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
@@ -182,7 +243,7 @@ export default function DashboardPage() {
                   <p className="text-sm font-bold text-slate-500">No recent applications.</p>
                 </div>
               ) : (
-                recentApplicants?.map((app, i) => (
+                recentApplicants?.map((app) => (
                   <motion.div 
                     variants={fadeUp}
                     key={app.id} 
@@ -214,64 +275,158 @@ export default function DashboardPage() {
             </div>
           </motion.div>
 
-          {/* Pending Soft Applications */}
-          <motion.div variants={container} initial="hidden" animate="show" className="bg-white/80 backdrop-blur-xl rounded-3xl p-4 sm:p-6 shadow-sm border border-slate-100 mt-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          {/* Inquiries & Requests Grid (Side-by-Side on desktop) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Pending Soft Applications Card */}
+            <motion.div variants={container} initial="hidden" animate="show" className="bg-white/80 backdrop-blur-xl rounded-3xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between">
               <div>
-                <h3 className="text-lg font-bold text-slate-800">Pending Soft Applications</h3>
-                <p className="text-sm text-slate-500 font-medium mt-0.5">Leads awaiting your review</p>
-              </div>
-              <Link to="/website/application-requests" className="inline-flex items-center gap-2 text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-2 rounded-xl hover:bg-indigo-100 transition-colors">
-                View All <ChevronRightIcon className="w-4 h-4" />
-              </Link>
-            </div>
-            
-            <div className="space-y-3">
-              {pendingRequests?.length === 0 ? (
-                <div className="text-center py-10 bg-slate-50 rounded-2xl border border-slate-100">
-                  <DocumentTextIcon className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                  <p className="text-sm font-bold text-slate-500">No pending leads right now.</p>
-                </div>
-              ) : (
-                pendingRequests?.map((req, i) => (
-                  <motion.div 
-                    variants={fadeUp}
-                    key={req.id} 
-                    className="group flex items-center justify-between p-3.5 rounded-2xl border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/50 hover:shadow-sm transition-all"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-200 flex items-center justify-center text-indigo-500 font-black text-base shrink-0 group-hover:from-indigo-200 group-hover:to-indigo-300 group-hover:text-indigo-800 transition-colors">
-                        {req.name?.charAt(0)}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-bold text-slate-800 group-hover:text-indigo-900 transition-colors truncate">{req.name}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="inline-block px-2 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-bold uppercase rounded-md tracking-wide truncate max-w-[120px] sm:max-w-none">
-                            {req.target_visa_name ? `${req.target_country_name} - ${req.target_visa_name}` : 'General Inquiry'}
-                          </span>
-                          <span className="w-1 h-1 rounded-full bg-slate-300 shrink-0"></span>
-                          <span className="text-[12px] text-slate-500 font-medium truncate">
-                            {req.phone}
-                          </span>
-                        </div>
-                      </div>
+                <div className="flex items-center justify-between gap-2 mb-4">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                      <ClipboardDocumentListIcon className="w-5 h-5" />
                     </div>
-                    <Link to="/website/application-requests" className="shrink-0 text-xs font-bold text-slate-600 bg-white border border-slate-200 px-4 py-2 rounded-xl hover:bg-slate-50 hover:text-slate-900 shadow-sm transition-all">
-                      Review
-                    </Link>
-                  </motion.div>
-                ))
+                    <div className="min-w-0">
+                      <h3 className="text-base font-bold text-slate-800 leading-snug truncate">Pending Soft Apps</h3>
+                      <p className="text-[11px] text-slate-400 font-medium">Website leads</p>
+                    </div>
+                  </div>
+                  <Link to="/website/application-requests" className="shrink-0 text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50/70 hover:bg-indigo-100 px-2.5 py-1.5 rounded-lg transition-colors">
+                    View All →
+                  </Link>
+                </div>
+                
+                <div className="space-y-2.5">
+                  {!pendingRequests || pendingRequests.length === 0 ? (
+                    <div className="text-center py-8 bg-slate-50/70 rounded-2xl border border-slate-100">
+                      <ClipboardDocumentListIcon className="w-8 h-8 text-slate-300 mx-auto mb-1.5" />
+                      <p className="text-xs font-bold text-slate-400">No pending soft applications.</p>
+                    </div>
+                  ) : (
+                    pendingRequests.slice(0, 4).map((req) => (
+                      <div 
+                        key={req.id} 
+                        className="group flex items-center justify-between p-2.5 rounded-xl border border-slate-100 hover:border-indigo-200 hover:bg-indigo-50/30 transition-all gap-2"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0">
+                            {req.name?.charAt(0)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-800 group-hover:text-indigo-900 truncate">{req.name}</p>
+                            <p className="text-[10px] text-slate-400 truncate">
+                              {req.target_visa_name ? `${req.target_country_name} - ${req.target_visa_name}` : req.phone}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setSelectedRequest(req)}
+                          className="shrink-0 text-[11px] font-bold text-indigo-600 hover:text-indigo-800 bg-white border border-slate-200 hover:border-indigo-300 px-2.5 py-1 rounded-lg shadow-2xs transition-all cursor-pointer"
+                        >
+                          Review
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {pendingRequests && pendingRequests.length > 4 && (
+                <div className="mt-4 pt-3 border-t border-slate-100 text-center">
+                  <Link to="/website/application-requests" className="text-xs font-bold text-indigo-600 hover:underline">
+                    + {pendingRequests.length - 4} more pending requests
+                  </Link>
+                </div>
               )}
-            </div>
-          </motion.div>
+            </motion.div>
+
+            {/* New Messages (General Queries) Card */}
+            <motion.div variants={container} initial="hidden" animate="show" className="bg-white/80 backdrop-blur-xl rounded-3xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-4">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 flex items-center justify-center shrink-0">
+                      <ChatBubbleLeftEllipsisIcon className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-base font-bold text-slate-800 leading-snug truncate">New Messages</h3>
+                      <p className="text-[11px] text-slate-400 font-medium">Public frontend queries</p>
+                    </div>
+                  </div>
+                  <Link to="/website/messages" className="shrink-0 text-xs font-bold text-teal-600 hover:text-teal-800 bg-teal-50/70 hover:bg-teal-100 px-2.5 py-1.5 rounded-lg transition-colors">
+                    View All →
+                  </Link>
+                </div>
+                
+                <div className="space-y-2.5">
+                  {!recentMessages || recentMessages.length === 0 ? (
+                    <div className="text-center py-8 bg-slate-50/70 rounded-2xl border border-slate-100">
+                      <ChatBubbleLeftEllipsisIcon className="w-8 h-8 text-slate-300 mx-auto mb-1.5" />
+                      <p className="text-xs font-bold text-slate-400">No public messages yet.</p>
+                    </div>
+                  ) : (
+                    recentMessages.slice(0, 4).map((msg) => (
+                      <div 
+                        key={msg.id} 
+                        className={`group flex items-center justify-between p-2.5 rounded-xl border transition-all gap-2 ${
+                          !msg.is_read 
+                            ? 'bg-rose-50/40 border-rose-100 hover:border-rose-300' 
+                            : 'bg-white border-slate-100 hover:border-teal-200'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={`w-8 h-8 rounded-lg font-bold text-xs flex items-center justify-center shrink-0 ${
+                            !msg.is_read ? 'bg-rose-100 text-rose-700' : 'bg-teal-100 text-teal-700'
+                          }`}>
+                            {msg.name?.charAt(0)}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-xs font-bold text-slate-800 group-hover:text-teal-900 truncate">{msg.name}</p>
+                              {!msg.is_read && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-slate-400 truncate">
+                              {msg.subject || msg.email}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setSelectedMessage(msg)}
+                          className={`shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-lg border shadow-2xs transition-all cursor-pointer ${
+                            !msg.is_read 
+                              ? 'bg-rose-600 hover:bg-rose-700 text-white border-rose-600' 
+                              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          {!msg.is_read ? 'Read' : 'View'}
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {recentMessages && recentMessages.length > 4 && (
+                <div className="mt-4 pt-3 border-t border-slate-100 text-center">
+                  <Link to="/website/messages" className="text-xs font-bold text-teal-600 hover:underline">
+                    View all public queries →
+                  </Link>
+                </div>
+              )}
+            </motion.div>
+
+          </div>
+
         </div>
 
-        {/* Right Column: Quick Actions & Slots Preview */}
+        {/* Right Column */}
         <div className="lg:col-span-4 space-y-6">
           
           {/* Quick Actions Grid */}
           <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-            {QUICK_ACTIONS.map((a, i) => (
+            {QUICK_ACTIONS.map((a) => (
               <Link key={a.label} to={a.to}>
                 <motion.div
                   variants={fadeUp}
@@ -326,6 +481,203 @@ export default function DashboardPage() {
 
         </div>
       </div>
+
+      {/* QUICK VIEW MODAL: MESSAGE DETAIL */}
+      <AnimatePresence>
+        {selectedMessage && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-5 relative overflow-hidden"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-teal-50 border border-teal-100 text-teal-600 flex items-center justify-center shrink-0">
+                    <ChatBubbleLeftEllipsisIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800 leading-tight">Public Inquiry Message</h3>
+                    <p className="text-xs text-slate-400">
+                      Received {new Date(selectedMessage.created_at || Date.now()).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedMessage(null)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 bg-slate-50/70 rounded-2xl p-4 border border-slate-100 text-xs text-slate-700">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="font-semibold text-slate-400 uppercase text-[10px] block">Sender Name</span>
+                    <span className="font-bold text-slate-800">{selectedMessage.name}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-400 uppercase text-[10px] block">Phone</span>
+                    <span className="font-bold text-slate-800">{selectedMessage.phone || 'N/A'}</span>
+                  </div>
+                </div>
+                <div>
+                  <span className="font-semibold text-slate-400 uppercase text-[10px] block">Email</span>
+                  <a href={`mailto:${selectedMessage.email}`} className="font-medium text-teal-600 hover:underline">
+                    {selectedMessage.email}
+                  </a>
+                </div>
+                <div>
+                  <span className="font-semibold text-slate-400 uppercase text-[10px] block">Subject</span>
+                  <span className="font-bold text-slate-900">{selectedMessage.subject || 'General Inquiry'}</span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <span className="font-semibold text-slate-400 uppercase text-[10px] block">Message Content</span>
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap">
+                  {selectedMessage.message || 'No message content provided.'}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-3">
+                <button
+                  onClick={() => messageMutation.mutate({ id: selectedMessage.id, is_read: !selectedMessage.is_read })}
+                  disabled={messageMutation.isPending}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                    selectedMessage.is_read
+                      ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                      : 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700 shadow-sm'
+                  }`}
+                >
+                  {selectedMessage.is_read ? 'Mark as Unread' : 'Mark as Read'}
+                </button>
+                <div className="flex items-center gap-2">
+                  <Link
+                    to="/website/messages"
+                    onClick={() => setSelectedMessage(null)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                  >
+                    Manage in Messages Page
+                  </Link>
+                  <button
+                    onClick={() => setSelectedMessage(null)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 transition-colors cursor-pointer"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* QUICK VIEW MODAL: APPLICATION REQUEST DETAIL */}
+      <AnimatePresence>
+        {selectedRequest && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-5 relative overflow-hidden"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                    <ClipboardDocumentListIcon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800 leading-tight">Soft Application Request</h3>
+                    <p className="text-xs text-slate-400">
+                      Submitted {new Date(selectedRequest.created_at || Date.now()).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedRequest(null)}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-3 bg-slate-50/70 rounded-2xl p-4 border border-slate-100 text-xs text-slate-700">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="font-semibold text-slate-400 uppercase text-[10px] block">Applicant Name</span>
+                    <span className="font-bold text-slate-800">{selectedRequest.name}</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-slate-400 uppercase text-[10px] block">Phone</span>
+                    <a href={`tel:${selectedRequest.phone}`} className="font-bold text-indigo-600 hover:underline">
+                      {selectedRequest.phone}
+                    </a>
+                  </div>
+                </div>
+                <div>
+                  <span className="font-semibold text-slate-400 uppercase text-[10px] block">Email</span>
+                  <span className="font-medium text-slate-800">{selectedRequest.email || 'N/A'}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-slate-400 uppercase text-[10px] block">Target Visa</span>
+                  <span className="font-bold text-indigo-900 inline-block px-2 py-0.5 bg-indigo-50 rounded-md border border-indigo-100 mt-0.5">
+                    {selectedRequest.target_visa_name ? `${selectedRequest.target_country_name} - ${selectedRequest.target_visa_name}` : 'General Soft Application'}
+                  </span>
+                </div>
+              </div>
+
+              {selectedRequest.message && (
+                <div className="space-y-1.5">
+                  <span className="font-semibold text-slate-400 uppercase text-[10px] block">Applicant Note / Message</span>
+                  <div className="bg-white border border-slate-200 rounded-2xl p-4 text-xs text-slate-700 leading-relaxed max-h-40 overflow-y-auto whitespace-pre-wrap">
+                    {selectedRequest.message}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <span className="font-semibold text-slate-400 uppercase text-[10px] block">Update Lead Status</span>
+                <div className="flex items-center gap-2">
+                  {['PENDING', 'REVIEWED', 'CONTACTED'].map((st) => (
+                    <button
+                      key={st}
+                      onClick={() => requestMutation.mutate({ id: selectedRequest.id, status: st })}
+                      disabled={requestMutation.isPending}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                        selectedRequest.status === st
+                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {st}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-3">
+                <Link
+                  to="/website/application-requests"
+                  onClick={() => setSelectedRequest(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+                >
+                  Go to All Requests →
+                </Link>
+                <button
+                  onClick={() => setSelectedRequest(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-slate-800 hover:bg-slate-900 transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -180,6 +180,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
     </div>
   );
 
+
   const DocumentFooter = () => (
     <div className="print-footer absolute bottom-0 left-0 right-0 h-12 bg-blue-900 text-white flex items-center justify-between px-8 text-[9px] font-medium z-30 w-full rounded-b-lg print:rounded-none">
       <div className="flex items-center gap-2">

@@ -246,6 +246,7 @@ function App() {
                 <Route path="important-notes" element={<ImportantNotesSettings />} />
                 <Route path="offices" element={<OfficesSettings />} />
                 <Route path="designations" element={<DesignationsSettings />} />
+                <Route path="currencies" element={<CurrenciesConfigPage />} />
                 <Route path="statuses" element={<ApplicationStatusSettings />} />
                 <Route path="tags" element={<ApplicantTagsSettings />} />
                 <Route path="lawyers" element={<LawyersSettings />} />

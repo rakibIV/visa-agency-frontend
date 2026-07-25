@@ -74,9 +74,54 @@ export default function ApplicantStatusUpdatePage() {
     onError: (err) => toast.error(parseApiError(err)),
   });
 
+  // Mutation to reset a rejected applicant
+  const resetApplicantMutation = useMutation({
+    mutationFn: (applicantId) => api.post(`/applicants/${applicantId}/reset/`),
+    onSuccess: () => {
+      toast.success('Applicant profile reset successfully! Financials & agreements cleared.');
+      queryClient.removeQueries();
+      queryClient.invalidateQueries();
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
+    },
+    onError: (err) => toast.error(parseApiError(err)),
+  });
+
   const handleStatusChange = (applicantId, newStatusId) => {
     if (!newStatusId) return;
     updateStatusMutation.mutate({ id: applicantId, statusId: newStatusId });
+  };
+
+  const getStatusOptions = (applicant) => {
+    if (!statuses || statuses.length === 0) return { options: [], currentSerial: null };
+    const sorted = [...statuses].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+
+    const currentId = applicant.status;
+    const currentName = applicant.status_name;
+    const currIdx = sorted.findIndex(
+      s => String(s.id) === String(currentId) || s.name === currentName
+    );
+
+    const currentSerial = currIdx >= 0 ? currIdx + 1 : null;
+
+    const options = sorted.map((s, idx) => {
+      const isCurrent = String(s.id) === String(currentId) || s.name === currentName;
+      const isForward = currIdx >= 0 && idx > currIdx;
+      const isRejection = s.name?.toLowerCase().includes('reject') || s.slug?.toLowerCase().includes('reject');
+
+      // Admin can move forward to any step ahead, stay at current, or select Rejection
+      const isAllowed = currIdx === -1 || isCurrent || isForward || isRejection;
+
+      return {
+        ...s,
+        serialNumber: idx + 1,
+        isCurrent,
+        isAllowed,
+      };
+    });
+
+    return { options, currentSerial };
   };
 
   const getDaysInfo = (applicant) => {
@@ -160,18 +205,16 @@ export default function ApplicantStatusUpdatePage() {
               <tbody className="divide-y divide-slate-50">
                 {applicants.map((applicant, i) => {
                   const dayInfo = getDaysInfo(applicant);
+                  const { options: statusOptions, currentSerial } = getStatusOptions(applicant);
 
                   return (
                     <motion.tr
                       key={applicant.id}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.04 }}
-                      className="hover:bg-blue-50/30 transition-colors"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="hover:bg-slate-50/80 transition-colors text-sm"
                     >
-                      <td className="px-5 py-4 font-mono text-xs text-slate-500 font-semibold">
-                        {applicant.application_id || `#${applicant.id?.slice(0, 8)}`}
-                      </td>
+                      <td className="px-5 py-4 font-mono font-bold text-slate-700">{applicant.application_id}</td>
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0 overflow-hidden">
@@ -191,7 +234,7 @@ export default function ApplicantStatusUpdatePage() {
                       </td>
                       <td className="px-5 py-4 font-mono text-slate-600 font-semibold">{applicant.passport_number}</td>
                       <td className="px-5 py-4">
-                        <span className={`inline-flex px-2.5 py-1 rounded-md text-xs font-bold ${STATUS_STYLES[applicant.status_name?.toLowerCase()] || STATUS_STYLES.pending}`}>
+                        <span className={`inline-flex px-3 py-1 rounded-md text-xs font-bold ${STATUS_STYLES[applicant.status_name?.toLowerCase()] || STATUS_STYLES.pending}`}>
                           {applicant.status_name || 'Pending'}
                         </span>
                       </td>
@@ -203,16 +246,40 @@ export default function ApplicantStatusUpdatePage() {
                               Updating...
                             </div>
                           ) : (
-                            <select
-                              value={applicant.status || ''}
-                              onChange={(e) => handleStatusChange(applicant.id, e.target.value)}
-                              className="w-full max-w-[200px] border border-slate-200 rounded-lg py-1.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                              <option value="" disabled>Select Status...</option>
-                              {statuses?.map(s => (
-                                <option key={s.id} value={s.id}>{s.name}</option>
-                              ))}
-                            </select>
+                            <div className="flex items-center gap-2">
+                              <select
+                                value={applicant.status || ''}
+                                onChange={(e) => handleStatusChange(applicant.id, e.target.value)}
+                                className="w-full max-w-[210px] border border-slate-200 rounded-lg py-1.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                              >
+                                <option value="" disabled>Select Status...</option>
+                                {statusOptions.map(s => (
+                                  <option 
+                                    key={s.id} 
+                                    value={s.id}
+                                    disabled={!s.isAllowed}
+                                    className={!s.isAllowed ? 'text-slate-400 bg-slate-50' : 'text-slate-800 font-semibold'}
+                                  >
+                                    {s.name}{s.isCurrent ? ' (Current)' : !s.isAllowed ? ' (Locked)' : ''}
+                                  </option>
+                                ))}
+                              </select>
+
+                              {applicant.status_name?.toLowerCase().includes('reject') && (
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm(`⚠️ WARNING: Are you sure you want to reset ${applicant.full_name}'s profile? This will permanently DELETE all payments, money receipts, refunds, and agreements, and reset status back to initial.`)) {
+                                      resetApplicantMutation.mutate(applicant.id);
+                                    }
+                                  }}
+                                  disabled={resetApplicantMutation.isPending}
+                                  className="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-xs shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                                >
+                                  <ArrowPathIcon className={`w-3.5 h-3.5 ${resetApplicantMutation.isPending && resetApplicantMutation.variables === applicant.id ? 'animate-spin' : ''}`} />
+                                  Reset
+                                </button>
+                              )}
+                            </div>
                           )}
 
                           {dayInfo && (

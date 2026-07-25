@@ -30,7 +30,7 @@ export default function CompanySettings() {
         { name: 'email', label: 'Email', type: 'email' },
         { name: 'website', label: 'Website URL', type: 'text' },
         { name: 'company_logo', label: 'Company Logo', type: 'file', accept: 'image/*' },
-        { name: 'company_signature', label: 'Company Signature', type: 'file', accept: 'image/*' },
+        { name: 'company_signature', label: 'Company Signature (300x80 px)', type: 'file', accept: 'image/*', requiredWidth: 300, requiredHeight: 80 },
         { name: 'money_receipt_important_note', label: 'Default Money Receipt Important Note', type: 'textarea', rows: 3 },
         { name: 'address', label: 'Address', type: 'textarea' },
         { name: 'about', label: 'About Us', type: 'textarea' },
