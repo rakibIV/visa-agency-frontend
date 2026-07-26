@@ -14,6 +14,7 @@ export default function StaffFormPage() {
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [employeeId, setEmployeeId] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [designationId, setDesignationId] = useState('');
@@ -72,6 +73,7 @@ export default function StaffFormPage() {
       const names = (staff.user?.full_name || staff.full_name || '').split(' ');
       setFirstName(names[0] || '');
       setLastName(names.slice(1).join(' ') || '');
+      setEmployeeId(staff.employee_id || '');
       setEmail(staff.user?.email || staff.email || '');
       
       let dId = staff.designation?.id || staff.designation;
@@ -141,6 +143,7 @@ export default function StaffFormPage() {
     const fd = new FormData();
     fd.append('first_name', firstName);
     fd.append('last_name', lastName);
+    fd.append('employee_id', employeeId ? employeeId.trim() : '');
     fd.append('email', email);
     if (password) fd.append('password', password);
     fd.append('designation', designationId);
@@ -193,6 +196,10 @@ export default function StaffFormPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           
           <div className="col-span-1 md:col-span-2 text-sm font-bold text-slate-800 border-b pb-2 mb-2">Account & Organization</div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Employee ID <span className="text-slate-400 font-normal lowercase">(optional - leave blank to auto-generate)</span></label>
+            <input type="text" value={employeeId} onChange={e => setEmployeeId(e.target.value)} placeholder="Auto-generated if left blank (e.g. EMP-0001)" className="w-full px-3 py-2 border border-slate-200 rounded-xl" />
+          </div>
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">First Name <span className="text-red-500">*</span></label>
             <input type="text" value={firstName} onChange={e => setFirstName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 rounded-xl" required />
