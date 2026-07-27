@@ -57,10 +57,12 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo, curr
   const dbExchangeRate = Number(payment.exchange_rate) || 0;
 
   const eurRatio = dbExchangeRate > 0
-    ? dbExchangeRate
-    : (paidAmount > 0 ? eurAmount / paidAmount : 0.00711);
+    ? (dbExchangeRate > 1 ? 1 / dbExchangeRate : dbExchangeRate)
+    : (paidAmount > 0 && eurAmount > 0 ? eurAmount / paidAmount : 0.00714286);
 
-  const displayExchangeRate = eurRatio > 0 ? (1 / eurRatio).toFixed(2) : '140.69';
+  const displayExchangeRate = dbExchangeRate > 0
+    ? (dbExchangeRate > 1 ? dbExchangeRate.toFixed(2) : (1 / dbExchangeRate).toFixed(2))
+    : (eurRatio > 0 ? (1 / eurRatio).toFixed(2) : '140.00');
   const paidCurrency = payment.currency || 'BDT';
   const paidCurrencySymbol = getCurrencySymbol(paidCurrency);
   const paidCurrencyName = getCurrencyName(paidCurrency);

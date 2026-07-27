@@ -165,6 +165,11 @@ export default function FakeLiveResultsPage() {
         { header: 'Job', accessor: 'job_name' },
         { header: 'Country', accessor: 'country_name' },
         { header: 'Status', accessor: 'status_name' },
+        { 
+          header: 'Result Date', 
+          accessor: 'result_date',
+          render: (item) => item.result_date ? String(item.result_date).split('T')[0] : 'N/A'
+        },
       ]}
       formFields={[
         { name: 'application_id', label: 'Application ID', type: 'text', required: true },

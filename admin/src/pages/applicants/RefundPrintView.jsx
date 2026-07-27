@@ -52,10 +52,12 @@ export default function RefundPrintView({ applicant, refund, companyInfo, curren
   const dbExchangeRate = Number(samplePayment?.exchange_rate) || 0;
 
   const eurRatio = dbExchangeRate > 0 
-    ? dbExchangeRate 
-    : (sampleAmount > 0 ? sampleEur / sampleAmount : 0.00711);
+    ? (dbExchangeRate > 1 ? 1 / dbExchangeRate : dbExchangeRate)
+    : (sampleAmount > 0 && sampleEur > 0 ? sampleEur / sampleAmount : 0.00714286);
 
-  const exchangeRate = eurRatio > 0 ? (1 / eurRatio).toFixed(2) : '140.69';
+  const exchangeRate = dbExchangeRate > 0 
+    ? (dbExchangeRate > 1 ? dbExchangeRate.toFixed(2) : (1 / dbExchangeRate).toFixed(2))
+    : (eurRatio > 0 ? (1 / eurRatio).toFixed(2) : '140.00');
 
   const paidAmount = Number(refund.refund_amount) || 0;
   const eurAmount = paidAmount * eurRatio;

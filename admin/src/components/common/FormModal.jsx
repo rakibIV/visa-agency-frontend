@@ -22,6 +22,15 @@ export default function FormModal({
         if (field.type === 'select' && data[field.name] && typeof data[field.name] === 'object') {
           data[field.name] = data[field.name].id || data[field.name];
         }
+        if (field.type === 'date' && data[field.name]) {
+          data[field.name] = String(data[field.name]).split('T')[0];
+        }
+        if (field.type === 'datetime-local' && data[field.name]) {
+          const dt = new Date(data[field.name]);
+          if (!isNaN(dt.getTime())) {
+            data[field.name] = dt.toISOString().slice(0, 16);
+          }
+        }
       });
       setFormData(data);
       setImagePreviews({});

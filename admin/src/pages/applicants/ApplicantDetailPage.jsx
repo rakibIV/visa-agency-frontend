@@ -258,7 +258,11 @@ export default function ApplicantDetailPage() {
       setPaymentAmount(payment.amount || '');
       setPaymentMethod(payment.payment_method || 'CASH');
       setCurrency(payment.currency || 'BDT');
-      setManualExchangeRate(payment.exchange_rate || '');
+      const rateVal = payment.exchange_rate ? Number(payment.exchange_rate) : 0;
+      const displayRate = (rateVal > 0 && payment.currency !== 'EUR')
+        ? (rateVal < 1 ? (1 / rateVal).toFixed(4) : String(rateVal))
+        : '';
+      setManualExchangeRate(displayRate);
       setPaymentDate(payment.payment_date || new Date().toISOString().split('T')[0]);
       setPaymentRemarks(payment.note || payment.remarks || '');
       setReference(payment.reference || '');
@@ -996,17 +1000,46 @@ export default function ApplicantDetailPage() {
                         </select>
                       </div>
                       
-                      {useManualExchangeRate && (
+                      {currency !== 'EUR' && (
                         <div>
-                          <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Exchange Rate</label>
+                          <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                            Exchange Rate (1 EUR = ? {currency})
+                          </label>
                           <input
                             type="number"
                             step="0.0001"
                             value={manualExchangeRate}
                             onChange={(e) => setManualExchangeRate(e.target.value)}
-                            placeholder="e.g. 140.6900"
+                            placeholder={currency === 'BDT' ? "e.g. 140.0000" : "Rate per EUR"}
                             className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                           />
+                          <p className="text-[10px] text-slate-400 mt-1">
+                            * Input {currency} per 1 EUR (e.g. 140). Backend will calculate Euro amount.
+                          </p>
+                        </div>
+                      )}
+                      
+                      {paymentAmount && Number(paymentAmount) > 0 && (
+                        <div className="col-span-1 sm:col-span-2 bg-blue-50/80 border border-blue-100 rounded-xl p-3 flex justify-between items-center text-xs">
+                          <span className="font-semibold text-blue-900">
+                            Calculated Euro Amount:
+                          </span>
+                          <span className="font-extrabold text-blue-700 text-sm">
+                            € {(() => {
+                              const amt = Number(paymentAmount) || 0;
+                              if (currency === 'EUR') return amt.toFixed(2);
+                              const rate = Number(manualExchangeRate) || 0;
+                              if (rate > 0) {
+                                if (currency === 'GBP') {
+                                  if (rate >= 1) return (amt * rate).toFixed(2);
+                                  return (amt / rate).toFixed(2);
+                                }
+                                if (rate > 1) return (amt / rate).toFixed(2);
+                                return (amt * rate).toFixed(2);
+                              }
+                              return '(Calculated by Backend)';
+                            })()}
+                          </span>
                         </div>
                       )}
                       
