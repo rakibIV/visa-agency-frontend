@@ -30,7 +30,15 @@ export default function LoginPage() {
       await login(username, password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.detail || 'Invalid username or password.');
+      const data = err.response?.data;
+      const msg = 
+        data?.detail || 
+        (Array.isArray(data?.non_field_errors) ? data.non_field_errors[0] : null) ||
+        data?.message || 
+        (typeof data === 'string' ? data : null) ||
+        err.message || 
+        'Invalid username or password.';
+      setError(msg);
     } finally {
       setLoading(false);
     }

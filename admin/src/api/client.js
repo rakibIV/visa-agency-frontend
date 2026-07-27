@@ -22,7 +22,9 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config;
-    if (error.response?.status === 401 && !original._retry) {
+    const isAuthRequest = original?.url?.includes('/auth/token');
+
+    if (error.response?.status === 401 && !original._retry && !isAuthRequest) {
       original._retry = true;
       const refresh = localStorage.getItem('refresh_token');
       if (refresh) {
@@ -33,10 +35,14 @@ api.interceptors.response.use(
           return api(original);
         } catch {
           localStorage.clear();
-          window.location.href = '/login';
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+          }
         }
       } else {
-        window.location.href = '/login';
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(error);

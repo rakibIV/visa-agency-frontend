@@ -231,7 +231,12 @@ export default function ApplicantFormPage() {
     onSuccess: () => {
       toast.success(isEdit ? 'Applicant updated successfully!' : 'Applicant created successfully!');
       queryClient.invalidateQueries(['applicants']);
-      navigate('/applicants');
+      queryClient.invalidateQueries(['applicant', id]);
+      if (isEdit) {
+        navigate(`/applicants/${id}`);
+      } else {
+        navigate('/applicants');
+      }
     },
     onError: (err) => {
       const errMsg = parseApiError(err);
@@ -276,7 +281,9 @@ export default function ApplicantFormPage() {
     if (currentCountry) fd.append('current_country', currentCountry);
     if (remarks) fd.append('remarks', remarks);
     if (selectedSlotId) fd.append('slot', selectedSlotId);
-    if (selectedLawyerId) fd.append('lawyer', selectedLawyerId);
+    if (isEdit || selectedLawyerId) {
+      fd.append('lawyer', selectedLawyerId || '');
+    }
     fd.append('send_email_on_status_change', sendEmailOnStatusChange);
 
     const profileData = {
@@ -313,11 +320,14 @@ export default function ApplicantFormPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <button
-        onClick={() => navigate('/applicants')}
-        className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors text-sm font-semibold"
+        onClick={() => {
+          if (isEdit) navigate(`/applicants/${id}`);
+          else navigate('/applicants');
+        }}
+        className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors text-sm font-semibold cursor-pointer"
       >
         <ArrowLeftIcon className="w-4 h-4" />
-        Back to list
+        {isEdit ? 'Back to applicant profile' : 'Back to list'}
       </button>
 
       <div>

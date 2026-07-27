@@ -118,7 +118,12 @@ export default function StaffFormPage() {
     onSuccess: () => {
       toast.success(isEdit ? 'Staff updated successfully!' : 'Staff created successfully!');
       queryClient.invalidateQueries(['staffs']);
-      navigate('/staff');
+      queryClient.invalidateQueries(['staff', id]);
+      if (isEdit) {
+        navigate(`/staff/${id}`);
+      } else {
+        navigate('/staff');
+      }
     },
     onError: (err) => {
       const errMsg = parseApiError(err);

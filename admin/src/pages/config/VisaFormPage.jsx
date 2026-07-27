@@ -89,7 +89,12 @@ export default function VisaFormPage() {
     onSuccess: () => {
       toast.success(isEdit ? 'Visa updated successfully!' : 'Visa created successfully!');
       queryClient.invalidateQueries(['config-visas']);
-      navigate('/config/visas');
+      queryClient.invalidateQueries(['config-visa', id]);
+      if (isEdit) {
+        navigate(`/config/visas/${id}`);
+      } else {
+        navigate('/config/visas');
+      }
     },
     onError: (err) => {
       const errMsg = parseApiError(err);

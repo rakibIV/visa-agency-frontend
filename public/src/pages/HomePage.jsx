@@ -83,7 +83,10 @@ export default function HomePage() {
   const activeReviews = reviews?.filter(r => r.is_active)?.slice(0, 5) || [];
   const recentUpdates = updates?.slice(0, 8) || [];
 
-  const totalApplicantsCount = appStats?.total ? `${appStats.total}+` : '15k+';
+  const baseServed = 17000;
+  const dbServed = appStats?.total ?? 0;
+  const combinedServed = baseServed + dbServed;
+  const totalApplicantsCount = `${(combinedServed >= 1000 ? `${(combinedServed / 1000).toFixed(0)}k` : combinedServed)}+`;
 
   const services = [
     { title: 'Work Visa Programs', description: 'Secure your global career with comprehensive work permit assistance for top destinations.', image: workServiceImg, icon: <WorkIcon /> },
@@ -436,7 +439,7 @@ export default function HomePage() {
               >
                 {[...recentUpdates, ...recentUpdates].map((item, i) => (
                   <div key={i} className="flex items-center gap-2.5 bg-white/5 px-4 py-1.5 rounded-full border border-white/10">
-                    <div className={`w-1.5 h-1.5 rounded-full ${item.status?.toLowerCase() === 'approved' ? 'bg-green-400' : 'bg-red-400'}`} />
+                    <div className={`w-1.5 h-1.5 rounded-full ${(item.is_approved !== undefined ? item.is_approved : (item.status?.toLowerCase() === 'approved' || item.status?.toLowerCase().includes('approve'))) ? 'bg-green-400' : 'bg-red-400'}`} />
                     <span className="text-xs font-semibold text-white">{item.applicant_name}</span>
                     <span className="text-xs text-white/40">•</span>
                     <span className="text-xs text-white/50">{item.country}</span>
@@ -483,28 +486,33 @@ export default function HomePage() {
           </div>
 
           {/* Mobile: Vertical timeline */}
-          <div className="md:hidden relative pl-10">
-            {/* Vertical line */}
-            <div className="absolute left-[18px] top-0 bottom-0 w-px bg-navy-200" />
+          <div className="md:hidden relative space-y-6">
+            {steps.map((step, i) => {
+              const isLast = i === steps.length - 1;
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  className="relative flex items-start gap-4 z-10"
+                >
+                  {/* Connecting vertical line only between nodes */}
+                  {!isLast && (
+                    <div className="absolute left-[19px] top-10 bottom-[-24px] w-0.5 bg-navy-200" />
+                  )}
 
-            {steps.map((step, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="relative mb-10 last:mb-0"
-              >
-                <div className="absolute -left-10 top-0 w-9 h-9 rounded-full bg-white border-2 border-navy-200 flex items-center justify-center shadow-soft">
-                  <span className="text-xs font-black text-accent-600 font-heading">{step.num}</span>
-                </div>
-                <div className="pl-4">
-                  <h3 className="heading-md text-navy-900 font-heading mb-1">{step.title}</h3>
-                  <p className="text-sm text-navy-500">{step.desc}</p>
-                </div>
-              </motion.div>
-            ))}
+                  <div className="w-10 h-10 rounded-full bg-white border-2 border-accent-500 flex items-center justify-center shadow-md shrink-0 ring-4 ring-surface-dim z-10">
+                    <span className="text-xs font-black text-accent-600 font-heading">{step.num}</span>
+                  </div>
+                  <div className="bg-white p-4.5 rounded-2xl border border-navy-100/80 shadow-xs flex-1">
+                    <h3 className="heading-md text-navy-900 font-heading mb-1">{step.title}</h3>
+                    <p className="text-sm text-navy-500 leading-relaxed">{step.desc}</p>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>

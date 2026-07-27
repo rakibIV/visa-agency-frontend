@@ -3,9 +3,11 @@ import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/client';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import Pagination from '../components/common/Pagination';
 
 export default function VisaUpdatesPage() {
   const [filter, setFilter] = useState('ALL');
+  const [page, setPage] = useState(1);
   const [zoomLevel, setZoomLevel] = useState(1);
 
   // Calculate zoom level to force desktop view on mobile
@@ -65,13 +67,24 @@ export default function VisaUpdatesPage() {
     if (!updatesList) return [];
     if (filter === 'ALL') return updatesList;
     if (filter === 'APPROVED') {
-      return updatesList.filter(u => u.status?.toUpperCase().includes('APPROV'));
+      return updatesList.filter(u => u.is_approved !== undefined ? u.is_approved : u.status?.toUpperCase().includes('APPROV'));
     }
     if (filter === 'REJECTED') {
-      return updatesList.filter(u => u.status?.toUpperCase().includes('REJECT'));
+      return updatesList.filter(u => u.is_rejected !== undefined ? u.is_rejected : u.status?.toUpperCase().includes('REJECT'));
     }
     return updatesList.filter(u => u.status?.toUpperCase() === filter);
   }, [updatesList, filter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filter]);
+
+  const itemsPerPage = 15;
+  const totalPages = Math.ceil((filteredUpdates?.length || 0) / itemsPerPage);
+  const paginatedUpdates = useMemo(() => {
+    const start = (page - 1) * itemsPerPage;
+    return filteredUpdates.slice(start, start + itemsPerPage);
+  }, [filteredUpdates, page, itemsPerPage]);
 
   return (
     <div className="bg-surface-dim min-h-screen pb-24 overflow-x-hidden">
@@ -189,84 +202,91 @@ export default function VisaUpdatesPage() {
             <p className="text-navy-500">No {filter !== 'ALL' ? filter.toLowerCase() : ''} decisions have been recorded for this month yet.</p>
           </div>
         ) : (
-          <div className="bg-white rounded-[2rem] shadow-card border border-navy-50 overflow-x-auto w-full">
-            <table className="w-full min-w-[1200px] text-left border-collapse">
-              <thead>
-                <tr className="bg-navy-900 text-white border-b border-navy-800">
-                  <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em] w-16 text-center">No</th>
-                  <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em]">Name</th>
-                  <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em]">App ID</th>
-                  <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em]">Passport</th>
-                  <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em]">Country</th>
-                  <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em]">Visa</th>
-                  <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em]">Job</th>
-                  <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em] w-28 text-center">Date</th>
-                  <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em] w-32 text-center">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-navy-50/50">
-                <AnimatePresence>
-                  {filteredUpdates.map((update, index) => {
-                    const isApproved = update.status?.toUpperCase().includes('APPROV');
-                    const rowBg = index % 2 === 0 ? "bg-white" : "bg-[#fbfcfd]";
-                    
-                    return (
-                      <motion.tr
-                        key={update.application_id || index}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95 }}
-                        transition={{ delay: index * 0.05 }}
-                        className={`${rowBg} hover:bg-navy-50/40 transition-colors duration-200 group relative`}
-                      >
-                        <td className="py-4 px-6 text-center relative">
-                          <div className={`absolute left-0 top-0 bottom-0 w-1 ${isApproved ? 'bg-green-500' : 'bg-red-500'}`} />
-                          <div className="inline-flex w-8 h-8 rounded-xl bg-navy-50 text-navy-900 items-center justify-center font-bold text-sm group-hover:bg-accent-50 group-hover:text-accent-700 transition-colors">
-                            {index + 1}
-                          </div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="font-bold text-navy-900 text-[14px] whitespace-nowrap">{update.applicant_name}</div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="font-bold text-navy-700 text-[13px]">{update.application_id}</div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="font-bold text-navy-700 text-[13px]">{update.passport_number || 'N/A'}</div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="font-bold text-navy-900 text-[13px]">{update.country}</div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="font-bold text-navy-600 text-[13px]">{update.visa}</div>
-                        </td>
-                        <td className="py-4 px-6">
-                          <div className="text-navy-700 font-medium text-[13px] truncate max-w-[150px]">{update.job}</div>
-                        </td>
-                        <td className="py-4 px-6 text-center">
-                          <div className="font-bold text-navy-900 text-xs">
-                            {new Date(update.result_date || Date.now()).getDate()} {new Date(update.result_date || Date.now()).toLocaleString('default', { month: 'short' })}
-                          </div>
-                          <div className="text-[9px] text-navy-400 font-bold uppercase mt-0.5">
-                            {new Date(update.result_date || Date.now()).getFullYear()}
-                          </div>
-                        </td>
-                        <td className="py-4 px-6 text-center">
-                          <span className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase w-full border ${
-                            isApproved 
-                              ? 'bg-green-50 text-green-700 border-green-200' 
-                              : 'bg-red-50 text-red-700 border-red-200'
-                          }`}>
-                            {update.status}
-                          </span>
-                        </td>
-                      </motion.tr>
-                    );
-                  })}
-                </AnimatePresence>
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="bg-white rounded-[2rem] shadow-card border border-navy-50 overflow-x-auto w-full">
+              <table className="w-full min-w-[1200px] text-left border-collapse">
+                <thead>
+                  <tr className="bg-navy-900 text-white border-b border-navy-800">
+                    <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em] w-16 text-center">No</th>
+                    <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em]">Name</th>
+                    <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em]">App ID</th>
+                    <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em]">Passport</th>
+                    <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em]">Country</th>
+                    <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em]">Visa</th>
+                    <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em]">Job</th>
+                    <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em] w-28 text-center">Date</th>
+                    <th className="py-5 px-6 font-bold text-[11px] uppercase tracking-[0.2em] w-32 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-navy-50/50">
+                  <AnimatePresence>
+                    {paginatedUpdates.map((update, index) => {
+                      const isApproved = update.is_approved !== undefined ? update.is_approved : update.status?.toUpperCase().includes('APPROV');
+                      const rowBg = index % 2 === 0 ? "bg-white" : "bg-[#fbfcfd]";
+                      
+                      return (
+                        <motion.tr
+                          key={update.application_id || index}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          transition={{ delay: index * 0.05 }}
+                          className={`${rowBg} hover:bg-navy-50/40 transition-colors duration-200 group relative`}
+                        >
+                          <td className="py-4 px-6 text-center relative">
+                            <div className={`absolute left-0 top-0 bottom-0 w-1 ${isApproved ? 'bg-green-500' : 'bg-red-500'}`} />
+                            <div className="inline-flex w-8 h-8 rounded-xl bg-navy-50 text-navy-900 items-center justify-center font-bold text-sm group-hover:bg-accent-50 group-hover:text-accent-700 transition-colors">
+                              {index + 1}
+                            </div>
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="font-bold text-navy-900 text-[14px] whitespace-nowrap">{update.applicant_name}</div>
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="font-bold text-navy-700 text-[13px]">{update.application_id}</div>
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="font-bold text-navy-700 text-[13px]">{update.passport_number || 'N/A'}</div>
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="font-bold text-navy-900 text-[13px]">{update.country}</div>
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="font-bold text-navy-600 text-[13px]">{update.visa}</div>
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="text-navy-700 font-medium text-[13px] truncate max-w-[150px]">{update.job}</div>
+                          </td>
+                          <td className="py-4 px-6 text-center">
+                            <div className="font-bold text-navy-900 text-xs">
+                              {new Date(update.result_date || Date.now()).getDate()} {new Date(update.result_date || Date.now()).toLocaleString('default', { month: 'short' })}
+                            </div>
+                            <div className="text-[9px] text-navy-400 font-bold uppercase mt-0.5">
+                              {new Date(update.result_date || Date.now()).getFullYear()}
+                            </div>
+                          </td>
+                          <td className="py-4 px-6 text-center">
+                            <span className={`inline-flex items-center justify-center px-4 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase w-full border ${
+                              isApproved 
+                                ? 'bg-green-50 text-green-700 border-green-200' 
+                                : 'bg-red-50 text-red-700 border-red-200'
+                            }`}>
+                              {update.status}
+                            </span>
+                          </td>
+                        </motion.tr>
+                      );
+                    })}
+                  </AnimatePresence>
+                </tbody>
+              </table>
+            </div>
+            {totalPages > 1 && (
+              <div className="mt-6 flex justify-center">
+                <Pagination page={page} setPage={setPage} totalPages={totalPages} />
+              </div>
+            )}
+          </>
         )}
       </section>
       </div>

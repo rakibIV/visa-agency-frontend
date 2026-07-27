@@ -51,7 +51,9 @@ export default function ApplicantsPage() {
   });
 
   const applicants = data?.results ?? data ?? [];
-  const totalPages = data?.count ? Math.ceil(data.count / 20) : 1;
+  const hasNextOrPrev = !!(data?.next || data?.previous);
+  const pageSize = (applicants.length > 0 && data?.next) ? applicants.length : 10;
+  const totalPages = !hasNextOrPrev ? 1 : (data?.count ? Math.ceil(data.count / pageSize) : 1);
 
   return (
     <div className="space-y-5 max-w-screen-xl mx-auto">
@@ -81,7 +83,7 @@ export default function ApplicantsPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, passport, or application no..."
+            placeholder="Search by name, email, phone number, passport, or app ID..."
             className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
           />
         </div>

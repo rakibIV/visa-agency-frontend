@@ -59,10 +59,16 @@ export default function CountryFormPage() {
         ? api.patch(`/countries/${slug}/`, formData, { headers }) 
         : api.post('/countries/', formData, { headers });
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       toast.success(isEdit ? 'Country updated successfully!' : 'Country added successfully!');
       queryClient.invalidateQueries(['config-countries']);
-      navigate('/config/countries');
+      queryClient.invalidateQueries(['config-country', slug]);
+      const targetSlug = res?.data?.slug || slug;
+      if (isEdit && targetSlug) {
+        navigate(`/config/countries/${targetSlug}`);
+      } else {
+        navigate('/config/countries');
+      }
     },
     onError: (err) => {
       const errMsg = parseApiError(err);

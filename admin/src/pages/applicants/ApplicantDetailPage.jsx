@@ -18,6 +18,7 @@ import {
   TrashIcon,
   ArrowDownTrayIcon,
   EnvelopeIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import AgreementPrintView from './AgreementPrintView';
@@ -56,6 +57,7 @@ export default function ApplicantDetailPage() {
   const [reference, setReference] = useState('');
   const [receiptNumber, setReceiptNumber] = useState('');
   const [importantNote, setImportantNote] = useState('');
+  const [countdownDays, setCountdownDays] = useState('');
   const [paymentError, setPaymentError] = useState(null);
 
   // Refund Form State
@@ -77,6 +79,14 @@ export default function ApplicantDetailPage() {
     queryKey: ['applicant', id],
     queryFn: () => api.get(`/applicants/${id}/`).then((r) => r.data),
     staleTime: 1000 * 60 * 5,
+  });
+
+  // Fetch status logs history for this applicant
+  const { data: statusLogs } = useQuery({
+    queryKey: ['applicant-status-history', id],
+    queryFn: () => api.get(`/applicants/${id}/status-history/`).then(r => r.data.results ?? r.data),
+    staleTime: 1000 * 60 * 2,
+    enabled: activeTab === 'status_logs' || activeTab === 'general',
   });
 
   // Fetch preset important notes for payment creation
@@ -268,6 +278,7 @@ export default function ApplicantDetailPage() {
       setReference(payment.reference || '');
       setReceiptNumber(payment.receipt_number || '');
       setImportantNote(payment.important_note || companyInfo?.money_receipt_important_note || "If the Visa Application has been officially submitted but the visa is not approved, and the candidate's overseas assignment is not completed within timeframe, refund shall be processed as per signed agreement clauses upon written request.");
+      setCountdownDays(payment.countdown_days || '');
       setShowPaymentModal(true);
       console.log('[ApplicantDetailPage] handleEditPayment set showPaymentModal to TRUE');
     } catch (err) {
@@ -291,10 +302,22 @@ export default function ApplicantDetailPage() {
     mutationFn: (paymentId) => api.delete(`/applicants/${id}/payments/${paymentId}/`),
     onSuccess: () => {
       queryClient.invalidateQueries(['applicant', id]);
-      toast.success('Payment deleted successfully!');
+      toast.success('Payment log deleted successfully!');
     },
     onError: (err) => {
-      toast.error('Failed to delete payment: ' + (err.response?.data?.detail || err.message));
+      toast.error('Failed to delete payment log: ' + (err.response?.data?.detail || err.message));
+    }
+  });
+
+  const deleteStatusLogMutation = useMutation({
+    mutationFn: (logId) => api.delete(`/applicants/${id}/status-history/${logId}/`),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['applicant-status-history', id]);
+      queryClient.invalidateQueries(['applicant', id]);
+      toast.success('Status log entry deleted successfully!');
+    },
+    onError: (err) => {
+      toast.error('Failed to delete status log: ' + (err.response?.data?.detail || err.message));
     }
   });
 
@@ -676,6 +699,7 @@ export default function ApplicantDetailPage() {
             { id: 'payments', label: 'Payments & Receipts', icon: CreditCardIcon },
             { id: 'refunds', label: 'Refunds Info', icon: ArrowPathRoundedSquareIcon },
             { id: 'agreements', label: 'Legal Agreements', icon: DocumentTextIcon },
+            { id: 'status_logs', label: 'Status Logs', icon: ClockIcon },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -1078,6 +1102,18 @@ export default function ApplicantDetailPage() {
                         />
                       </div>
                       <div className="col-span-1 sm:col-span-2">
+                        <label className="block text-xs font-bold text-blue-700 uppercase mb-1">
+                          Countdown Days (Target Days for Track Status Page)
+                        </label>
+                        <input
+                          type="number"
+                          value={countdownDays}
+                          onChange={(e) => setCountdownDays(e.target.value)}
+                          placeholder="e.g. 190 (Type days count for public status countdown)"
+                          className="w-full px-3 py-2 border border-blue-200 bg-blue-50/20 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold text-slate-800"
+                        />
+                      </div>
+                      <div className="col-span-1 sm:col-span-2">
                         <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Reference (Bank/Bkash TxID)</label>
                         <input
                           type="text"
@@ -1178,6 +1214,7 @@ export default function ApplicantDetailPage() {
                           note: paymentRemarks,
                           important_note: importantNote,
                           manual_exchange_rate: manualExchangeRate || null,
+                          countdown_days: countdownDays ? Number(countdownDays) : null,
                         };
 
                         if (editPaymentId) {
@@ -1577,6 +1614,73 @@ export default function ApplicantDetailPage() {
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {activeTab === 'status_logs' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h3 className="font-bold text-slate-800 text-base">Applicant Status History Logs</h3>
+                <p className="text-slate-400 text-xs mt-0.5">Chronological record of status changes for this applicant.</p>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto w-full">
+              <table className="w-full text-sm whitespace-nowrap min-w-[650px]">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-100">
+                    {['Date & Time', 'Previous Status', 'New Status', 'Changed By', 'Remarks', 'Action'].map((h) => (
+                      <th key={h} className="px-5 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {statusLogs?.map((log) => (
+                    <tr key={log.id} className="hover:bg-slate-50/50">
+                      <td className="px-5 py-4 text-xs font-semibold text-slate-600">
+                        {log.created_at ? new Date(log.created_at).toLocaleString() : '—'}
+                      </td>
+                      <td className="px-5 py-4 text-xs text-slate-500">
+                        {log.old_status_name ? (
+                          <span className="px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full font-medium">{log.old_status_name}</span>
+                        ) : (
+                          <span className="text-slate-400">Initial</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4 text-xs font-bold">
+                        <span className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-full font-bold">{log.new_status_name || log.status}</span>
+                      </td>
+                      <td className="px-5 py-4 text-xs text-slate-600 font-medium">
+                        {log.changed_by_name || log.changed_by || 'System'}
+                      </td>
+                      <td className="px-5 py-4 text-xs text-slate-500 max-w-xs truncate">
+                        {log.remarks || '—'}
+                      </td>
+                      <td className="px-5 py-4">
+                        <button
+                          onClick={() => {
+                            if (window.confirm('Are you sure you want to delete this status log entry?')) {
+                              deleteStatusLogMutation.mutate(log.id);
+                            }
+                          }}
+                          disabled={deleteStatusLogMutation.isPending}
+                          className="p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors cursor-pointer"
+                          title="Delete Status Log Entry"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {(!statusLogs || statusLogs.length === 0) && (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-slate-400">No status log entries recorded yet</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

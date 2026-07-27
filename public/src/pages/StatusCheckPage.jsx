@@ -16,6 +16,7 @@ import VerifiedIcon from '@mui/icons-material/Verified';
 import TimelineIcon from '@mui/icons-material/Timeline';
 import BadgeIcon from '@mui/icons-material/Badge';
 import SearchIcon from '@mui/icons-material/Search';
+import GavelIcon from '@mui/icons-material/Gavel';
 
 export default function StatusCheckPage() {
   const [applicationId, setApplicationId] = useState('');
@@ -265,46 +266,61 @@ export default function StatusCheckPage() {
                 <div className="bg-gradient-to-br from-navy-950 via-slate-900 to-navy-900 p-6 sm:p-8 text-white relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-80 h-80 bg-accent-500/10 rounded-full blur-3xl pointer-events-none" />
 
-                  {/* Title Row: Avatar + Name + Live Status Pill Beside Name */}
-                  <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                  {/* Header Row: Left Side (Photo, Name, Blue Status Badge, App ID) | Right Side (Lawyer Name & Address ONLY) */}
+                  <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2">
+                    {/* LEFT SIDE: Photo + Name + Blue Status Badge + App ID */}
                     <div className="flex items-center gap-4 sm:gap-5">
                       {result.photo ? (
                         <img
                           src={result.photo}
                           alt={result.full_name}
-                          className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl object-cover ring-4 ring-white/20 shadow-xl shrink-0"
+                          className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl object-cover ring-4 ring-blue-500/30 shadow-xl shrink-0"
                         />
                       ) : (
-                        <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white font-black text-3xl border border-white/20 shrink-0 shadow-xl">
+                        <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-blue-600/20 backdrop-blur-md flex items-center justify-center text-white font-black text-3xl border border-blue-400/30 shrink-0 shadow-xl">
                           {result.full_name?.charAt(0) || 'A'}
                         </div>
                       )}
 
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         <div className="flex flex-wrap items-center gap-3">
                           <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">{result.full_name}</h2>
-                          <VerifiedIcon fontSize="small" className="text-accent-400" />
+                          <VerifiedIcon fontSize="small" className="text-blue-400" />
                           
-                          {/* Live Status Tag Right Beside Name */}
+                          {/* Blue Live Status Tag */}
                           <span
-                            className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider backdrop-blur-md border shadow-sm"
-                            style={{
-                              backgroundColor: result.status_color ? `${result.status_color}25` : 'rgba(255,255,255,0.15)',
-                              color: result.status_color || '#FFFFFF',
-                              borderColor: result.status_color ? `${result.status_color}60` : 'rgba(255,255,255,0.3)'
-                            }}
+                            className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-blue-600/40 text-blue-100 border border-blue-400/60 shadow-md shadow-blue-500/20 backdrop-blur-md"
                           >
-                            <span className="w-2.5 h-2.5 rounded-full animate-ping" style={{ backgroundColor: result.status_color || '#3B82F6' }} />
+                            <span className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-ping" />
                             {result.status}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2 text-xs font-mono text-slate-300 font-semibold">
-                          <FactCheckIcon style={{ fontSize: 16 }} className="text-accent-400" />
-                          <span>App ID: {result.application_id}</span>
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-300 tracking-wide">
+                          <FactCheckIcon style={{ fontSize: 16 }} className="text-blue-400" />
+                          <span>App ID: <span className="font-bold text-white tracking-wider">{result.application_id}</span></span>
                         </div>
                       </div>
                     </div>
+
+                    {/* RIGHT SIDE: Lawyer Name & Address ONLY */}
+                    {result.lawyer_name && (
+                      <div className="md:text-right shrink-0 bg-white/5 backdrop-blur-md border border-white/10 px-5 py-3 rounded-2xl md:max-w-xs shadow-inner space-y-0.5">
+                        <div className="flex items-center md:justify-end gap-1.5 text-[10px] font-bold uppercase tracking-wider text-blue-300">
+                          <GavelIcon style={{ fontSize: 14 }} className="text-blue-400" />
+                          <span>Assigned Lawyer</span>
+                        </div>
+                        <div className="flex items-center md:justify-end gap-1.5">
+                          <p className="text-sm font-extrabold text-white leading-snug">{result.lawyer_name}</p>
+                          <VerifiedIcon style={{ fontSize: 15 }} className="text-blue-400 shrink-0" />
+                        </div>
+                        {result.lawyer_address && (
+                          <p className="text-xs text-slate-300 font-medium leading-relaxed whitespace-pre-line mt-1">
+                            {result.lawyer_address}
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* 4-Pillar Overview Grid */}
@@ -341,6 +357,50 @@ export default function StatusCheckPage() {
                       <p className="text-sm font-bold text-white truncate">{result.secondary_job || '—'}</p>
                     </div>
                   </div>
+
+                  {/* Live Day Counter Card */}
+                  {result.countdown_info && (
+                    <div className="relative z-10 pt-5 mt-5 border-t border-white/10">
+                      <div className={`p-4.5 rounded-2xl border backdrop-blur-md transition-all ${
+                        result.countdown_info.is_overdue
+                          ? 'bg-red-500/15 border-red-500/30 text-red-100 shadow-lg shadow-red-950/20'
+                          : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-100 shadow-lg shadow-emerald-950/20'
+                      }`}>
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
+                            <span className={`w-2.5 h-2.5 rounded-full animate-ping ${result.countdown_info.is_overdue ? 'bg-red-400' : 'bg-emerald-400'}`} />
+                            <span className={result.countdown_info.is_overdue ? 'text-red-300 font-extrabold' : 'text-emerald-300 font-extrabold'}>
+                              {result.countdown_info.is_overdue ? '⚠️ Processing Overdue' : '⚡ Live Processing Countdown'}
+                            </span>
+                          </div>
+                          <span className="text-xs font-semibold opacity-90 px-2.5 py-0.5 rounded-full bg-white/10 border border-white/10">
+                            Target: {result.countdown_info.target_days} Days
+                          </span>
+                        </div>
+
+                        <div className="flex items-baseline gap-2 mb-2">
+                          <span className={`text-3xl font-black tracking-tight ${result.countdown_info.is_overdue ? 'text-red-400' : 'text-emerald-400'}`}>
+                            Day {result.countdown_info.days_elapsed}
+                          </span>
+                          <span className="text-sm font-semibold opacity-80">
+                            / {result.countdown_info.target_days} Days
+                          </span>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="w-full bg-black/30 rounded-full h-2 overflow-hidden p-0.5 border border-white/10">
+                          <div
+                            className={`h-full rounded-full transition-all duration-700 ${
+                              result.countdown_info.is_overdue ? 'bg-red-500 shadow-xs shadow-red-400' : 'bg-emerald-400 shadow-xs shadow-emerald-400'
+                            }`}
+                            style={{
+                              width: `${Math.min(100, (result.countdown_info.days_elapsed / result.countdown_info.target_days) * 100)}%`
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* C. Segmented Section Navigation Tabs */}
@@ -487,23 +547,39 @@ export default function StatusCheckPage() {
                       </div>
 
                       {result.status_history?.length > 0 ? (
-                        <div className="relative pl-4 space-y-6 pt-2 max-w-2xl">
-                          <div className="absolute left-[25px] top-4 bottom-4 w-0.5 bg-slate-200" />
+                        <div className="relative pl-2 space-y-6 pt-2 max-w-2xl">
+                          {result.status_history.map((entry, i) => {
+                            const isLast = i === result.status_history.length - 1;
+                            const stLower = (entry.status || '').toLowerCase();
+                            const isRejected = stLower.includes('reject') || stLower.includes('cancel') || stLower.includes('refus');
 
-                          {result.status_history.map((entry, i) => (
-                            <div key={i} className="relative flex items-start gap-4 z-10">
-                              <div
-                                className="w-5 h-5 rounded-full ring-4 ring-white shrink-0 mt-0.5 shadow-xs"
-                                style={{ backgroundColor: entry.color || '#2563EB' }}
-                              />
-                              <div className="flex-1 p-4 bg-slate-50/80 rounded-2xl border border-slate-100 space-y-1">
-                                <p className="text-base font-black text-slate-900 leading-snug">{entry.status}</p>
-                                <p className="text-xs font-semibold text-slate-400">
-                                  {new Date(entry.changed_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                </p>
+                            return (
+                              <div key={i} className="relative flex items-start gap-4 z-10">
+                                {/* Connecting line (only between nodes, no overflow past the last status!) */}
+                                {!isLast && (
+                                  <div className="absolute left-[11px] top-6 bottom-[-24px] w-0.5 bg-slate-200" />
+                                )}
+
+                                {/* Timeline Node Badge */}
+                                {isRejected ? (
+                                  <div className="w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center ring-4 ring-red-100 shrink-0 mt-0.5 shadow-xs">
+                                    <span className="w-2 h-2 rounded-full bg-white" />
+                                  </div>
+                                ) : (
+                                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center ring-4 ring-blue-100 shrink-0 mt-0.5 shadow-xs">
+                                    <CheckCircleIcon style={{ fontSize: 18 }} className="text-white bg-blue-600 rounded-full" />
+                                  </div>
+                                )}
+
+                                <div className="flex-1 p-4 bg-slate-50/80 rounded-2xl border border-slate-100 space-y-1">
+                                  <p className="text-base font-black text-slate-900 leading-snug">{entry.status}</p>
+                                  <p className="text-xs font-semibold text-slate-400">
+                                    {new Date(entry.changed_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       ) : (
                         <div className="text-center py-10 text-slate-400 font-medium text-sm">

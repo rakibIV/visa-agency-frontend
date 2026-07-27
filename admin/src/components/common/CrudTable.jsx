@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import api from '../../api/client';
 import { parseApiError } from '../../utils/errorParser';
 import FormModal from './FormModal';
+import Pagination from './Pagination';
 
 export default function CrudTable({
   title,
@@ -25,13 +26,20 @@ export default function CrudTable({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [isViewOnly, setIsViewOnly] = useState(false);
+  const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: [queryKey, search],
-    queryFn: () => api.get(endpoint, { params: search ? { search } : {} }).then(r => r.data.results ?? r.data),
+  const { data: rawData, isLoading, error } = useQuery({
+    queryKey: [queryKey, search, page],
+    queryFn: () => api.get(endpoint, { params: { page, ...(search ? { search } : {}) } }).then(r => r.data),
     keepPreviousData: true,
   });
+
+  const data = rawData?.results ?? (Array.isArray(rawData) ? rawData : []);
+  const count = rawData?.count;
+  const hasNextOrPrev = !!(rawData?.next || rawData?.previous);
+  const pageSize = (data.length > 0 && rawData?.next) ? data.length : 10;
+  const totalPages = !hasNextOrPrev ? 1 : (count ? Math.ceil(count / pageSize) : 1);
 
   const mutationCreate = useMutation({
     mutationFn: ({ data, config }) => api.post(endpoint, data, config),
@@ -163,7 +171,10 @@ export default function CrudTable({
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               placeholder="Search..."
               className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-400 transition-all"
             />
@@ -173,17 +184,17 @@ export default function CrudTable({
 
       {/* DESKTOP TABLE VIEW (md and up) */}
       <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="overflow-x-auto w-full">
-          <table className="w-full text-left border-collapse min-w-max">
+        <div className="w-full">
+          <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
                 {columns.map((col, idx) => (
-                  <th key={idx} className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <th key={idx} className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                     {col.header}
                   </th>
                 ))}
                 {(enableView || !disableEdit || !disableDelete) && (
-                  <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">
+                  <th className="px-4 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-wider text-right">
                     Actions
                   </th>
                 )}
@@ -192,19 +203,19 @@ export default function CrudTable({
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr>
-                  <td colSpan={columns.length + 1} className="px-6 py-8 text-center text-slate-500 text-sm">
+                  <td colSpan={columns.length + 1} className="px-4 py-6 text-center text-slate-500 text-xs">
                     Loading...
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={columns.length + 1} className="px-6 py-8 text-center text-red-500 text-sm">
+                  <td colSpan={columns.length + 1} className="px-4 py-6 text-center text-red-500 text-xs">
                     Error loading data.
                   </td>
                 </tr>
               ) : data?.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length + 1} className="px-6 py-8 text-center text-slate-500 text-sm">
+                  <td colSpan={columns.length + 1} className="px-4 py-6 text-center text-slate-500 text-xs">
                     No items found.
                   </td>
                 </tr>
@@ -212,12 +223,12 @@ export default function CrudTable({
                 data?.map((item, idx) => (
                   <tr key={item.id || item.slug || idx} className="hover:bg-slate-50 transition-colors">
                     {columns.map((col, cIdx) => (
-                      <td key={cIdx} className="px-6 py-4 text-sm text-slate-700">
+                      <td key={cIdx} className="px-4 py-3 text-xs text-slate-700 min-w-0 break-words">
                         {col.render ? col.render(item) : item[col.accessor]}
                       </td>
                     ))}
                     {(enableView || !disableEdit || !disableDelete) && (
-                      <td className="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+                      <td className="px-4 py-3 text-right space-x-1.5 whitespace-nowrap shrink-0">
                         {enableView && (
                           <button
                             onClick={() => handleView(item)}
@@ -330,6 +341,8 @@ export default function CrudTable({
           ))
         )}
       </div>
+
+      <Pagination page={page} setPage={setPage} totalPages={totalPages} />
 
       <FormModal
         isOpen={isModalOpen}

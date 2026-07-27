@@ -138,7 +138,7 @@ function App() {
               />
               <Route
                 path="/slots"
-                element={<AdminLayout><SlotsPage /></AdminLayout>}
+                element={<Navigate to="/config/slots" replace />}
               />
               <Route
                 path="/config/countries"

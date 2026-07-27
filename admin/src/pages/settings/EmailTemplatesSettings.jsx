@@ -196,7 +196,7 @@ export default function EmailTemplatesSettings() {
     const statusName = selectedStatusObj?.name || 'In Progress';
     const isRejected = statusName.toLowerCase().includes('reject');
 
-    let processedBody = body
+    let textBody = body
       .replace(/\{\{\s*applicant_name\s*\}\}/g, 'John Doe')
       .replace(/\{\{\s*applicant_id\s*\}\}/g, 'APP-98241')
       .replace(/\{\{\s*passport_number\s*\}\}/g, 'A01928374')
@@ -211,34 +211,89 @@ export default function EmailTemplatesSettings() {
       .replace(/\{\{\s*lawyer_address\s*\}\}/g, 'Chamber 402, High Court Annex, Dhaka')
       .replace(/\{\{\s*staff\s*\}\}/g, 'Mahmud Computers');
 
-    // Signature replacement simulation
-    processedBody = processedBody.replace(
-      /<p>Best regards,<br>The \{\{\s*company_name\s*\}\} Team<\/p>/gi,
-      `<p style="margin-top: 24px;">Best regards<br><strong style="color: #0f172a; font-size: 15px; display: block; margin-top: 4px;">Advocate Rakib Hasan</strong><span style="color: #64748b; font-size: 13px; font-weight: 500; display: block; margin-top: 2px;">Legal Representative</span><br><span style="color: #475569; font-size: 13px; display: block; margin-top: 2px;">Chamber 402, High Court Annex, Dhaka</span></p>`
-    );
+    // Strip raw HTML tags if typed
+    // Strip raw HTML tags if typed
+    textBody = textBody.replace(/<[^>]*>/g, '');
 
-    const statusBoxCss = isRejected ? `
-      .status-box { background: linear-gradient(to right, #fef2f2, #ffffff); border-left: 4px solid #ef4444; border-right: 1px solid #fee2e2; border-top: 1px solid #fee2e2; border-bottom: 1px solid #fee2e2; padding: 18px 22px; margin: 20px 0; border-radius: 0 8px 8px 0; }
-      .status-label { font-size: 11px; text-transform: uppercase; color: #991b1b; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 6px; }
-      .status-value { font-size: 16px; color: #b91c1c; font-weight: 800; margin: 0; display: inline-block; padding: 4px 12px; background-color: #fee2e2; border-radius: 20px; }
-    ` : `
-      .status-box { background: linear-gradient(to right, #eff6ff, #ffffff); border-left: 4px solid #3b82f6; border-right: 1px solid #e2e8f0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 18px 22px; margin: 20px 0; border-radius: 0 8px 8px 0; }
-      .status-label { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 6px; }
-      .status-value { font-size: 16px; color: #1d4ed8; font-weight: 800; margin: 0; display: inline-block; padding: 4px 12px; background-color: #dbeafe; border-radius: 20px; }
+    // Format paragraphs & status box from plain text line breaks
+    const lines = textBody.split('\n\n').filter(p => p.trim());
+    const formattedChunks = [];
+
+    lines.forEach(chunk => {
+      const match = chunk.match(/^(?:Status|New Application Status)\s*:\s*(.*)$/i);
+      if (match) {
+        const customVal = match[1].trim() || statusName;
+        const valRejected = isRejected || customVal.toLowerCase().includes('reject');
+        
+        if (valRejected) {
+          formattedChunks.push(`
+            <div class="status-box" style="background: linear-gradient(to right, #fef2f2, #ffffff); border-left: 4px solid #ef4444; border-right: 1px solid #fee2e2; border-top: 1px solid #fee2e2; border-bottom: 1px solid #fee2e2; padding: 18px 22px; margin: 22px 0; border-radius: 0 10px 10px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
+              <span style="font-size: 11px; text-transform: uppercase; color: #991b1b; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 6px;">New Application Status</span>
+              <span style="font-size: 16px; color: #b91c1c; font-weight: 800; margin: 0; display: inline-block; padding: 4px 14px; background-color: #fee2e2; border-radius: 20px;">${customVal}</span>
+            </div>
+          `);
+        } else {
+          formattedChunks.push(`
+            <div class="status-box" style="background: linear-gradient(to right, #eff6ff, #ffffff); border-left: 4px solid #3b82f6; border-right: 1px solid #e2e8f0; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 18px 22px; margin: 22px 0; border-radius: 0 10px 10px 0; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
+              <span style="font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 1px; display: block; margin-bottom: 6px;">New Application Status</span>
+              <span style="font-size: 16px; color: #1d4ed8; font-weight: 800; margin: 0; display: inline-block; padding: 4px 14px; background-color: #dbeafe; border-radius: 20px;">${customVal}</span>
+            </div>
+          `);
+        }
+      } else {
+        formattedChunks.push(`<p style="margin: 0 0 16px 0; line-height: 1.7; color: #334155; font-size: 14.5px;">${chunk.replace(/\n/g, '<br>')}</p>`);
+      }
+    });
+
+    const signatureHtml = `
+      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #f1f5f9; text-align: left;">
+        <div style="color: #64748b; font-size: 14px; font-weight: 500; margin-bottom: 6px;">Best regards,</div>
+        <div style="color: #0f172a; font-size: 16px; font-weight: 800;">Advocate Rakib Hasan</div>
+        <div style="color: #64748b; font-size: 13px; font-weight: 600; margin-top: 2px;">Legal Representative</div>
+        <div style="color: #64748b; font-size: 13px; font-weight: 400; margin-top: 3px;">Chamber 402, High Court Annex, Dhaka</div>
+      </div>
     `;
+
+    // Flag image sample (Italy flag URL)
+    const sampleFlagUrl = "https://res.cloudinary.com/prfvuhln/image/upload/v1784399873/nltqujtitxsmmhv6x1vg.jpg";
 
     return `
       <div style="font-family: 'Inter', system-ui, sans-serif; background-color: #f8fafc; padding: 20px; border-radius: 12px;">
-        <style>${statusBoxCss}</style>
-        <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
-          <div style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); padding: 25px 20px; color: #ffffff;">
-            <h1 style="margin: 0; font-size: 20px; font-weight: 700;">Al Raiyan Group</h1>
-            <p style="margin: 3px 0 0 0; font-size: 12px; opacity: 0.9; color: #e0f2fe;">Official Application Communication</p>
+        <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 14px rgba(0,0,0,0.05);">
+          
+          <!-- CENTERED HEADER DESIGN: Applicant's Country Flag + Bold Country Name in Middle + Company Logo & Reference: Company Name -->
+          <div style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); padding: 32px 25px; color: #ffffff; text-align: center;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td align="center" valign="middle">
+                  <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto 10px auto;">
+                    <tr>
+                      <td valign="middle" style="padding-right: 12px;">
+                        <img src="${sampleFlagUrl}" alt="Italy Flag" style="width: 46px; height: 32px; object-fit: cover; border-radius: 6px; border: 2px solid rgba(255,255,255,0.4); display: block; box-shadow: 0 4px 10px rgba(0,0,0,0.2);" />
+                      </td>
+                      <td valign="middle" align="left">
+                        <h1 style="margin: 0; font-size: 26px; font-weight: 900; color: #ffffff; letter-spacing: 0.5px; text-transform: uppercase; line-height: 1.1;">ITALY</h1>
+                      </td>
+                    </tr>
+                  </table>
+                  <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
+                    <tr>
+                      <td valign="middle" align="center">
+                        <p style="margin: 0; font-size: 13px; font-weight: 600; color: #e0f2fe; opacity: 0.95; letter-spacing: 0.3px;">Reference: Al Raiyan Group</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
           </div>
-          <div style="padding: 25px 20px; font-size: 14px; line-height: 1.6; color: #334155;">
-            ${processedBody}
+
+          <div style="padding: 30px 25px; font-size: 14.5px; line-height: 1.6; color: #334155;">
+            ${formattedChunks.join('')}
+            ${signatureHtml}
           </div>
-          <div style="background-color: #f8fafc; padding: 15px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 11px; color: #94a3b8;">
+
+          <div style="background-color: #f8fafc; padding: 18px 25px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #94a3b8;">
             &copy; Al Raiyan Group. All rights reserved.
           </div>
         </div>
@@ -548,11 +603,11 @@ export default function EmailTemplatesSettings() {
 
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="block text-xs font-bold text-slate-600 uppercase">
-                        Email Body (HTML Content) <span className="text-rose-500">*</span>
+                      <label className="block text-xs font-bold text-slate-700 uppercase">
+                        Email Body (Plain Text) <span className="text-rose-500">*</span>
                       </label>
-                      <span className="text-[11px] text-slate-400 font-medium">
-                        Will be automatically formatted and wrapped in the official designed template.
+                      <span className="text-[11px] text-blue-600 font-bold">
+                        ✨ Pure text — no HTML coding needed! Line breaks format as paragraphs automatically.
                       </span>
                     </div>
                     <textarea
@@ -560,8 +615,8 @@ export default function EmailTemplatesSettings() {
                       value={body}
                       onChange={e => setBody(e.target.value)}
                       rows={8}
-                      className="w-full p-3.5 border border-slate-200 rounded-xl text-xs font-mono leading-relaxed bg-slate-900 text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      placeholder="Enter HTML or plain text body..."
+                      className="w-full p-4 border border-slate-200 rounded-xl text-sm font-sans leading-relaxed bg-white text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-2xs"
+                      placeholder="Write your email body in normal plain text. Insert variables like {{ applicant_name }}, {{ visa }}, {{ passport_number }} as needed..."
                       required
                     />
                   </div>

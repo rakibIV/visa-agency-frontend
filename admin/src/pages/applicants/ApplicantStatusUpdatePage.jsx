@@ -48,6 +48,7 @@ export default function ApplicantStatusUpdatePage() {
     queryFn: () => api.get('/applicants/', { 
       params: { 
         page,
+        ordering: '-updated_at',
         ...(search ? { search } : {}),
         ...(statusFilter ? { status: statusFilter } : {})
       } 

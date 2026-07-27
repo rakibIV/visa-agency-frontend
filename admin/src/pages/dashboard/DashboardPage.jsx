@@ -56,7 +56,7 @@ function StatCard({ label, value, sub, Icon, bg, iconColor, to }) {
 
 const QUICK_ACTIONS = [
   { label: 'New Applicant', desc: 'Create profile', Icon: UserPlusIcon, to: '/applicants/new', bg: 'from-blue-600 via-blue-700 to-indigo-800', shadow: 'shadow-blue-500/30' },
-  { label: 'Monthly Slots', desc: 'Manage calendar', Icon: CalendarDaysIcon, to: '/slots', bg: 'from-violet-600 via-purple-600 to-fuchsia-700', shadow: 'shadow-violet-500/30' },
+  { label: 'Monthly Slots', desc: 'Manage calendar', Icon: CalendarDaysIcon, to: '/config/slots', bg: 'from-violet-600 via-purple-600 to-fuchsia-700', shadow: 'shadow-violet-500/30' },
   { label: 'Refunds Hub', desc: 'Process returns', Icon: ArrowUturnLeftIcon, to: '/refunds', bg: 'from-orange-500 via-orange-600 to-red-600', shadow: 'shadow-orange-500/30' },
   { label: 'Agreements', desc: 'Legal docs', Icon: DocumentTextIcon, to: '/agreements', bg: 'from-emerald-500 via-emerald-600 to-teal-700', shadow: 'shadow-emerald-500/30' },
 ];
@@ -163,8 +163,8 @@ export default function DashboardPage() {
   const recentMessagesList = Array.isArray(recentMessages) ? recentMessages : (recentMessages?.results ?? []);
   const recentApplicantsList = Array.isArray(recentApplicants) ? recentApplicants : (recentApplicants?.results ?? []);
 
-  const monthApprovedCount = monthResultsList.filter(r => r.status_name?.toLowerCase().includes('approve') || r.status?.toLowerCase().includes('approve')).length;
-  const monthRejectedCount = monthResultsList.filter(r => r.status_name?.toLowerCase().includes('reject') || r.status?.toLowerCase().includes('reject')).length;
+  const monthApprovedCount = monthResultsList.filter(r => r.is_approved !== undefined ? r.is_approved : (r.status_name?.toLowerCase().includes('approve') || r.status?.toLowerCase().includes('approve'))).length;
+  const monthRejectedCount = monthResultsList.filter(r => r.is_rejected !== undefined ? r.is_rejected : (r.status_name?.toLowerCase().includes('reject') || r.status?.toLowerCase().includes('reject'))).length;
   const monthSlotsPreview = monthSlotsList.slice(0, 3);
 
   // Statistics Object Normalization
@@ -519,7 +519,7 @@ export default function DashboardPage() {
                      </div>
                    </div>
                  ))}
-                 <Link to="/slots" className="block text-center text-xs font-bold text-blue-600 hover:text-blue-700 mt-2">
+                 <Link to="/config/slots" className="block text-center text-xs font-bold text-blue-600 hover:text-blue-700 mt-2">
                    View all slots →
                  </Link>
                </div>

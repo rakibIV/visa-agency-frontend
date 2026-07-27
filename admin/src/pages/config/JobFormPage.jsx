@@ -68,7 +68,12 @@ export default function JobFormPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['config-visa-jobs', visaId]);
-      navigate('/config/jobs');
+      queryClient.invalidateQueries(['config-job', jobId]);
+      if (isEdit && jobId) {
+        navigate(`/config/visas/${visaId}/jobs/${jobId}`);
+      } else {
+        navigate(`/config/visas/${visaId}`);
+      }
     },
     onError: (err) => {
       setError(err?.response?.data?.detail || 'An error occurred while saving.');

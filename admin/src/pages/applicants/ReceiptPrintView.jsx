@@ -336,21 +336,19 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo, curr
               </div>
 
               {/* Official Signature Fields (col-span-5: 2 spacious side-by-side signature areas) */}
-              <div className="col-span-5 border border-slate-200/90 rounded-xl p-2.5 bg-white/40 flex items-stretch gap-4 justify-between shadow-2xs">
+              <div className="col-span-5 border border-slate-200/90 rounded-xl p-2.5 bg-white/40 flex items-end gap-4 justify-between shadow-2xs">
                 {/* Applicant Signature */}
-                <div className="flex-1 flex flex-col justify-between text-center min-h-[55px]">
-                  <div className="flex-1" />
-                  <div className="w-full border-t-2 border-slate-700 pt-1">
-                    <p className="text-[11px] font-black text-slate-900 uppercase tracking-wider leading-tight">Applicant Signature</p>
+                <div className="flex-1 flex flex-col justify-end text-center min-h-[46px]">
+                  <div className="w-full border-t border-slate-700 pt-1">
+                    <p className="text-[9.5px] font-extrabold text-slate-900 uppercase tracking-wider leading-tight">Applicant Signature</p>
                     <p className="text-[8px] text-slate-400 mt-0.5 font-medium">Date: ___ / ___ / ______</p>
                   </div>
                 </div>
 
                 {/* Authorized Representative & Seal */}
-                <div className="flex-1 flex flex-col justify-between text-center min-h-[55px]">
-                  <div className="flex-1" />
-                  <div className="w-full border-t-2 border-slate-700 pt-1">
-                    <p className="text-[11px] font-black text-slate-900 uppercase tracking-wider leading-tight">Authorized Signature &amp; Seal</p>
+                <div className="flex-1 flex flex-col justify-end text-center min-h-[46px]">
+                  <div className="w-full border-t border-slate-700 pt-1">
+                    <p className="text-[9.5px] font-extrabold text-slate-900 uppercase tracking-wider leading-tight">Authorized Signature &amp; Seal</p>
                     <p className="text-[8px] text-slate-400 mt-0.5 font-medium">Date: ___ / ___ / ______</p>
                   </div>
                 </div>
