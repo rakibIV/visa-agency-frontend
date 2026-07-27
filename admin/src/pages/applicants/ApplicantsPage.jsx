@@ -24,6 +24,8 @@ export default function ApplicantsPage() {
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
+  const [statusNameFilter, setStatusNameFilter] = useState(searchParams.get('status_name') || '');
+  const [inProgressFilter, setInProgressFilter] = useState(searchParams.get('in_progress') === 'true');
 
   const [page, setPage] = useState(1);
 
@@ -34,12 +36,14 @@ export default function ApplicantsPage() {
   });
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['applicants', search, statusFilter, page],
+    queryKey: ['applicants', search, statusFilter, statusNameFilter, inProgressFilter, page],
     queryFn: () => api.get('/applicants/', { 
       params: { 
         page,
         ...(search ? { search } : {}),
-        ...(statusFilter ? { status: statusFilter } : {})
+        ...(statusFilter ? { status: statusFilter } : {}),
+        ...(statusNameFilter ? { status__name__icontains: statusNameFilter } : {}),
+        ...(inProgressFilter ? { in_progress: true } : {})
       } 
     }).then((r) => r.data),
     staleTime: 1000 * 60 * 2,
@@ -85,10 +89,16 @@ export default function ApplicantsPage() {
           <FunnelIcon className="w-4 h-4 text-slate-400 mr-2" />
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setStatusNameFilter(''); // Clear other filters when using dropdown
+              setInProgressFilter(false);
+            }}
             className="bg-transparent border-none text-sm font-semibold text-slate-600 focus:outline-none focus:ring-0 pr-4"
           >
-            <option value="">All Statuses</option>
+            <option value="">
+              {(statusNameFilter || inProgressFilter) ? 'Custom Filter Applied' : 'All Statuses'}
+            </option>
             {statuses?.map(s => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}

@@ -1,7 +1,118 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import api from '../../api/client';
 import CrudTable from '../../components/common/CrudTable';
+
+function ManualStatsSettings() {
+  const queryClient = useQueryClient();
+  const [stats, setStats] = useState({
+    approved_count: 0,
+    rejected_count: 0,
+    processing_count: 0
+  });
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['manual-fake-stats'],
+    queryFn: () => api.get('/fake-stats/').then(r => r.data).catch(() => ({
+      approved_count: 0,
+      rejected_count: 0,
+      processing_count: 0
+    }))
+  });
+
+  useEffect(() => {
+    if (data) {
+      setStats({
+        approved_count: data.approved_count || 0,
+        rejected_count: data.rejected_count || 0,
+        processing_count: data.processing_count || 0
+      });
+    }
+  }, [data]);
+
+  const mutation = useMutation({
+    mutationFn: (newStats) => api.post('/fake-stats/', newStats).catch(() => api.put('/fake-stats/', newStats)),
+    onSuccess: () => {
+      toast.success('Manual stats updated successfully');
+      queryClient.invalidateQueries(['manual-fake-stats']);
+    },
+    onError: () => toast.error('Failed to update manual stats. The API endpoint might not exist yet.')
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    mutation.mutate(stats);
+  };
+
+  const handleChange = (e) => {
+    setStats({
+      ...stats,
+      [e.target.name]: parseInt(e.target.value) || 0
+    });
+  };
+
+  return (
+    <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 mb-8">
+      <div className="mb-4">
+        <h3 className="text-lg font-bold text-slate-800">Manual Stat Inflation</h3>
+        <p className="text-sm text-slate-500">
+          Enter numbers below to artificially inflate the total lifetime counts shown on the dashboard and public results page. 
+          These numbers will be added to the actual application counts and the fake entries below.
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 items-end">
+        <div className="flex-1 w-full">
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            Manual Approved
+          </label>
+          <input 
+            type="number" 
+            name="approved_count" 
+            value={stats.approved_count} 
+            onChange={handleChange}
+            min="0"
+            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium text-slate-800"
+          />
+        </div>
+        <div className="flex-1 w-full">
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            Manual Rejected
+          </label>
+          <input 
+            type="number" 
+            name="rejected_count" 
+            value={stats.rejected_count} 
+            onChange={handleChange}
+            min="0"
+            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium text-slate-800"
+          />
+        </div>
+        <div className="flex-1 w-full">
+          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            Manual Processing
+          </label>
+          <input 
+            type="number" 
+            name="processing_count" 
+            value={stats.processing_count} 
+            onChange={handleChange}
+            min="0"
+            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-medium text-slate-800"
+          />
+        </div>
+        <button 
+          type="submit" 
+          disabled={isLoading || mutation.isPending}
+          className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-sm hover:shadow-md transition-all disabled:opacity-50"
+        >
+          {mutation.isPending ? 'Saving...' : 'Save Counts'}
+        </button>
+      </form>
+    </div>
+  );
+}
 
 export default function FakeLiveResultsPage() {
   const [selectedVisaId, setSelectedVisaId] = useState('');
@@ -39,8 +150,10 @@ export default function FakeLiveResultsPage() {
   };
 
   return (
-    <CrudTable
-      title="Fake Live Results"
+    <>
+      <ManualStatsSettings />
+      <CrudTable
+        title="Fake Live Results"
       subtitle="Manage fake entries for the public live visa results feed."
       endpoint="/fake-live-results/"
       queryKey="fake-live-results"
@@ -74,6 +187,7 @@ export default function FakeLiveResultsPage() {
         { name: 'result_date', label: 'Result Date', type: 'date', required: true },
       ]}
     />
+    </>
   );
 }
 

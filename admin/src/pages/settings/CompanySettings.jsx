@@ -32,6 +32,14 @@ export default function CompanySettings() {
         { name: 'company_logo', label: 'Company Logo', type: 'file', accept: 'image/*' },
         { name: 'company_signature', label: 'Company Signature (300x80 px)', type: 'file', accept: 'image/*', requiredWidth: 300, requiredHeight: 80 },
         { name: 'money_receipt_important_note', label: 'Default Money Receipt Important Note', type: 'textarea', rows: 3 },
+        { name: 'use_manual_exchange_rate', label: 'Use Manual Exchange Rate (EUR to BDT)', type: 'checkbox' },
+        { 
+          name: 'manual_exchange_rate', 
+          label: 'Manual Exchange Rate (1 EUR = X BDT)', 
+          type: 'number', 
+          step: '0.0001',
+          disabled: (formData) => !formData?.use_manual_exchange_rate
+        },
         { name: 'address', label: 'Address', type: 'textarea' },
         { name: 'about', label: 'About Us', type: 'textarea' },
         { name: 'mission', label: 'Mission', type: 'textarea' },

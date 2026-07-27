@@ -67,9 +67,21 @@ export default function DashboardPage() {
   const [selectedRequest, setSelectedRequest] = useState(null);
 
   // Combined statistics
+  // Combined statistics
   const { data: appStats, isLoading: loadingStats } = useQuery({
     queryKey: ['dash-applicant-statistics'],
-    queryFn: () => api.get('/public/applicant-statistics/').then(r => r.data),
+    queryFn: () => api.get('/public/applicant-statistics/').then(r => r.data.results ?? r.data),
+    staleTime: 1000 * 60 * 3,
+  });
+
+  // Manual Fake Stats
+  const { data: manualStats } = useQuery({
+    queryKey: ['dash-manual-fake-stats'],
+    queryFn: () => api.get('/fake-stats/').then(r => r.data).catch(() => ({
+      approved_count: 0,
+      rejected_count: 0,
+      processing_count: 0
+    })),
     staleTime: 1000 * 60 * 3,
   });
 
@@ -104,13 +116,13 @@ export default function DashboardPage() {
   // Current Month Data
   const { data: currentMonthResults } = useQuery({
     queryKey: ['dash-current-month-results'],
-    queryFn: () => api.get('/public/applicant-results/current-month/').then(r => r.data).catch(() => []),
+    queryFn: () => api.get('/public/applicant-results/current-month/').then(r => r.data.results ?? r.data).catch(() => []),
     staleTime: 1000 * 60 * 3,
   });
 
   const { data: currentMonthSlots } = useQuery({
     queryKey: ['dash-current-month-slots'],
-    queryFn: () => api.get('/public/staff-slots/current-month/').then(r => r.data).catch(() => []),
+    queryFn: () => api.get('/public/staff-slots/current-month/').then(r => r.data.results ?? r.data).catch(() => []),
     staleTime: 1000 * 60 * 3,
   });
 
@@ -144,29 +156,64 @@ export default function DashboardPage() {
     onError: () => toast.error('Failed to update request status'),
   });
 
-  const monthApprovedCount = currentMonthResults?.filter(r => r.status_name?.toLowerCase().includes('approve') || r.status?.toLowerCase().includes('approve'))?.length || 0;
-  const monthRejectedCount = currentMonthResults?.filter(r => r.status_name?.toLowerCase().includes('reject') || r.status?.toLowerCase().includes('reject'))?.length || 0;
-  const monthSlotsPreview = currentMonthSlots?.slice(0, 3) || [];
+  // Array Normalization
+  const monthResultsList = Array.isArray(currentMonthResults) ? currentMonthResults : (currentMonthResults?.results ?? []);
+  const monthSlotsList = Array.isArray(currentMonthSlots) ? currentMonthSlots : (currentMonthSlots?.results ?? []);
+  const pendingRequestsList = Array.isArray(pendingRequests) ? pendingRequests : (pendingRequests?.results ?? []);
+  const recentMessagesList = Array.isArray(recentMessages) ? recentMessages : (recentMessages?.results ?? []);
+  const recentApplicantsList = Array.isArray(recentApplicants) ? recentApplicants : (recentApplicants?.results ?? []);
 
-  const total = loadingStats ? '...' : (appStats?.total ?? '—');
-  const approved = loadingStats ? '...' : (appStats?.approved ?? 0);
-  const rejected = loadingStats ? '...' : (appStats?.rejected ?? 0);
-  const inProgress = loadingStats ? '...' : (appStats?.processing ?? 0);
+  const monthApprovedCount = monthResultsList.filter(r => r.status_name?.toLowerCase().includes('approve') || r.status?.toLowerCase().includes('approve')).length;
+  const monthRejectedCount = monthResultsList.filter(r => r.status_name?.toLowerCase().includes('reject') || r.status?.toLowerCase().includes('reject')).length;
+  const monthSlotsPreview = monthSlotsList.slice(0, 3);
 
-  const realCountSub = appStats ? `${appStats.real_total} real + ${appStats.fake_total} fake` : 'Total applicants';
+  // Statistics Object Normalization
+  const statsObj = (Array.isArray(appStats) ? appStats[0] : (appStats?.results ? appStats.results[0] : appStats)) || {};
+  
+  const manualApproved = Number(manualStats?.approved_count || 0);
+  const manualRejected = Number(manualStats?.rejected_count || 0);
+  const manualProcessing = Number(manualStats?.processing_count || 0);
+  const manualTotal = manualApproved + manualRejected + manualProcessing;
+
+  const realTotal = Number(statsObj.real_total ?? statsObj.real_applicants ?? 0);
+  const fakeTotal = Number(statsObj.fake_total ?? statsObj.fake_applicants ?? 0);
+  const baseTotalVal = statsObj.total !== undefined ? Number(statsObj.total) : (realTotal + fakeTotal);
+  const totalVal = baseTotalVal + manualTotal;
+
+  const realApproved = Number(statsObj.real_approved ?? 0);
+  const fakeApproved = Number(statsObj.fake_approved ?? 0);
+  const baseApprovedVal = statsObj.approved !== undefined ? Number(statsObj.approved) : (realApproved + fakeApproved);
+  const approvedVal = baseApprovedVal + manualApproved;
+
+  const realRejected = Number(statsObj.real_rejected ?? 0);
+  const fakeRejected = Number(statsObj.fake_rejected ?? 0);
+  const baseRejectedVal = statsObj.rejected !== undefined ? Number(statsObj.rejected) : (realRejected + fakeRejected);
+  const rejectedVal = baseRejectedVal + manualRejected;
+
+  const realProcessing = Number(statsObj.real_processing ?? statsObj.real_pending ?? 0);
+  const fakeProcessing = Number(statsObj.fake_processing ?? statsObj.fake_pending ?? 0);
+  const baseProcessingVal = statsObj.processing !== undefined ? Number(statsObj.processing) : (statsObj.in_progress !== undefined ? Number(statsObj.in_progress) : (realProcessing + fakeProcessing));
+  const inProgressVal = baseProcessingVal + manualProcessing;
+
+  const total = loadingStats ? '...' : totalVal;
+  const approved = loadingStats ? '...' : approvedVal;
+  const rejected = loadingStats ? '...' : rejectedVal;
+  const inProgress = loadingStats ? '...' : inProgressVal;
+
+  const realCountSub = appStats ? `${realTotal} real + ${fakeTotal} fake + ${manualTotal} manual` : 'Total applicants';
 
   const stats = [
     { label: 'Total Applicants', value: total, sub: realCountSub, Icon: UsersIcon, bg: 'bg-blue-500', iconColor: 'text-blue-600', to: '/applicants' },
-    { label: 'Visa Approved', value: approved, sub: `${appStats?.real_approved ?? 0} real + ${appStats?.fake_approved ?? 0} fake`, Icon: CheckBadgeIcon, bg: 'bg-emerald-500', iconColor: 'text-emerald-600', to: '/applicants' },
-    { label: 'Visa Rejected', value: rejected, sub: `${appStats?.real_rejected ?? 0} real + ${appStats?.fake_rejected ?? 0} fake`, Icon: XCircleIcon, bg: 'bg-red-500', iconColor: 'text-red-600', to: '/applicants' },
-    { label: 'In Progress', value: inProgress, sub: `${appStats?.real_processing ?? 0} real + ${appStats?.fake_processing ?? 0} fake`, Icon: ClockIcon, bg: 'bg-amber-500', iconColor: 'text-amber-500', to: '/applicants' },
+    { label: 'Visa Approved', value: approved, sub: `${realApproved} real + ${fakeApproved} fake + ${manualApproved} manual`, Icon: CheckBadgeIcon, bg: 'bg-emerald-500', iconColor: 'text-emerald-600', to: '/applicants?status_name=approve' },
+    { label: 'Visa Rejected', value: rejected, sub: `${realRejected} real + ${fakeRejected} fake + ${manualRejected} manual`, Icon: XCircleIcon, bg: 'bg-red-500', iconColor: 'text-red-600', to: '/applicants?status_name=reject' },
+    { label: 'In Progress', value: inProgress, sub: `${realProcessing} real + ${fakeProcessing} fake + ${manualProcessing} manual`, Icon: ClockIcon, bg: 'bg-amber-500', iconColor: 'text-amber-500', to: '/applicants?in_progress=true' },
   ];
 
   const storedUser = localStorage.getItem('user');
   const username = storedUser ? JSON.parse(storedUser).username : 'Admin';
 
-  const unreadMessagesCount = notificationCounts?.unread_messages ?? (recentMessages?.filter(m => !m.is_read)?.length || 0);
-  const pendingLeadsCount = notificationCounts?.pending_requests ?? (pendingRequests?.length || 0);
+  const unreadMessagesCount = notificationCounts?.unread_messages ?? (recentMessagesList.filter(m => !m.is_read).length);
+  const pendingLeadsCount = notificationCounts?.pending_requests ?? pendingRequestsList.length;
 
   return (
     <div className="space-y-6 max-w-[1400px] mx-auto min-h-full pb-8">

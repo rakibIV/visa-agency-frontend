@@ -27,20 +27,51 @@ export default function VisaUpdatesPage() {
 
   const { data: updates, isLoading } = useQuery({
     queryKey: ['visa-updates'],
-    queryFn: () => api.get('/public/applicant-results/current-month/').then(r => r.data),
+    queryFn: () => api.get('/public/applicant-results/current-month/').then(r => r.data.results ?? r.data),
   });
 
+  const { data: statsData } = useQuery({
+    queryKey: ['public-applicant-statistics'],
+    queryFn: () => api.get('/public/applicant-statistics/').then(r => r.data.results?.[0] ?? r.data).catch(() => null),
+  });
+
+  const { data: manualStats } = useQuery({
+    queryKey: ['public-manual-fake-stats'],
+    queryFn: () => api.get('/fake-stats/').then(r => r.data).catch(() => ({
+      approved_count: 0,
+      rejected_count: 0,
+      processing_count: 0
+    })),
+  });
+
+  const statsObj = (Array.isArray(statsData) ? statsData[0] : (statsData?.results ? statsData.results[0] : statsData)) || {};
+  
+  const manualApproved = Number(manualStats?.approved_count || 0);
+  const manualRejected = Number(manualStats?.rejected_count || 0);
+
+  const realApproved = Number(statsObj.real_approved ?? 0);
+  const fakeApproved = Number(statsObj.fake_approved ?? 0);
+  const baseApproved = statsObj.approved !== undefined ? Number(statsObj.approved) : (realApproved + fakeApproved);
+  const lifetimeApprovedCount = baseApproved + manualApproved;
+
+  const realRejected = Number(statsObj.real_rejected ?? 0);
+  const fakeRejected = Number(statsObj.fake_rejected ?? 0);
+  const baseRejected = statsObj.rejected !== undefined ? Number(statsObj.rejected) : (realRejected + fakeRejected);
+  const lifetimeRejectedCount = baseRejected + manualRejected;
+
+  const updatesList = Array.isArray(updates) ? updates : (updates?.results ?? []);
+
   const filteredUpdates = useMemo(() => {
-    if (!updates) return [];
-    if (filter === 'ALL') return updates;
+    if (!updatesList) return [];
+    if (filter === 'ALL') return updatesList;
     if (filter === 'APPROVED') {
-      return updates.filter(u => u.status?.toUpperCase().includes('APPROV'));
+      return updatesList.filter(u => u.status?.toUpperCase().includes('APPROV'));
     }
     if (filter === 'REJECTED') {
-      return updates.filter(u => u.status?.toUpperCase().includes('REJECT'));
+      return updatesList.filter(u => u.status?.toUpperCase().includes('REJECT'));
     }
-    return updates.filter(u => u.status?.toUpperCase() === filter);
-  }, [updates, filter]);
+    return updatesList.filter(u => u.status?.toUpperCase() === filter);
+  }, [updatesList, filter]);
 
   return (
     <div className="bg-surface-dim min-h-screen pb-24 overflow-x-hidden">
@@ -77,6 +108,46 @@ export default function VisaUpdatesPage() {
           <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="body-lg text-navy-500 max-w-xl mx-auto">
             Real-time feed of visa approvals and decisions for the current month.
           </motion.p>
+
+          {/* Lifetime Approved Visas Highlight */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ delay: 0.3 }}
+            className="mt-8 inline-flex items-center gap-3.5 px-6 py-3.5 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200/80 text-emerald-900 rounded-2xl shadow-sm"
+          >
+            <div className="w-11 h-11 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black text-xl shadow-sm">
+              ✓
+            </div>
+            <div className="text-left">
+              <div className="text-2xl sm:text-3xl font-black font-heading leading-none text-emerald-950">
+                {lifetimeApprovedCount > 0 ? `${lifetimeApprovedCount.toLocaleString()}+` : '0'}
+              </div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 mt-1">
+                Lifetime Approved Visas
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Lifetime Rejected Visas Highlight */}
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ delay: 0.4 }}
+            className="mt-8 ml-0 sm:ml-4 inline-flex items-center gap-3.5 px-6 py-3.5 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200/80 text-red-900 rounded-2xl shadow-sm"
+          >
+            <div className="w-11 h-11 rounded-xl bg-red-600 text-white flex items-center justify-center font-black text-xl shadow-sm">
+              ✕
+            </div>
+            <div className="text-left">
+              <div className="text-2xl sm:text-3xl font-black font-heading leading-none text-red-950">
+                {lifetimeRejectedCount > 0 ? `${lifetimeRejectedCount.toLocaleString()}+` : '0'}
+              </div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-red-700 mt-1">
+                Lifetime Rejected Visas
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 

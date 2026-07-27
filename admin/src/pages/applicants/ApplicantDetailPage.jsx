@@ -47,11 +47,12 @@ export default function ApplicantDetailPage() {
 
   // Payment Form State
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [currency, setCurrency] = useState('BDT');
   const [paymentMethod, setPaymentMethod] = useState('CASH');
+  const [manualExchangeRate, setManualExchangeRate] = useState('');
   const [preferredRefundMethod, setPreferredRefundMethod] = useState('BANK');
   const [paymentRemarks, setPaymentRemarks] = useState('');
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
-  const [currency, setCurrency] = useState('BDT');
   const [reference, setReference] = useState('');
   const [receiptNumber, setReceiptNumber] = useState('');
   const [importantNote, setImportantNote] = useState('');
@@ -218,6 +219,13 @@ export default function ApplicantDetailPage() {
     },
   });
 
+  const { data: companies } = useQuery({
+    queryKey: ['company-settings'],
+    queryFn: () => api.get('/companies/').then(r => r.data.results)
+  });
+  const company = companies?.[0];
+  const useManualExchangeRate = company?.use_manual_exchange_rate;
+
   const handleOpenAddPayment = () => {
     console.log('[ApplicantDetailPage] handleOpenAddPayment triggered');
     try {
@@ -226,6 +234,7 @@ export default function ApplicantDetailPage() {
       setPaymentRemarks('');
       setReference('');
       setReceiptNumber('');
+      setManualExchangeRate('');
       setPaymentError(null);
       const presetsList = Array.isArray(importantNotePresets)
         ? importantNotePresets
@@ -246,9 +255,10 @@ export default function ApplicantDetailPage() {
     console.log('[ApplicantDetailPage] handleEditPayment triggered with payment:', payment);
     try {
       setEditPaymentId(payment.id);
-      setPaymentAmount(payment.amount);
+      setPaymentAmount(payment.amount || '');
       setPaymentMethod(payment.payment_method || 'CASH');
       setCurrency(payment.currency || 'BDT');
+      setManualExchangeRate(payment.exchange_rate || '');
       setPaymentDate(payment.payment_date || new Date().toISOString().split('T')[0]);
       setPaymentRemarks(payment.note || payment.remarks || '');
       setReference(payment.reference || '');
@@ -985,6 +995,21 @@ export default function ApplicantDetailPage() {
                           <option value="ONLINE">Online Payment</option>
                         </select>
                       </div>
+                      
+                      {useManualExchangeRate && (
+                        <div>
+                          <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Exchange Rate</label>
+                          <input
+                            type="number"
+                            step="0.0001"
+                            value={manualExchangeRate}
+                            onChange={(e) => setManualExchangeRate(e.target.value)}
+                            placeholder="e.g. 140.6900"
+                            className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                          />
+                        </div>
+                      )}
+                      
                       <div>
                         <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Installment Type</label>
                         {isPaymentComplete ? (
@@ -1119,6 +1144,7 @@ export default function ApplicantDetailPage() {
                           receipt_number: receiptNumber,
                           note: paymentRemarks,
                           important_note: importantNote,
+                          manual_exchange_rate: manualExchangeRate || null,
                         };
 
                         if (editPaymentId) {
