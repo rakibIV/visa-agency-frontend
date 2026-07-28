@@ -56,12 +56,13 @@ export default function EmailTemplatesSettings() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('');
+  const [categoryTab, setCategoryTab] = useState('general'); // 'general' | 'status'
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, selectedStatusFilter, pageSize]);
+  }, [categoryTab, searchQuery, selectedStatusFilter, pageSize]);
 
   // Fetch email templates (request page_size: 200 to load all status templates)
   const { data: templatesData, isLoading } = useQuery({
@@ -77,9 +78,14 @@ export default function EmailTemplatesSettings() {
   });
   const statuses = statusesData ?? [];
 
-  const filteredTemplates = templates.filter(tmpl => {
+  const generalTemplates = templates.filter(tmpl => !(tmpl.status || tmpl.status_name));
+  const statusTemplates = templates.filter(tmpl => !!(tmpl.status || tmpl.status_name));
+
+  const targetTemplates = categoryTab === 'general' ? generalTemplates : statusTemplates;
+
+  const filteredTemplates = targetTemplates.filter(tmpl => {
     const statusName = (tmpl.status_name || statuses.find(s => String(s.id) === String(tmpl.status))?.name || '');
-    if (selectedStatusFilter && statusName.toLowerCase() !== selectedStatusFilter.toLowerCase()) {
+    if (categoryTab === 'status' && selectedStatusFilter && statusName.toLowerCase() !== selectedStatusFilter.toLowerCase()) {
       return false;
     }
     if (searchQuery.trim()) {
@@ -126,11 +132,21 @@ export default function EmailTemplatesSettings() {
   const openCreateModal = () => {
     setEditingTemplate(null);
     setName('');
-    setStatusId('');
-    setSubject('Application Status Update: {{ current_status }}');
-    setBody(
-      `<p>Dear <strong style="color: #0f172a;">{{ applicant_name }}</strong>,</p>\n<p>We are writing to inform you that there has been an update regarding your application (ID: <strong style="color: #0f172a;">{{ applicant_id }}</strong>).</p>\n<div class="status-box">\n  <span class="status-label">New Application Status</span>\n  <p class="status-value">{{ current_status }}</p>\n</div>\n<p>If you have any questions or require further assistance, please do not hesitate to contact our team.</p>\n<p>Best regards,<br>The {{ company_name }} Team</p>`
-    );
+    if (categoryTab === 'status') {
+      const existingStatusIds = statusTemplates.map(t => String(t.status?.id || t.status));
+      const firstUnused = statuses.find(s => !existingStatusIds.includes(String(s.id)));
+      setStatusId(firstUnused ? firstUnused.id : (statuses[0]?.id || ''));
+      setSubject('Application Status Update: {{ current_status }}');
+      setBody(
+        `<p>Dear <strong style="color: #0f172a;">{{ applicant_name }}</strong>,</p>\n<p>We are writing to inform you that there has been an update regarding your application (ID: <strong style="color: #0f172a;">{{ applicant_id }}</strong>).</p>\n<div class="status-box">\n  <span class="status-label">New Application Status</span>\n  <p class="status-value">{{ current_status }}</p>\n</div>\n<p>If you have any questions or require further assistance, please do not hesitate to contact our team.</p>\n<p>Best regards,<br>The {{ company_name }} Team</p>`
+      );
+    } else {
+      setStatusId('');
+      setSubject('Notice: Important Update Regarding Your Application');
+      setBody(
+        `<p>Dear <strong style="color: #0f172a;">{{ applicant_name }}</strong>,</p>\n<p>We would like to update you regarding your visa application (ID: <strong style="color: #0f172a;">{{ applicant_id }}</strong>).</p>\n<p>Type your custom message here...</p>\n<p>Best regards,<br>The {{ company_name }} Team</p>`
+      );
+    }
     setIsActive(true);
     setFormError('');
     setActiveTab('edit');
@@ -322,6 +338,43 @@ export default function EmailTemplatesSettings() {
         </button>
       </div>
 
+      {/* Category Tabs: General / Manual vs Status Templates */}
+      <div className="flex bg-white p-1.5 rounded-2xl border border-slate-100 shadow-xs">
+        <button
+          onClick={() => { setCategoryTab('general'); setPage(1); }}
+          className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            categoryTab === 'general'
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <DocumentTextIcon className="w-4 h-4" />
+          General / Manual Templates
+          <span className={`px-2 py-0.5 text-[11px] rounded-full font-bold ${
+            categoryTab === 'general' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+          }`}>
+            {generalTemplates.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => { setCategoryTab('status'); setPage(1); }}
+          className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            categoryTab === 'status'
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <CheckCircleIcon className="w-4 h-4" />
+          Status Email Templates
+          <span className={`px-2 py-0.5 text-[11px] rounded-full font-bold ${
+            categoryTab === 'status' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+          }`}>
+            {statusTemplates.length}
+          </span>
+        </button>
+      </div>
+
       {/* Templates List Header & Search Bar */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-xs overflow-hidden">
         <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row items-center justify-between gap-3 bg-slate-50/50">
@@ -332,26 +385,28 @@ export default function EmailTemplatesSettings() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by template name or status..."
+                placeholder={categoryTab === 'status' ? "Search template name or status..." : "Search general template name or subject..."}
                 className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-2xs"
               />
             </div>
 
-            {/* Status Dropdown Filter */}
-            <div className="w-full sm:w-52">
-              <select
-                value={selectedStatusFilter}
-                onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-2xs"
-              >
-                <option value="">— All Application Statuses —</option>
-                {statuses.map(s => (
-                  <option key={s.id} value={s.name}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Status Dropdown Filter - Only shown on Status Templates tab */}
+            {categoryTab === 'status' && (
+              <div className="w-full sm:w-52">
+                <select
+                  value={selectedStatusFilter}
+                  onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                  className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-2xs"
+                >
+                  <option value="">— All Application Statuses —</option>
+                  {statuses.map(s => (
+                    <option key={s.id} value={s.name}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
@@ -383,15 +438,19 @@ export default function EmailTemplatesSettings() {
         ) : filteredTemplates.length === 0 ? (
           <div className="text-center py-16 px-4">
             <DocumentTextIcon className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-sm font-bold text-slate-700">No Matching Templates</h3>
-            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">No email template matched your search criteria.</p>
+            <h3 className="text-sm font-bold text-slate-700">No {categoryTab === 'general' ? 'General / Manual' : 'Status'} Templates Found</h3>
+            <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+              {categoryTab === 'general'
+                ? 'No general/manual email templates found. Click "Create Email Template" to add one.'
+                : 'No status email templates matched your search criteria.'}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase tracking-wider font-bold">
                 <tr>
-                  <th className="px-5 py-3.5">Linked Status</th>
+                  <th className="px-5 py-3.5">{categoryTab === 'general' ? 'Category' : 'Linked Status'}</th>
                   <th className="px-5 py-3.5">Template Name</th>
                   <th className="px-5 py-3.5">Email Subject</th>
                   <th className="px-5 py-3.5">Status</th>
