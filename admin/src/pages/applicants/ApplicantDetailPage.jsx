@@ -121,7 +121,7 @@ export default function ApplicantDetailPage() {
   // Fetch agreement templates for printing
   const { data: templates } = useQuery({
     queryKey: ['agreement-templates'],
-    queryFn: () => api.get('/agreement-templates/').then((r) => r.data.results ?? r.data),
+    queryFn: () => api.get('/agreement-templates/', { params: { page_size: 100 } }).then((r) => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 30,
   });
 
@@ -1101,18 +1101,21 @@ export default function ApplicantDetailPage() {
                           className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                         />
                       </div>
-                      <div className="col-span-1 sm:col-span-2">
-                        <label className="block text-xs font-bold text-blue-700 uppercase mb-1">
-                          Countdown Days (Target Days for Track Status Page)
-                        </label>
-                        <input
-                          type="number"
-                          value={countdownDays}
-                          onChange={(e) => setCountdownDays(e.target.value)}
-                          placeholder="e.g. 190 (Type days count for public status countdown)"
-                          className="w-full px-3 py-2 border border-blue-200 bg-blue-50/20 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold text-slate-800"
-                        />
-                      </div>
+                      {/* Countdown Days - Only available and shown for 2nd payment (Optional) */}
+                      {(editPaymentId ? (existingPayments.find(p => p.id === editPaymentId)?.installment_type === 'SECOND') : (nextInstallmentType === 'SECOND')) && (
+                        <div className="col-span-1 sm:col-span-2">
+                          <label className="block text-xs font-bold text-blue-700 uppercase mb-1">
+                            Countdown Days (Optional - Target Days for Track Status Page)
+                          </label>
+                          <input
+                            type="number"
+                            value={countdownDays}
+                            onChange={(e) => setCountdownDays(e.target.value)}
+                            placeholder="e.g. 190 (Optional - Type days count for public status countdown)"
+                            className="w-full px-3 py-2 border border-blue-200 bg-blue-50/20 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-bold text-slate-800"
+                          />
+                        </div>
+                      )}
                       <div className="col-span-1 sm:col-span-2">
                         <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Reference (Bank/Bkash TxID)</label>
                         <input
@@ -1204,6 +1207,8 @@ export default function ApplicantDetailPage() {
                           updateProfileMutation.mutate({ preferred_refund_method: preferredRefundMethod });
                         }
 
+                        const isSecondModal = editPaymentId ? (existingPayments.find(p => p.id === editPaymentId)?.installment_type === 'SECOND') : (nextInstallmentType === 'SECOND');
+
                         const payload = {
                           amount: Number(paymentAmount),
                           payment_method: paymentMethod,
@@ -1214,7 +1219,7 @@ export default function ApplicantDetailPage() {
                           note: paymentRemarks,
                           important_note: importantNote,
                           manual_exchange_rate: manualExchangeRate || null,
-                          countdown_days: countdownDays ? Number(countdownDays) : null,
+                          countdown_days: (isSecondModal && countdownDays) ? Number(countdownDays) : null,
                         };
 
                         if (editPaymentId) {
@@ -1541,13 +1546,13 @@ export default function ApplicantDetailPage() {
 
         {activeTab === 'agreements' && (
           <div className="bg-white rounded-2xl p-6 border border-slate-100 space-y-6">
-            {!isPaymentComplete ? (
+            {!((hasInitial && hasSecond) || isPaymentComplete) ? (
               <div className="flex flex-col items-center justify-center py-12 text-center bg-slate-50 rounded-xl border border-dashed border-slate-300">
                 <DocumentTextIcon className="w-16 h-16 text-slate-300 mb-4" />
                 <h3 className="font-bold text-slate-700 text-lg">Agreement Locked</h3>
                 <p className="text-slate-500 text-sm mt-2 max-w-md">
-                  Agreement generation is locked until full payment is completed.
-                  Please collect the remaining payments to unlock the agreement documents.
+                  Agreement generation is locked until the 2nd payment is completed.
+                  Please collect the 2nd payment installment to unlock all agreement documents.
                 </p>
               </div>
             ) : (
@@ -1580,28 +1585,40 @@ export default function ApplicantDetailPage() {
                   </div>
                 </label>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[
+                {(() => {
+                  const extraTemplates = [...(templates || [])].sort((a, b) => (a.sequence || 0) - (b.sequence || 0)).slice(2);
+                  const printItems = [
                     { title: 'Page 1: Client Bio & Cover Page', desc: 'Application info, payment amounts, and signatures.', type: 'form' },
                     { title: 'Page 2: Receipt & Agreement', desc: 'Payment receipt header with clauses 1-6 of Main Agreement.', type: 'tc' },
                     { title: 'Page 3: Agreement Clauses', desc: 'The dynamic legal clauses (7-15) of Main Agreement.', type: 'clauses' },
                     { title: 'Page 4: Terms & Conditions', desc: 'The 6 standard clauses of the General T&C Agreement.', type: 'tc2' },
-                  ].map((printItem) => (
-                    <div key={printItem.title} className="p-4 border border-slate-200/60 rounded-xl flex items-start justify-between gap-4 bg-slate-50/50 hover:bg-slate-50 transition-colors">
-                      <div>
-                        <h4 className="font-bold text-slate-800 text-sm">{printItem.title}</h4>
-                        <p className="text-slate-400 text-xs mt-1 leading-snug">{printItem.desc}</p>
-                      </div>
-                      <button
-                        onClick={() => handlePrint(printItem.type)}
-                        className="p-2.5 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-600 hover:text-white shadow-sm transition-all shrink-0"
-                        title="Print / PDF"
-                      >
-                        <PrinterIcon className="w-5 h-5" />
-                      </button>
+                    ...extraTemplates.map((tmpl, idx) => ({
+                      title: `Page ${idx + 5}: ${tmpl.title || tmpl.name || `Agreement ${tmpl.sequence || idx + 3}`}`,
+                      desc: `${(tmpl.clauses || []).length} Custom Clauses defined in this agreement template.`,
+                      type: tmpl.id,
+                    })),
+                  ];
+
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {printItems.map((printItem) => (
+                        <div key={printItem.title} className="p-4 border border-slate-200/60 rounded-xl flex items-start justify-between gap-4 bg-slate-50/50 hover:bg-slate-50 transition-colors">
+                          <div>
+                            <h4 className="font-bold text-slate-800 text-sm">{printItem.title}</h4>
+                            <p className="text-slate-400 text-xs mt-1 leading-snug">{printItem.desc}</p>
+                          </div>
+                          <button
+                            onClick={() => handlePrint(printItem.type)}
+                            className="p-2.5 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-600 hover:text-white shadow-sm transition-all shrink-0"
+                            title="Print / PDF"
+                          >
+                            <PrinterIcon className="w-5 h-5" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  );
+                })()}
 
                 <div className="pt-4 border-t flex justify-end">
                   <button
@@ -1609,7 +1626,7 @@ export default function ApplicantDetailPage() {
                     className="flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-xl text-sm font-semibold shadow hover:bg-blue-800 transition-colors"
                   >
                     <PrinterIcon className="w-5 h-5" />
-                    Print Full Agreement Package ({showBengali ? '5' : '4'} Pages)
+                    Print Full Agreement Package ({(showBengali ? 5 : 4) + Math.max(0, (templates || []).length - 2)} Pages)
                   </button>
                 </div>
               </>

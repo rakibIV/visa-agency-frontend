@@ -29,16 +29,20 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
     const isSaudi = countryName.includes('saudi');
 
     return clauses.filter(c => {
+      if (c.is_active === false) return false;
+
       // Clause 15 of Template 1 is strictly hidden for Saudi Arabia applicants
       if (template.sequence === 1 && c.clause_number === 15 && isSaudi) {
         return false;
       }
 
       if (c.visibility_mode === 'INCLUDE') {
-        return c.countries?.includes(applicant?.country?.id);
+        if (!c.countries || c.countries.length === 0) return true;
+        return c.countries?.includes(applicant?.country?.id) || c.countries?.includes(applicant?.country);
       }
       if (c.visibility_mode === 'EXCLUDE') {
-        return !c.countries?.includes(applicant?.country?.id);
+        if (!c.countries || c.countries.length === 0) return true;
+        return !c.countries?.includes(applicant?.country?.id) && !c.countries?.includes(applicant?.country);
       }
       return true;
     });
@@ -96,11 +100,16 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
       .replace(/\{staff\}/g, applicant?.assigned_staff_name || 'Authorized Representative')
       .replace(/\{application_id\}/g, applicant?.application_id || '—')
       .replace(/\{full_name\}/g, applicant?.full_name || '—')
+      .replace(/\{applicant_name\}/g, applicant?.full_name || '—')
+      .replace(/\{father_name\}/g, applicant?.profile?.father_name || '—')
+      .replace(/\{nid_number\}/g, applicant?.profile?.nid_number || '—')
+      .replace(/\{nid\}/g, applicant?.profile?.nid_number || '—')
       .replace(/\{passport_number\}/g, applicant?.passport_number || '—')
-      .replace(/\{visa\}/g, applicant?.visa?.name || '—')
-      .replace(/\{job\}/g, applicant?.job?.title || '—')
-      .replace(/\{country\}/g, applicant?.country?.name || '—')
-      .replace(/\{payment\}/g, applicant?.agreed_amount || '—');
+      .replace(/\{visa\}/g, applicant?.visa?.name || applicant?.visa_name || '—')
+      .replace(/\{job\}/g, applicant?.job?.title || applicant?.job_title || '—')
+      .replace(/\{country\}/g, applicant?.country?.name || applicant?.country_name || '—')
+      .replace(/\{payment\}/g, applicant?.agreed_amount || '—')
+      .replace(/\{company_name\}/g, companyInfo?.company_name || 'Al Raiyan Group');
   };
 
   const ClauseBlock = ({ clause, isTerms = false }) => (
@@ -399,21 +408,55 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
         <PageContainer>
           <div className="flex-1 w-full relative z-20">
             <DocumentHeader 
-              title="General Terms & Conditions" 
-              subtitle="الشروط والأحكام العامة | সাধারণ শর্তাবলী" 
+              title={template2?.title || template2?.name || "General Terms & Conditions"} 
+              subtitle={template2?.body || template2?.details || "الشروط والأحكام العامة | সাধারণ শর্তাবলী"} 
             />
             <div className="space-y-1 mt-6">
               {template2Clauses.map(clause => (
                 <ClauseBlock key={clause.id} clause={clause} isTerms={true} />
               ))}
+              {template2Clauses.length === 0 && (
+                <p className="text-slate-400 text-xs text-center py-10 italic font-medium">
+                  No active clauses defined for this agreement template.
+                </p>
+              )}
             </div>
           </div>
           <SignatureBlock showThumb={true} />
         </PageContainer>
       )}
 
+      {/* ========================================================== */}
+      {/* ADDITIONAL TEMPLATES (Sequence 3+) */}
+      {/* ========================================================== */}
+      {sortedTemplates.slice(2).map((tmpl, idx) => {
+        const shouldShow = type === 'all' || type === tmpl.id || type === `tmpl-${tmpl.id}`;
+        if (!shouldShow) return null;
 
+        const clauses = getVisibleClauses(tmpl);
 
+        return (
+          <PageContainer key={tmpl.id || idx}>
+            <div className="flex-1 w-full relative z-20">
+              <DocumentHeader
+                title={tmpl.title || tmpl.name || `Agreement ${tmpl.sequence || idx + 3}`}
+                subtitle={tmpl.body || tmpl.details || ''}
+              />
+              <div className="space-y-2 mt-6">
+                {clauses.map((clause) => (
+                  <ClauseBlock key={clause.id || clause.clause_number} clause={clause} />
+                ))}
+                {clauses.length === 0 && (
+                  <p className="text-slate-400 text-xs text-center py-10 italic font-medium">
+                    No active clauses defined for this agreement template.
+                  </p>
+                )}
+              </div>
+            </div>
+            <SignatureBlock showThumb={true} />
+          </PageContainer>
+        );
+      })}
     </div>
     </>
   );

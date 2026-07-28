@@ -84,8 +84,8 @@ export default function AgreementTemplatesConfig() {
 
   const handleEditTemplate = (tmpl) => {
     setCurrentTemplate(tmpl);
-    setTemplateName(tmpl.name || '');
-    setTemplateDetails(tmpl.details || '');
+    setTemplateName(tmpl.title || tmpl.name || '');
+    setTemplateDetails(tmpl.body || tmpl.details || '');
     setTemplateSequence(tmpl.sequence || 1);
     // Sort clauses by number
     const sortedClauses = [...(tmpl.clauses || [])].sort((a, b) => a.clause_number - b.clause_number);
@@ -104,8 +104,8 @@ export default function AgreementTemplatesConfig() {
 
   const handleSaveTemplate = () => {
     saveMutation.mutate({
-      name: templateName,
-      details: templateDetails,
+      title: templateName,
+      body: templateDetails,
       sequence: parseInt(templateSequence, 10) || 1,
       clauses: clauses.map((c, i) => ({ ...c, clause_number: i + 1 })) // Auto-number based on order
     });
@@ -428,9 +428,9 @@ export default function AgreementTemplatesConfig() {
                   Sequence: {tmpl.sequence || 1}
                 </span>
                 <h3 className="font-bold text-slate-800 text-lg mb-1">
-                  {tmpl.name || `Agreement ${tmpl.sequence || 1}`}
+                  {tmpl.title || tmpl.name || `Agreement ${tmpl.sequence || 1}`}
                 </h3>
-                <p className="text-sm text-slate-500 mb-2">{tmpl.details}</p>
+                <p className="text-sm text-slate-500 mb-2">{tmpl.body || tmpl.details}</p>
                 <p className="text-sm text-slate-500 font-medium flex items-center gap-2">
                   <DocumentTextIcon className="w-4 h-4" /> {tmpl.clauses?.length || 0} Clauses
                 </p>
