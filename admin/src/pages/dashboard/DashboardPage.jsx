@@ -200,13 +200,13 @@ export default function DashboardPage() {
   const rejected = loadingStats ? '...' : rejectedVal;
   const inProgress = loadingStats ? '...' : inProgressVal;
 
-  const realCountSub = appStats ? `${realTotal} real + ${fakeTotal} fake + ${manualTotal} manual` : 'Total applicants';
+  const realCountSub = appStats ? `${realTotal} real + ${fakeTotal} dummy + ${manualTotal} manual` : 'Total applicants';
 
   const stats = [
     { label: 'Total Applicants', value: total, sub: realCountSub, Icon: UsersIcon, bg: 'bg-blue-500', iconColor: 'text-blue-600', to: '/applicants' },
-    { label: 'Visa Approved', value: approved, sub: `${realApproved} real + ${fakeApproved} fake + ${manualApproved} manual`, Icon: CheckBadgeIcon, bg: 'bg-emerald-500', iconColor: 'text-emerald-600', to: '/applicants?status_name=approve' },
-    { label: 'Visa Rejected', value: rejected, sub: `${realRejected} real + ${fakeRejected} fake + ${manualRejected} manual`, Icon: XCircleIcon, bg: 'bg-red-500', iconColor: 'text-red-600', to: '/applicants?status_name=reject' },
-    { label: 'In Progress', value: inProgress, sub: `${realProcessing} real + ${fakeProcessing} fake + ${manualProcessing} manual`, Icon: ClockIcon, bg: 'bg-amber-500', iconColor: 'text-amber-500', to: '/applicants?in_progress=true' },
+    { label: 'Visa Approved', value: approved, sub: `${realApproved} real + ${fakeApproved} dummy + ${manualApproved} manual`, Icon: CheckBadgeIcon, bg: 'bg-emerald-500', iconColor: 'text-emerald-600', to: '/applicants?status_name=approve' },
+    { label: 'Visa Rejected', value: rejected, sub: `${realRejected} real + ${fakeRejected} dummy + ${manualRejected} manual`, Icon: XCircleIcon, bg: 'bg-red-500', iconColor: 'text-red-600', to: '/applicants?status_name=reject' },
+    { label: 'In Progress', value: inProgress, sub: `${realProcessing} real + ${fakeProcessing} dummy + ${manualProcessing} manual`, Icon: ClockIcon, bg: 'bg-amber-500', iconColor: 'text-amber-500', to: '/applicants?in_progress=true' },
   ];
 
   const storedUser = localStorage.getItem('user');

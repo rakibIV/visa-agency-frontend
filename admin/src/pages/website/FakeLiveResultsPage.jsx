@@ -58,7 +58,7 @@ function ManualStatsSettings() {
         <h3 className="text-lg font-bold text-slate-800">Manual Stat Inflation</h3>
         <p className="text-sm text-slate-500">
           Enter numbers below to artificially inflate the total lifetime counts shown on the dashboard and public results page. 
-          These numbers will be added to the actual application counts and the fake entries below.
+          These numbers will be added to the actual application counts and the dummy entries below.
         </p>
       </div>
 
@@ -153,8 +153,8 @@ export default function FakeLiveResultsPage() {
     <>
       <ManualStatsSettings />
       <CrudTable
-        title="Fake Live Results"
-      subtitle="Manage fake entries for the public live visa results feed."
+        title="Dummy Live Results"
+        subtitle="Manage dummy entries for the public live visa results feed."
       endpoint="/fake-live-results/"
       queryKey="fake-live-results"
       onFormChange={handleFormChange}

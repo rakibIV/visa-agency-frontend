@@ -341,12 +341,12 @@ export default function StaffFormPage() {
             <p className="text-[11px] text-slate-400 mt-1">Staff yearly rank position (if set)</p>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Manual/Fake Approved Visas Addition</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Manual/Dummy Approved Visas Addition</label>
             <input type="number" min="0" value={fakeApprovedCount} onChange={e => setFakeApprovedCount(parseInt(e.target.value || '0', 10))} placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium" />
             <p className="text-[11px] text-slate-400 mt-1">Added to actual approved count shown in public staff profile</p>
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Manual/Fake Rejected Visas Addition</label>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Manual/Dummy Rejected Visas Addition</label>
             <input type="number" min="0" value={fakeRejectedCount} onChange={e => setFakeRejectedCount(parseInt(e.target.value || '0', 10))} placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium" />
             <p className="text-[11px] text-slate-400 mt-1">Added to actual rejected count shown in public staff profile</p>
           </div>

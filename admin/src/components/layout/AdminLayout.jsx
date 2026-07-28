@@ -65,7 +65,7 @@ const NAV_ITEMS = [
       { label: 'Messages', icon: ChatBubbleLeftEllipsisIcon, to: '/website/messages' },
       { label: 'App Requests', icon: ClipboardDocumentListIcon, to: '/website/application-requests' },
       { label: 'Social Links', icon: LinkIcon, to: '/website/social-links' },
-      { label: 'Fake Live Results', icon: ClipboardDocumentListIcon, to: '/website/fake-live-results' },
+      { label: 'Dummy Live Results', icon: ClipboardDocumentListIcon, to: '/website/fake-live-results' },
       { label: 'Agency Images', icon: RectangleStackIcon, to: '/website/agency-images' },
     ],
   },
