@@ -41,6 +41,7 @@ export default function StaffFormPage() {
   const [yearlyRank, setYearlyRank] = useState('');
   const [fakeApprovedCount, setFakeApprovedCount] = useState(0);
   const [fakeRejectedCount, setFakeRejectedCount] = useState(0);
+  const [fakeProcessingCount, setFakeProcessingCount] = useState(0);
   const [error, setError] = useState('');
 
   const { data: staff } = useQuery({
@@ -107,6 +108,7 @@ export default function StaffFormPage() {
       setYearlyRank(staff.yearly_rank ?? '');
       setFakeApprovedCount(staff.fake_approved_count ?? 0);
       setFakeRejectedCount(staff.fake_rejected_count ?? 0);
+      setFakeProcessingCount(staff.fake_processing_count ?? 0);
     }
   }, [staff, isEdit, designations, offices]);
 
@@ -179,6 +181,7 @@ export default function StaffFormPage() {
     }
     fd.append('fake_approved_count', fakeApprovedCount || 0);
     fd.append('fake_rejected_count', fakeRejectedCount || 0);
+    fd.append('fake_processing_count', fakeProcessingCount || 0);
 
     if (photoFile) fd.append('photo', photoFile);
     if (signatureFile) fd.append('signature', signatureFile);
@@ -349,6 +352,11 @@ export default function StaffFormPage() {
             <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Manual/Dummy Rejected Visas Addition</label>
             <input type="number" min="0" value={fakeRejectedCount} onChange={e => setFakeRejectedCount(parseInt(e.target.value || '0', 10))} placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium" />
             <p className="text-[11px] text-slate-400 mt-1">Added to actual rejected count shown in public staff profile</p>
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Manual/Dummy Processing Visas Addition</label>
+            <input type="number" min="0" value={fakeProcessingCount} onChange={e => setFakeProcessingCount(parseInt(e.target.value || '0', 10))} placeholder="0" className="w-full px-3 py-2 border border-slate-200 rounded-xl font-medium" />
+            <p className="text-[11px] text-slate-400 mt-1">Added to actual processing count shown in public staff profile</p>
           </div>
           <div className="flex items-center gap-6 col-span-1 md:col-span-2">
             <label className="flex items-center gap-2 cursor-pointer">

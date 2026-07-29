@@ -10,6 +10,8 @@ import {
   CheckCircleIcon,
   InformationCircleIcon,
   DocumentTextIcon,
+  SparklesIcon,
+  PhotoIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import toast from 'react-hot-toast';
@@ -50,13 +52,16 @@ export default function EmailTemplatesSettings() {
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [isGenerous, setIsGenerous] = useState(false);
+  const [topLeftLogo, setTopLeftLogo] = useState('');
+  const [topCenterLogo, setTopCenterLogo] = useState('');
   const [formError, setFormError] = useState('');
 
   const bodyTextareaRef = useRef(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('');
-  const [categoryTab, setCategoryTab] = useState('general'); // 'general' | 'status'
+  const [categoryTab, setCategoryTab] = useState('general'); // 'general' | 'status' | 'generous'
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
@@ -78,10 +83,38 @@ export default function EmailTemplatesSettings() {
   });
   const statuses = statusesData ?? [];
 
-  const generalTemplates = templates.filter(tmpl => !(tmpl.status || tmpl.status_name));
-  const statusTemplates = templates.filter(tmpl => !!(tmpl.status || tmpl.status_name));
+  // Fetch company logos / logo variations
+  const { data: companyLogosData } = useQuery({
+    queryKey: ['company-logos-options'],
+    queryFn: () => api.get('/company-logos/').then(r => r.data.results ?? r.data),
+    staleTime: 1000 * 60 * 5,
+  });
+  const { data: companiesData } = useQuery({
+    queryKey: ['company-info-options'],
+    queryFn: () => api.get('/companies/').then(r => r.data.results ?? r.data),
+    staleTime: 1000 * 60 * 5,
+  });
 
-  const targetTemplates = categoryTab === 'general' ? generalTemplates : statusTemplates;
+  const companyLogosList = companyLogosData ?? [];
+  const primaryCompanyLogo = companiesData?.[0]?.company_logo || '';
+
+  const allLogoOptions = [
+    ...(primaryCompanyLogo ? [{ label: 'Primary Company Header Logo', url: primaryCompanyLogo }] : []),
+    ...companyLogosList.map((l) => ({
+      label: l.title || `Logo Variation #${l.serial_number || l.id}`,
+      url: l.image,
+    })),
+  ];
+
+  const generalTemplates = templates.filter(tmpl => !tmpl.is_generous && !(tmpl.status || tmpl.status_name));
+  const statusTemplates = templates.filter(tmpl => !tmpl.is_generous && !!(tmpl.status || tmpl.status_name));
+  const generousTemplates = templates.filter(tmpl => !!tmpl.is_generous);
+
+  const targetTemplates = categoryTab === 'general'
+    ? generalTemplates
+    : categoryTab === 'status'
+      ? statusTemplates
+      : generousTemplates;
 
   const filteredTemplates = targetTemplates.filter(tmpl => {
     const statusName = (tmpl.status_name || statuses.find(s => String(s.id) === String(tmpl.status))?.name || '');
@@ -132,7 +165,20 @@ export default function EmailTemplatesSettings() {
   const openCreateModal = () => {
     setEditingTemplate(null);
     setName('');
-    if (categoryTab === 'status') {
+    if (categoryTab === 'generous') {
+      setIsGenerous(true);
+      setStatusId('');
+      setTopLeftLogo('');
+      setTopCenterLogo('');
+      setName('Generous Email Template');
+      setSubject('Notice: Special Update Regarding Your Visa Application');
+      setBody(
+        `Dear {{ applicant_name }},\n\nWe are writing to share an important update regarding your visa application (ID: {{ applicant_id }}).\n\nType your custom message here...\n\nBest regards,\nThe {{ company_name }} Team`
+      );
+    } else if (categoryTab === 'status') {
+      setIsGenerous(false);
+      setTopLeftLogo('');
+      setTopCenterLogo('');
       const existingStatusIds = statusTemplates.map(t => String(t.status?.id || t.status));
       const firstUnused = statuses.find(s => !existingStatusIds.includes(String(s.id)));
       setStatusId(firstUnused ? firstUnused.id : (statuses[0]?.id || ''));
@@ -141,7 +187,10 @@ export default function EmailTemplatesSettings() {
         `<p>Dear <strong style="color: #0f172a;">{{ applicant_name }}</strong>,</p>\n<p>We are writing to inform you that there has been an update regarding your application (ID: <strong style="color: #0f172a;">{{ applicant_id }}</strong>).</p>\n<div class="status-box">\n  <span class="status-label">New Application Status</span>\n  <p class="status-value">{{ current_status }}</p>\n</div>\n<p>If you have any questions or require further assistance, please do not hesitate to contact our team.</p>\n<p>Best regards,<br>The {{ company_name }} Team</p>`
       );
     } else {
+      setIsGenerous(false);
       setStatusId('');
+      setTopLeftLogo('');
+      setTopCenterLogo('');
       setSubject('Notice: Important Update Regarding Your Application');
       setBody(
         `<p>Dear <strong style="color: #0f172a;">{{ applicant_name }}</strong>,</p>\n<p>We would like to update you regarding your visa application (ID: <strong style="color: #0f172a;">{{ applicant_id }}</strong>).</p>\n<p>Type your custom message here...</p>\n<p>Best regards,<br>The {{ company_name }} Team</p>`
@@ -160,6 +209,9 @@ export default function EmailTemplatesSettings() {
     setSubject(tmpl.subject || '');
     setBody(tmpl.body || '');
     setIsActive(tmpl.is_active ?? true);
+    setIsGenerous(tmpl.is_generous ?? (categoryTab === 'generous'));
+    setTopLeftLogo(tmpl.top_left_logo || '');
+    setTopCenterLogo(tmpl.top_center_logo || '');
     setFormError('');
     setActiveTab('edit');
     setShowModal(true);
@@ -199,10 +251,13 @@ export default function EmailTemplatesSettings() {
 
     saveMutation.mutate({
       name: name.trim(),
-      status: statusId || null,
+      status: (categoryTab === 'generous' || isGenerous) ? null : (statusId || null),
       subject: subject.trim(),
       body: body.trim(),
       is_active: isActive,
+      is_generous: categoryTab === 'generous' || isGenerous,
+      top_left_logo: topLeftLogo,
+      top_center_logo: topCenterLogo,
     });
   };
 
@@ -273,6 +328,31 @@ export default function EmailTemplatesSettings() {
     // Flag image sample (Italy flag URL)
     const sampleFlagUrl = "https://res.cloudinary.com/prfvuhln/image/upload/v1784399873/nltqujtitxsmmhv6x1vg.jpg";
 
+    // Generous Template: Simple layout without header banner or footer
+    if (categoryTab === 'generous' || isGenerous || editingTemplate?.is_generous) {
+      const hasLogos = Boolean(topLeftLogo || topCenterLogo);
+      return `
+        <div style="font-family: 'Inter', system-ui, -apple-system, sans-serif; background-color: #f8fafc; padding: 24px; border-radius: 14px;">
+          <div style="max-width: 580px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.03); padding: 30px 28px;">
+            ${hasLogos ? `
+              <div style="margin-bottom: 24px; padding-bottom: 18px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+                <div style="flex: 1; text-align: left;">
+                  ${topLeftLogo ? `<img src="${topLeftLogo}" alt="Top Left Logo" style="max-height: 48px; max-width: 170px; object-fit: contain; display: inline-block;" />` : ''}
+                </div>
+                <div style="flex: 1; text-align: center;">
+                  ${topCenterLogo ? `<img src="${topCenterLogo}" alt="Top Center Logo" style="max-height: 48px; max-width: 170px; object-fit: contain; display: inline-block;" />` : ''}
+                </div>
+                <div style="flex: 1;"></div>
+              </div>
+            ` : ''}
+            <div style="font-size: 15px; line-height: 1.7; color: #334155;">
+              ${formattedChunks.join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     return `
       <div style="font-family: 'Inter', system-ui, sans-serif; background-color: #f8fafc; padding: 20px; border-radius: 12px;">
         <div style="max-width: 550px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; border: 1px solid #e2e8f0; box-shadow: 0 4px 14px rgba(0,0,0,0.05);">
@@ -338,7 +418,7 @@ export default function EmailTemplatesSettings() {
         </button>
       </div>
 
-      {/* Category Tabs: General / Manual vs Status Templates */}
+      {/* Category Tabs: General vs Status vs Generous Templates */}
       <div className="flex bg-white p-1.5 rounded-2xl border border-slate-100 shadow-xs">
         <button
           onClick={() => { setCategoryTab('general'); setPage(1); }}
@@ -371,6 +451,23 @@ export default function EmailTemplatesSettings() {
             categoryTab === 'status' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
           }`}>
             {statusTemplates.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => { setCategoryTab('generous'); setPage(1); }}
+          className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            categoryTab === 'generous'
+              ? 'bg-amber-600 text-white shadow-md'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <SparklesIcon className="w-4 h-4" />
+          Generous Email Templates
+          <span className={`px-2 py-0.5 text-[11px] rounded-full font-bold ${
+            categoryTab === 'generous' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
+          }`}>
+            {generousTemplates.length}
           </span>
         </button>
       </div>
@@ -581,6 +678,68 @@ export default function EmailTemplatesSettings() {
 
               {activeTab === 'edit' ? (
                 <form id="template-form" onSubmit={handleSubmit} className="space-y-4">
+                  {(categoryTab === 'generous' || isGenerous) && (
+                    <div className="p-4 bg-amber-50/70 border border-amber-200/80 rounded-2xl space-y-3 col-span-full">
+                      <div className="flex items-center gap-2 text-xs font-bold text-amber-900">
+                        <SparklesIcon className="w-4 h-4 text-amber-600" />
+                        <span>Generous Template Header Logos (Optional):</span>
+                      </div>
+                      <p className="text-[11px] text-amber-700">
+                        Select logo variations from company logos to place at top left or top center. This generous template uses a simple, clean layout without standard company headers or footers.
+                      </p>
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                            Top Left Logo (Optional)
+                          </label>
+                          <select
+                            value={topLeftLogo}
+                            onChange={e => setTopLeftLogo(e.target.value)}
+                            className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-medium bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                          >
+                            <option value="">— No Top Left Logo —</option>
+                            {allLogoOptions.map((opt, idx) => (
+                              <option key={idx} value={opt.url}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                          {topLeftLogo && (
+                            <div className="mt-2 p-2 bg-white rounded-lg border border-slate-200 flex items-center gap-2">
+                              <img src={topLeftLogo} alt="Top Left Preview" className="h-8 max-w-[120px] object-contain" />
+                              <span className="text-[10px] text-slate-500 font-medium">Top Left Logo Selected</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
+                            Top Center Logo (Optional)
+                          </label>
+                          <select
+                            value={topCenterLogo}
+                            onChange={e => setTopCenterLogo(e.target.value)}
+                            className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-medium bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                          >
+                            <option value="">— No Top Center Logo —</option>
+                            {allLogoOptions.map((opt, idx) => (
+                              <option key={idx} value={opt.url}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                          {topCenterLogo && (
+                            <div className="mt-2 p-2 bg-white rounded-lg border border-slate-200 flex items-center gap-2">
+                              <img src={topCenterLogo} alt="Top Center Preview" className="h-8 max-w-[120px] object-contain" />
+                              <span className="text-[10px] text-slate-500 font-medium">Top Center Logo Selected</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
@@ -595,23 +754,25 @@ export default function EmailTemplatesSettings() {
                         required
                       />
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
-                        Linked Status (Automatic Trigger)
-                      </label>
-                      <select
-                        value={statusId}
-                        onChange={e => setStatusId(e.target.value)}
-                        className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-medium bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      >
-                        <option value="">— None (Manual / General Template) —</option>
-                        {statuses.map(s => (
-                          <option key={s.id} value={s.id}>
-                            {s.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {categoryTab !== 'generous' && !isGenerous && (
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 uppercase mb-1">
+                          Linked Status (Automatic Trigger)
+                        </label>
+                        <select
+                          value={statusId}
+                          onChange={e => setStatusId(e.target.value)}
+                          className="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-xs font-medium bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        >
+                          <option value="">— None (Manual / General Template) —</option>
+                          {statuses.map(s => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
 
                   <div>

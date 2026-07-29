@@ -51,6 +51,7 @@ export default function ApplicantDetailPage() {
   const [currency, setCurrency] = useState('BDT');
   const [paymentMethod, setPaymentMethod] = useState('CASH');
   const [manualExchangeRate, setManualExchangeRate] = useState('');
+  const [euroAmount, setEuroAmount] = useState('');
   const [preferredRefundMethod, setPreferredRefundMethod] = useState('BANK');
   const [paymentRemarks, setPaymentRemarks] = useState('');
   const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
@@ -245,6 +246,7 @@ export default function ApplicantDetailPage() {
       setReference('');
       setReceiptNumber('');
       setManualExchangeRate('');
+      setEuroAmount('');
       setPaymentError(null);
       const presetsList = Array.isArray(importantNotePresets)
         ? importantNotePresets
@@ -269,6 +271,16 @@ export default function ApplicantDetailPage() {
       setPaymentMethod(payment.payment_method || 'CASH');
       setCurrency(payment.currency || 'BDT');
       const rateVal = payment.exchange_rate ? Number(payment.exchange_rate) : 0;
+      const amtVal = payment.amount ? Number(payment.amount) : 0;
+      const eurVal = payment.euro_amount ? Number(payment.euro_amount) : 0;
+      let displayEuro = '';
+      if (eurVal > 0) {
+        displayEuro = String(eurVal);
+      } else if (amtVal > 0 && rateVal > 0) {
+        displayEuro = (rateVal > 1 ? amtVal / rateVal : amtVal * rateVal).toFixed(2);
+      }
+      setEuroAmount(displayEuro);
+
       const displayRate = (rateVal > 0 && payment.currency !== 'EUR')
         ? (rateVal < 1 ? (1 / rateVal).toFixed(4) : String(rateVal))
         : '';
@@ -1027,18 +1039,18 @@ export default function ApplicantDetailPage() {
                       {currency !== 'EUR' && (
                         <div>
                           <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
-                            Exchange Rate (1 EUR = ? {currency})
+                            Euro Amount (€) <span className="text-red-500">*</span>
                           </label>
                           <input
                             type="number"
-                            step="0.0001"
-                            value={manualExchangeRate}
-                            onChange={(e) => setManualExchangeRate(e.target.value)}
-                            placeholder={currency === 'BDT' ? "e.g. 140.0000" : "Rate per EUR"}
+                            step="0.01"
+                            value={euroAmount}
+                            onChange={(e) => setEuroAmount(e.target.value)}
+                            placeholder="e.g. 1000"
                             className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                           />
                           <p className="text-[10px] text-slate-400 mt-1">
-                            * Input {currency} per 1 EUR (e.g. 140). Backend will calculate Euro amount.
+                            * Input Euro amount (€). System will calculate exchange rate.
                           </p>
                         </div>
                       )}
@@ -1046,22 +1058,18 @@ export default function ApplicantDetailPage() {
                       {paymentAmount && Number(paymentAmount) > 0 && (
                         <div className="col-span-1 sm:col-span-2 bg-blue-50/80 border border-blue-100 rounded-xl p-3 flex justify-between items-center text-xs">
                           <span className="font-semibold text-blue-900">
-                            Calculated Euro Amount:
+                            Calculated Exchange Rate:
                           </span>
                           <span className="font-extrabold text-blue-700 text-sm">
-                            € {(() => {
+                            {(() => {
                               const amt = Number(paymentAmount) || 0;
-                              if (currency === 'EUR') return amt.toFixed(2);
-                              const rate = Number(manualExchangeRate) || 0;
-                              if (rate > 0) {
-                                if (currency === 'GBP') {
-                                  if (rate >= 1) return (amt * rate).toFixed(2);
-                                  return (amt / rate).toFixed(2);
-                                }
-                                if (rate > 1) return (amt / rate).toFixed(2);
-                                return (amt * rate).toFixed(2);
+                              if (currency === 'EUR') return '1 EUR = 1 EUR';
+                              const eur = Number(euroAmount) || 0;
+                              if (eur > 0 && amt > 0) {
+                                const rate = (amt / eur).toFixed(4);
+                                return `1 EUR = ${rate} ${currency}`;
                               }
-                              return '(Calculated by Backend)';
+                              return '(Enter Euro Amount)';
                             })()}
                           </span>
                         </div>
@@ -1202,6 +1210,9 @@ export default function ApplicantDetailPage() {
                       disabled={addPaymentMutation.isPending || editPaymentMutation.isPending}
                       onClick={() => {
                         if (!paymentAmount) return setPaymentError('Amount is required.');
+                        if (currency !== 'EUR' && (!euroAmount || Number(euroAmount) <= 0)) {
+                          return setPaymentError('Euro Amount is required and must be greater than 0.');
+                        }
                         setPaymentError(null);
                         if (nextInstallmentType === 'SECOND') {
                           updateProfileMutation.mutate({ preferred_refund_method: preferredRefundMethod });
@@ -1209,8 +1220,12 @@ export default function ApplicantDetailPage() {
 
                         const isSecondModal = editPaymentId ? (existingPayments.find(p => p.id === editPaymentId)?.installment_type === 'SECOND') : (nextInstallmentType === 'SECOND');
 
+                        const amtNum = Number(paymentAmount) || 0;
+                        const eurNum = currency === 'EUR' ? amtNum : (Number(euroAmount) || 0);
+                        const calcRate = (amtNum > 0 && eurNum > 0) ? Number((amtNum / eurNum).toFixed(4)) : null;
+
                         const payload = {
-                          amount: Number(paymentAmount),
+                          amount: amtNum,
                           payment_method: paymentMethod,
                           currency: currency,
                           payment_date: paymentDate,
@@ -1218,7 +1233,8 @@ export default function ApplicantDetailPage() {
                           receipt_number: receiptNumber,
                           note: paymentRemarks,
                           important_note: importantNote,
-                          manual_exchange_rate: manualExchangeRate || null,
+                          manual_exchange_rate: calcRate ? String(calcRate) : null,
+                          euro_amount: eurNum ? Number(eurNum.toFixed(2)) : null,
                           countdown_days: (isSecondModal && countdownDays) ? Number(countdownDays) : null,
                         };
 

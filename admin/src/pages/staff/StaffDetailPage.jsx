@@ -136,7 +136,7 @@ export default function StaffDetailPage() {
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">Manual Visa Boosts</p>
                 <p className="text-sm font-semibold text-slate-800">
-                  +{staff.fake_approved_count || 0} Approved / +{staff.fake_rejected_count || 0} Rejected
+                  +{staff.fake_approved_count || 0} Approved / +{staff.fake_rejected_count || 0} Rejected / +{staff.fake_processing_count || 0} Processing
                 </p>
               </div>
             </div>
