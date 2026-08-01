@@ -46,6 +46,11 @@ export default function ApplicantDetailPage() {
   const [showBengali, setShowBengali] = useState(false);
   const [editPaymentId, setEditPaymentId] = useState(null);
 
+  // Status Log Edit State
+  const [showStatusLogEditModal, setShowStatusLogEditModal] = useState(false);
+  const [editStatusLogId, setEditStatusLogId] = useState(null);
+  const [editStatusLogDate, setEditStatusLogDate] = useState('');
+
   // Payment Form State
   const [paymentAmount, setPaymentAmount] = useState('');
   const [currency, setCurrency] = useState('BDT');
@@ -330,6 +335,18 @@ export default function ApplicantDetailPage() {
     },
     onError: (err) => {
       toast.error('Failed to delete status log: ' + (err.response?.data?.detail || err.message));
+    }
+  });
+
+  const updateStatusLogMutation = useMutation({
+    mutationFn: ({ logId, created_at }) => api.patch(`/applicants/${id}/status-history/${logId}/`, { created_at }),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['applicant-status-history', id]);
+      toast.success('Status log date updated successfully!');
+      setShowStatusLogEditModal(false);
+    },
+    onError: (err) => {
+      toast.error('Failed to update status log: ' + (err.response?.data?.detail || err.message));
     }
   });
 
@@ -1691,18 +1708,33 @@ export default function ApplicantDetailPage() {
                         {log.remarks || '—'}
                       </td>
                       <td className="px-5 py-4">
-                        <button
-                          onClick={() => {
-                            if (window.confirm('Are you sure you want to delete this status log entry?')) {
-                              deleteStatusLogMutation.mutate(log.id);
-                            }
-                          }}
-                          disabled={deleteStatusLogMutation.isPending}
-                          className="p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors cursor-pointer"
-                          title="Delete Status Log Entry"
-                        >
-                          <TrashIcon className="w-4 h-4" />
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              setEditStatusLogId(log.id);
+                              const d = log.created_at ? new Date(log.created_at) : new Date();
+                              d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                              setEditStatusLogDate(d.toISOString().slice(0, 16));
+                              setShowStatusLogEditModal(true);
+                            }}
+                            className="p-1.5 text-slate-400 hover:bg-blue-50 hover:text-blue-500 rounded-lg transition-colors cursor-pointer"
+                            title="Edit Date/Time"
+                          >
+                            <PencilSquareIcon className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm('Are you sure you want to delete this status log entry?')) {
+                                deleteStatusLogMutation.mutate(log.id);
+                              }
+                            }}
+                            disabled={deleteStatusLogMutation.isPending}
+                            className="p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-lg transition-colors cursor-pointer"
+                            title="Delete Status Log Entry"
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1714,6 +1746,58 @@ export default function ApplicantDetailPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Modal for Editing Status Log Date/Time */}
+            {showStatusLogEditModal && (
+              <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+                <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl flex flex-col">
+                  <div className="flex items-center justify-between border-b pb-3 shrink-0">
+                    <h3 className="font-bold text-slate-800 text-lg">Edit Date & Time</h3>
+                    <button
+                      onClick={() => setShowStatusLogEditModal(false)}
+                      className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors text-lg font-bold leading-none"
+                      title="Close"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div className="py-4 space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Date and Time</label>
+                      <input
+                        type="datetime-local"
+                        value={editStatusLogDate}
+                        onChange={(e) => setEditStatusLogDate(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 justify-end text-sm font-semibold pt-3 border-t shrink-0">
+                    <button
+                      onClick={() => setShowStatusLogEditModal(false)}
+                      className="px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (editStatusLogDate) {
+                          const d = new Date(editStatusLogDate);
+                          updateStatusLogMutation.mutate({
+                            logId: editStatusLogId,
+                            created_at: d.toISOString()
+                          });
+                        }
+                      }}
+                      disabled={updateStatusLogMutation.isPending}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {updateStatusLogMutation.isPending ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
