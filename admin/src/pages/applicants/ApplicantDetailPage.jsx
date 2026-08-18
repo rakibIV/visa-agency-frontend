@@ -50,6 +50,15 @@ export default function ApplicantDetailPage() {
   const [showStatusLogEditModal, setShowStatusLogEditModal] = useState(false);
   const [editStatusLogId, setEditStatusLogId] = useState(null);
   const [editStatusLogDate, setEditStatusLogDate] = useState('');
+  const [editStatusLogRemarks, setEditStatusLogRemarks] = useState('');
+  const [editStatusLogNewStatus, setEditStatusLogNewStatus] = useState('');
+
+  // Fetch all statuses for status dropdowns
+  const { data: statusesList } = useQuery({
+    queryKey: ['application-statuses', 'v2'],
+    queryFn: () => api.get('/application-statuses/').then(r => r.data.results ?? r.data),
+    staleTime: 1000 * 60 * 15,
+  });
 
   // Payment Form State
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -339,10 +348,13 @@ export default function ApplicantDetailPage() {
   });
 
   const updateStatusLogMutation = useMutation({
-    mutationFn: ({ logId, created_at }) => api.patch(`/applicants/${id}/status-history/${logId}/`, { created_at }),
+    mutationFn: ({ logId, data }) => api.patch(`/applicants/${id}/status-history/${logId}/`, data),
     onSuccess: () => {
       queryClient.invalidateQueries(['applicant-status-history', id]);
-      toast.success('Status log date updated successfully!');
+      queryClient.invalidateQueries(['applicant', id]);
+      queryClient.invalidateQueries(['applicants']);
+      queryClient.invalidateQueries(['applicants-status-update']);
+      toast.success('Status log entry updated successfully!');
       setShowStatusLogEditModal(false);
     },
     onError: (err) => {
@@ -1715,6 +1727,8 @@ export default function ApplicantDetailPage() {
                               const d = log.created_at ? new Date(log.created_at) : new Date();
                               d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
                               setEditStatusLogDate(d.toISOString().slice(0, 16));
+                              setEditStatusLogRemarks(log.remarks || '');
+                              setEditStatusLogNewStatus(log.new_status || log.status_id || '');
                               setShowStatusLogEditModal(true);
                             }}
                             className="p-1.5 text-slate-400 hover:bg-blue-50 hover:text-blue-500 rounded-lg transition-colors cursor-pointer"
@@ -1747,12 +1761,12 @@ export default function ApplicantDetailPage() {
               </table>
             </div>
 
-            {/* Modal for Editing Status Log Date/Time */}
+            {/* Modal for Editing Status Log Entry */}
             {showStatusLogEditModal && (
               <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-                <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl flex flex-col">
+                <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl flex flex-col">
                   <div className="flex items-center justify-between border-b pb-3 shrink-0">
-                    <h3 className="font-bold text-slate-800 text-lg">Edit Date & Time</h3>
+                    <h3 className="font-bold text-slate-800 text-lg">Edit Status Log Entry</h3>
                     <button
                       onClick={() => setShowStatusLogEditModal(false)}
                       className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors text-lg font-bold leading-none"
@@ -1763,12 +1777,39 @@ export default function ApplicantDetailPage() {
                   </div>
                   <div className="py-4 space-y-4">
                     <div>
-                      <label className="block text-xs font-bold text-slate-400 uppercase mb-1">Date and Time</label>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Date and Time</label>
                       <input
                         type="datetime-local"
                         value={editStatusLogDate}
                         onChange={(e) => setEditStatusLogDate(e.target.value)}
                         className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">New Status</label>
+                      <select
+                        value={editStatusLogNewStatus}
+                        onChange={(e) => setEditStatusLogNewStatus(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                      >
+                        <option value="">(Keep current log status)</option>
+                        {statusesList?.map((st) => (
+                          <option key={st.id} value={st.id}>
+                            {st.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Remarks</label>
+                      <textarea
+                        value={editStatusLogRemarks}
+                        onChange={(e) => setEditStatusLogRemarks(e.target.value)}
+                        rows={3}
+                        placeholder="Add remarks or notes..."
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
                       />
                     </div>
                   </div>
@@ -1781,13 +1822,19 @@ export default function ApplicantDetailPage() {
                     </button>
                     <button
                       onClick={() => {
+                        const payload = {};
                         if (editStatusLogDate) {
                           const d = new Date(editStatusLogDate);
-                          updateStatusLogMutation.mutate({
-                            logId: editStatusLogId,
-                            created_at: d.toISOString()
-                          });
+                          payload.created_at = d.toISOString();
                         }
+                        payload.remarks = editStatusLogRemarks;
+                        if (editStatusLogNewStatus) {
+                          payload.new_status = editStatusLogNewStatus;
+                        }
+                        updateStatusLogMutation.mutate({
+                          logId: editStatusLogId,
+                          data: payload,
+                        });
                       }}
                       disabled={updateStatusLogMutation.isPending}
                       className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
