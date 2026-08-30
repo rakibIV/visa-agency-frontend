@@ -44,7 +44,7 @@ export default function ApplicantFormPage() {
   const [selectedVisaId, setSelectedVisaId] = useState('');
   const [selectedJobId, setSelectedJobId] = useState('');
   const [selectedSecondaryJobId, setSelectedSecondaryJobId] = useState('');
-  const [paymentPlan, setPaymentPlan] = useState(3);
+  const [paymentPlan, setPaymentPlan] = useState(2);
   const [remarks, setRemarks] = useState('');
   const [selectedStaffId, setSelectedStaffId] = useState('');
   const [selectedSlotId, setSelectedSlotId] = useState('');
@@ -95,7 +95,7 @@ export default function ApplicantFormPage() {
       if (applicant.visa) setSelectedVisaId(applicant.visa?.id || applicant.visa);
       if (applicant.job) setSelectedJobId(applicant.job?.id || applicant.job);
       if (applicant.secondary_job) setSelectedSecondaryJobId(applicant.secondary_job?.id || applicant.secondary_job);
-      setPaymentPlan(applicant.payment_plan_installments || 3);
+      setPaymentPlan(applicant.payment_plan_installments || 2);
       
       const staffId = applicant.slot?.staff?.id || applicant.slot?.staff || applicant.assigned_staff?.id || applicant.assigned_staff;
       if (staffId) setSelectedStaffId(staffId);
@@ -533,8 +533,8 @@ export default function ApplicantFormPage() {
                   disabled={isPaymentComplete}
                   required
                 >
-                  <option value={3}>Three Installments</option>
                   <option value={2}>Two Installments</option>
+                  <option value={3}>Three Installments</option>
                 </select>
               </div>
               <div>
