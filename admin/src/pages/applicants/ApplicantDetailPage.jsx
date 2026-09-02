@@ -513,7 +513,7 @@ export default function ApplicantDetailPage() {
             </div>
           </div>
           <div id="agreement-preview-content" className="p-4 flex justify-center">
-            <AgreementPrintView applicant={applicant} templates={templates} type={printType} companyInfo={companyInfo} showBengali={showBengali} />
+            <AgreementPrintView applicant={applicant} templates={templates} type={printType} companyInfo={companyInfo} showBengali={showBengali} currenciesList={currenciesList} />
           </div>
         </div>
       )}
@@ -521,7 +521,7 @@ export default function ApplicantDetailPage() {
       {/* Print portal: injected directly into document.body so CSS body>*:not(.print-portal) works correctly */}
       {showPrintView && createPortal(
         <div className="print-portal">
-          <AgreementPrintView applicant={applicant} templates={templates} type={printType} companyInfo={companyInfo} showBengali={showBengali} />
+          <AgreementPrintView applicant={applicant} templates={templates} type={printType} companyInfo={companyInfo} showBengali={showBengali} currenciesList={currenciesList} />
         </div>,
         document.body
       )}
@@ -1462,7 +1462,7 @@ export default function ApplicantDetailPage() {
                   {applicant.refunds?.map((refund) => (
                     <tr key={refund.id} className="hover:bg-slate-50/50">
                       <td className="px-5 py-4 font-mono text-xs font-bold text-slate-500">{refund.receipt_number || `REF-${refund.id}`}</td>
-                      <td className="px-5 py-4 font-semibold text-slate-800">৳{Number(refund.refund_amount).toLocaleString()}</td>
+                      <td className="px-5 py-4 font-semibold text-slate-800">{getCurrencySymbol(refund.currency || applicant.payments?.[0]?.currency || 'BDT')}{Number(refund.refund_amount).toLocaleString()}</td>
                       <td className="px-5 py-4">
                         <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 capitalize">
                           {refund.refund_status}

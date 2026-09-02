@@ -1,8 +1,10 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import api from '../../api/client';
 import topIllustration from '../../assets/top-illustration.png';
 import companyLogo from '../../assets/logo.png';
 
-export default function AgreementPrintView({ applicant, templates = [], type, companyInfo, showBengali = false }) {
+export default function AgreementPrintView({ applicant, templates = [], type, companyInfo, showBengali = false, currenciesList = [] }) {
   React.useEffect(() => {
     const originalTitle = document.title;
     const name = applicant?.full_name || 'Applicant';
@@ -11,6 +13,57 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
       document.title = originalTitle;
     };
   }, [applicant]);
+
+  // Fetch currencies list as fallback if not passed in props
+  const { data: currenciesData } = useQuery({
+    queryKey: ['config-currencies'],
+    queryFn: () => api.get('/currencies/').then((r) => r.data),
+    staleTime: 1000 * 60 * 15,
+  });
+  const allCurrencies = currenciesList?.length ? currenciesList : (currenciesData?.results ?? currenciesData ?? []);
+
+  const getCurrencySymbol = (code) => {
+    if (!code) return '৳';
+    const curr = allCurrencies.find((c) => c.code === code);
+    return curr?.symbol || code || '৳';
+  };
+
+  const formatPaymentAmount = (payment) => {
+    if (!payment) return '—';
+    const curr = payment.currency || 'BDT';
+    const amt = Number(payment.amount) || 0;
+    const sym = getCurrencySymbol(curr);
+    const isSingleSymbol = ['৳', '€', '$', '£', '¥', '﷼', '₹'].includes(sym) || sym.length === 1;
+    return isSingleSymbol ? `${sym}${amt.toLocaleString()}` : `${sym} ${amt.toLocaleString()}`;
+  };
+
+  const formatTotalPaid = (payments = []) => {
+    if (!payments || payments.length === 0) return `${getCurrencySymbol('BDT')}0`;
+
+    const totalsByCurrency = {};
+    payments.forEach((p) => {
+      const curr = p.currency || 'BDT';
+      const amt = Number(p.amount) || 0;
+      totalsByCurrency[curr] = (totalsByCurrency[curr] || 0) + amt;
+    });
+
+    const entries = Object.entries(totalsByCurrency);
+    if (entries.length === 1) {
+      const [curr, total] = entries[0];
+      const sym = getCurrencySymbol(curr);
+      const isSingleSymbol = ['৳', '€', '$', '£', '¥', '﷼', '₹'].includes(sym) || sym.length === 1;
+      return isSingleSymbol ? `${sym}${total.toLocaleString()}` : `${sym} ${total.toLocaleString()}`;
+    }
+
+    return entries
+      .map(([curr, total]) => {
+        const sym = getCurrencySymbol(curr);
+        const isSingleSymbol = ['৳', '€', '$', '£', '¥', '﷼', '₹'].includes(sym) || sym.length === 1;
+        return isSingleSymbol ? `${sym}${total.toLocaleString()}` : `${sym} ${total.toLocaleString()}`;
+      })
+      .join(' + ');
+  };
+
   // Page visibility toggles
   const showCover = type === 'all' || type === 'form';
   const showTemplate1Part1 = type === 'all' || type === 'tc';
@@ -108,7 +161,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
       .replace(/\{visa\}/g, applicant?.visa?.name || applicant?.visa_name || '—')
       .replace(/\{job\}/g, applicant?.job?.title || applicant?.job_title || '—')
       .replace(/\{country\}/g, applicant?.country?.name || applicant?.country_name || '—')
-      .replace(/\{payment\}/g, applicant?.agreed_amount || '—')
+      .replace(/\{payment\}/g, applicant?.agreed_amount ? String(applicant.agreed_amount) : (formatTotalPaid(applicant?.payments) || '—'))
       .replace(/\{company_name\}/g, companyInfo?.company_name || 'Al Raiyan Group');
   };
 
@@ -308,7 +361,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
                       <React.Fragment key={payment.id || index}>
                         <div className="flex justify-between border-b border-slate-200 pb-1">
                           <span className="text-slate-500 font-medium text-[11px] uppercase">Installment {index + 1} (Receipt {payment.receipt_number || (index + 1)})</span>
-                          <span className="font-bold text-slate-900 text-xs">৳{Number(payment.amount).toLocaleString()}</span>
+                          <span className="font-bold text-slate-900 text-xs">{formatPaymentAmount(payment)}</span>
                         </div>
                         <div className="flex justify-between border-b border-slate-200 pb-1">
                           <span className="text-slate-500 font-medium text-[11px] uppercase">Payment Date</span>
@@ -323,7 +376,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
                     )}
                     <div className="flex justify-between border-b border-slate-200 pb-1 col-span-2 mt-2">
                       <span className="text-slate-500 font-medium text-[11px] uppercase">Total Amount Paid</span>
-                      <span className="font-extrabold text-blue-800 text-xs">৳{Number(applicant?.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0).toLocaleString()}</span>
+                      <span className="font-extrabold text-blue-800 text-xs">{formatTotalPaid(applicant?.payments)}</span>
                     </div>
                   </div>
                 </div>
@@ -354,7 +407,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
             
             <div className="bg-slate-50 border border-slate-200 rounded p-4 flex justify-between items-center mb-6">
                <div className="text-xs uppercase font-bold text-slate-500 tracking-wider">Total Amount Received</div>
-               <div className="text-xl font-black text-slate-900">৳{Number(applicant?.payments?.reduce((sum, p) => sum + Number(p.amount || 0), 0) || 0).toLocaleString()}</div>
+               <div className="text-xl font-black text-slate-900">{formatTotalPaid(applicant?.payments)}</div>
             </div>
 
             <div className="space-y-1">

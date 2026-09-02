@@ -123,7 +123,7 @@ export default function StatusCheckPage() {
 
   return (
     <div className="bg-slate-100/70 min-h-screen pb-28 font-sans selection:bg-accent-500 selection:text-white">
-      
+
       {/* ═══════════════════════════════════════════
           1. HERO HEADER — Brand Identity & Search
       ═══════════════════════════════════════════ */}
@@ -134,7 +134,7 @@ export default function StatusCheckPage() {
 
         <div className="container-narrow relative z-10 text-center">
           <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-            
+
             {/* Top Brand Logo Showcase */}
             {upDownLogoUrl ? (
               <div className="flex justify-center mb-6">
@@ -270,23 +270,29 @@ export default function StatusCheckPage() {
                   <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2">
                     {/* LEFT SIDE: Photo + Name + Blue Status Badge + App ID */}
                     <div className="flex items-center gap-4 sm:gap-5">
-                      {result.photo ? (
-                        <img
-                          src={result.photo}
-                          alt={result.full_name}
-                          className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl object-cover ring-4 ring-blue-500/30 shadow-xl shrink-0"
-                        />
-                      ) : (
-                        <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-blue-600/20 backdrop-blur-md flex items-center justify-center text-white font-black text-3xl border border-blue-400/30 shrink-0 shadow-xl">
-                          {result.full_name?.charAt(0) || 'A'}
-                        </div>
-                      )}
+                      <div className="relative shrink-0">
+                        {result.photo ? (
+                          <img
+                            src={result.photo}
+                            alt={result.full_name}
+                            className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl object-cover ring-4 ring-blue-500/30 shadow-xl"
+                          />
+                        ) : (
+                          <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-blue-600/20 backdrop-blur-md flex items-center justify-center text-white font-black text-3xl border border-blue-400/30 shadow-xl">
+                            {result.full_name?.charAt(0) || 'A'}
+                          </div>
+                        )}
+                        {/* Green Active Status Circle */}
+                        <span className="absolute bottom-0 right-0 translate-x-0.5 translate-y-0.5 flex h-4 w-4">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 border-2 border-slate-900 shadow-sm" />
+                        </span>
+                      </div>
 
                       <div className="space-y-1.5">
                         <div className="flex flex-wrap items-center gap-3">
                           <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white">{result.full_name}</h2>
-                          <VerifiedIcon fontSize="small" className="text-blue-400" />
-                          
+
                           {/* Blue Live Status Tag */}
                           <span
                             className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-blue-600/40 text-blue-100 border border-blue-400/60 shadow-md shadow-blue-500/20 backdrop-blur-md"
@@ -361,11 +367,10 @@ export default function StatusCheckPage() {
                   {/* Live Day Counter Card */}
                   {result.countdown_info && (
                     <div className="relative z-10 pt-5 mt-5 border-t border-white/10">
-                      <div className={`p-4.5 rounded-2xl border backdrop-blur-md transition-all ${
-                        result.countdown_info.is_overdue
-                          ? 'bg-red-500/15 border-red-500/30 text-red-100 shadow-lg shadow-red-950/20'
-                          : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-100 shadow-lg shadow-emerald-950/20'
-                      }`}>
+                      <div className={`p-4.5 rounded-2xl border backdrop-blur-md transition-all ${result.countdown_info.is_overdue
+                        ? 'bg-red-500/15 border-red-500/30 text-red-100 shadow-lg shadow-red-950/20'
+                        : 'bg-emerald-500/15 border-emerald-500/30 text-emerald-100 shadow-lg shadow-emerald-950/20'
+                        }`}>
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
                             <span className={`w-2.5 h-2.5 rounded-full animate-ping ${result.countdown_info.is_overdue ? 'bg-red-400' : 'bg-emerald-400'}`} />
@@ -390,9 +395,8 @@ export default function StatusCheckPage() {
                         {/* Progress Bar */}
                         <div className="w-full bg-black/30 rounded-full h-2 overflow-hidden p-0.5 border border-white/10">
                           <div
-                            className={`h-full rounded-full transition-all duration-700 ${
-                              result.countdown_info.is_overdue ? 'bg-red-500 shadow-xs shadow-red-400' : 'bg-emerald-400 shadow-xs shadow-emerald-400'
-                            }`}
+                            className={`h-full rounded-full transition-all duration-700 ${result.countdown_info.is_overdue ? 'bg-red-500 shadow-xs shadow-red-400' : 'bg-emerald-400 shadow-xs shadow-emerald-400'
+                              }`}
                             style={{
                               width: `${Math.min(100, (result.countdown_info.days_elapsed / result.countdown_info.target_days) * 100)}%`
                             }}
@@ -407,11 +411,10 @@ export default function StatusCheckPage() {
                 <div className="border-b border-slate-200 bg-slate-50/80 px-6 pt-3 flex items-center gap-2 overflow-x-auto">
                   <button
                     onClick={() => setActiveTab('overview')}
-                    className={`flex items-center gap-2 px-4 py-3 text-xs font-extrabold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
-                      activeTab === 'overview'
-                        ? 'border-navy-950 text-navy-950 bg-white rounded-t-xl shadow-2xs'
-                        : 'border-transparent text-slate-500 hover:text-slate-800'
-                    }`}
+                    className={`flex items-center gap-2 px-4 py-3 text-xs font-extrabold uppercase tracking-wider border-b-2 transition-all shrink-0 ${activeTab === 'overview'
+                      ? 'border-navy-950 text-navy-950 bg-white rounded-t-xl shadow-2xs'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                      }`}
                   >
                     <BadgeIcon fontSize="small" />
                     <span>Credentials & Info</span>
@@ -419,11 +422,10 @@ export default function StatusCheckPage() {
 
                   <button
                     onClick={() => setActiveTab('timeline')}
-                    className={`flex items-center gap-2 px-4 py-3 text-xs font-extrabold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
-                      activeTab === 'timeline'
-                        ? 'border-navy-950 text-navy-950 bg-white rounded-t-xl shadow-2xs'
-                        : 'border-transparent text-slate-500 hover:text-slate-800'
-                    }`}
+                    className={`flex items-center gap-2 px-4 py-3 text-xs font-extrabold uppercase tracking-wider border-b-2 transition-all shrink-0 ${activeTab === 'timeline'
+                      ? 'border-navy-950 text-navy-950 bg-white rounded-t-xl shadow-2xs'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                      }`}
                   >
                     <TimelineIcon fontSize="small" />
                     <span>Processing Timeline</span>
@@ -436,11 +438,10 @@ export default function StatusCheckPage() {
 
                   <button
                     onClick={() => setActiveTab('finance')}
-                    className={`flex items-center gap-2 px-4 py-3 text-xs font-extrabold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
-                      activeTab === 'finance'
-                        ? 'border-navy-950 text-navy-950 bg-white rounded-t-xl shadow-2xs'
-                        : 'border-transparent text-slate-500 hover:text-slate-800'
-                    }`}
+                    className={`flex items-center gap-2 px-4 py-3 text-xs font-extrabold uppercase tracking-wider border-b-2 transition-all shrink-0 ${activeTab === 'finance'
+                      ? 'border-navy-950 text-navy-950 bg-white rounded-t-xl shadow-2xs'
+                      : 'border-transparent text-slate-500 hover:text-slate-800'
+                      }`}
                   >
                     <AccountBalanceWalletIcon fontSize="small" />
                     <span>Financial History</span>
@@ -454,7 +455,7 @@ export default function StatusCheckPage() {
 
                 {/* D. Dynamic Tab Contents */}
                 <div className="p-6 sm:p-8">
-                  
+
                   {/* TAB 1: OVERVIEW & CREDENTIALS */}
                   {activeTab === 'overview' && (
                     <motion.div
