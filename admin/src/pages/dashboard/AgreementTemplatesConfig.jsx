@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   PlusIcon, PencilSquareIcon, TrashIcon, XMarkIcon, 
-  ArrowLeftIcon, ChevronUpIcon, ChevronDownIcon, DocumentTextIcon 
+  ArrowLeftIcon, ChevronUpIcon, ChevronDownIcon, DocumentTextIcon, SparklesIcon 
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
+import { TEMPLATE_VARIABLES_CONFIG } from '../../utils/templateVariables';
 
 function Modal({ title, onClose, children }) {
   return (
@@ -40,6 +41,62 @@ export default function AgreementTemplatesConfig() {
   const [clauseTab, setClauseTab] = useState('en'); // 'en', 'ar', 'bn', 'rules'
   const [editingClauseIndex, setEditingClauseIndex] = useState(null); // index or 'new'
   const [clauseForm, setClauseForm] = useState(getEmptyClause());
+  const [copiedVar, setCopiedVar] = useState(null);
+
+  const insertVariableIntoClause = (varKey, lang = 'en') => {
+    const tag = `{{ ${varKey} }}`;
+    const fieldKey = lang === 'ar' ? 'body_ar' : lang === 'bn' ? 'body_bn' : 'body_en';
+    setClauseForm((prev) => ({
+      ...prev,
+      [fieldKey]: prev[fieldKey] ? `${prev[fieldKey]} ${tag}` : tag,
+    }));
+    setCopiedVar(`${lang}_${varKey}`);
+    setTimeout(() => setCopiedVar(null), 1500);
+  };
+
+  const renderVariablesSelector = (lang) => (
+    <div className="mt-3 p-3 bg-blue-50/70 border border-blue-100 rounded-xl space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+          <SparklesIcon className="w-4 h-4 text-blue-600" />
+          <span>Insert Dynamic Variables (All 29 Variables):</span>
+        </span>
+        <span className="text-[10px] font-semibold text-blue-700 bg-white px-2 py-0.5 rounded border border-blue-200">
+          Click variable to insert
+        </span>
+      </div>
+
+      <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+        {TEMPLATE_VARIABLES_CONFIG.map((cat, idx) => (
+          <div key={idx} className="space-y-1">
+            <span className="text-[10px] font-black uppercase text-blue-900/70 tracking-wider">
+              {cat.category}
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {cat.variables.map((v) => {
+                const isCopied = copiedVar === `${lang}_${v.key}`;
+                return (
+                  <button
+                    key={v.key}
+                    type="button"
+                    onClick={() => insertVariableIntoClause(v.key, lang)}
+                    className={`text-[10px] px-2 py-0.5 rounded-md font-mono transition border ${
+                      isCopied
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                        : 'bg-white text-blue-800 border-blue-200 hover:bg-blue-100 hover:border-blue-400'
+                    }`}
+                    title={`Insert {{ ${v.key} }}`}
+                  >
+                    {isCopied ? '✓ Inserted!' : `+ {{ ${v.key} }}`}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   const { data: templates, isLoading } = useQuery({
     queryKey: ['agreement-templates'],
@@ -311,7 +368,7 @@ export default function AgreementTemplatesConfig() {
                   <div>
                     <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">Clause Body</label>
                     <textarea value={clauseForm.body_en || ''} onChange={e => setClauseForm({...clauseForm, body_en: e.target.value})} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl h-32 focus:ring-2 focus:ring-blue-500/20 transition-all" placeholder="Detailed clause content..." />
-                    <p className="text-[11px] text-slate-500 mt-2 bg-slate-50 p-2 rounded-lg border border-slate-100">💡 You can use <code className="bg-white px-1 border border-slate-200 rounded text-blue-600 font-bold">{"{application_id}"}</code>, <code className="bg-white px-1 border border-slate-200 rounded text-blue-600 font-bold">{"{full_name}"}</code>, <code className="bg-white px-1 border border-slate-200 rounded text-blue-600 font-bold">{"{passport_number}"}</code>, <code className="bg-white px-1 border border-slate-200 rounded text-blue-600 font-bold">{"{visa}"}</code>, <code className="bg-white px-1 border border-slate-200 rounded text-blue-600 font-bold">{"{job}"}</code>, <code className="bg-white px-1 border border-slate-200 rounded text-blue-600 font-bold">{"{country}"}</code>, <code className="bg-white px-1 border border-slate-200 rounded text-blue-600 font-bold">{"{staff}"}</code>, <code className="bg-white px-1 border border-slate-200 rounded text-blue-600 font-bold">{"{payment}"}</code> to dynamically insert applicant data.</p>
+                    {renderVariablesSelector('en')}
                   </div>
                 </div>
               )}
@@ -326,6 +383,7 @@ export default function AgreementTemplatesConfig() {
                   <div>
                     <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">Clause Body (Arabic)</label>
                     <textarea dir="rtl" value={clauseForm.body_ar || ''} onChange={e => setClauseForm({...clauseForm, body_ar: e.target.value})} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl h-32 focus:ring-2 focus:ring-blue-500/20 transition-all font-sans" placeholder="نص البند هنا..." />
+                    {renderVariablesSelector('ar')}
                   </div>
                 </div>
               )}
@@ -340,6 +398,7 @@ export default function AgreementTemplatesConfig() {
                   <div>
                     <label className="block text-xs font-bold text-slate-600 uppercase mb-1.5">Clause Body (Bengali)</label>
                     <textarea value={clauseForm.body_bn || ''} onChange={e => setClauseForm({...clauseForm, body_bn: e.target.value})} className="w-full px-4 py-2.5 border border-slate-200 rounded-xl h-32 focus:ring-2 focus:ring-blue-500/20 transition-all" placeholder="ধারার বিস্তারিত..." />
+                    {renderVariablesSelector('bn')}
                   </div>
                 </div>
               )}

@@ -229,7 +229,7 @@ export default function ApplicantStatusUpdatePage() {
                             <Link to={`/applicants/${applicant.id}`} className="font-bold text-slate-800 hover:text-blue-700 hover:underline">
                               {applicant.full_name}
                             </Link>
-                            <p className="text-xs text-slate-400">{applicant.phone_number}</p>
+                            <p className="text-xs text-slate-400">{applicant.profile?.phone || applicant.phone_number || '—'}</p>
                           </div>
                         </div>
                       </td>

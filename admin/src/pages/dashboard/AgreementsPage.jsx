@@ -5,10 +5,12 @@ import {
   DocumentCheckIcon, 
   MagnifyingGlassIcon,
   DocumentIcon,
-  CogIcon
+  CogIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import AgreementTemplatesConfig from './AgreementTemplatesConfig';
+import ExtraTemplateConfig from './ExtraTemplateConfig';
 import Pagination from '../../components/common/Pagination';
 
 export default function AgreementsPage() {
@@ -60,12 +62,22 @@ export default function AgreementsPage() {
             >
               <CogIcon className="w-4 h-4" /> Templates Config
             </button>
+            <button
+              onClick={() => setSearchParams({ tab: 'extra' })}
+              className={`px-4 py-2 text-xs sm:text-sm font-bold rounded-xl flex items-center gap-2 transition-all ${
+                currentTab === 'extra' ? 'bg-white text-emerald-900 shadow-md' : 'text-slate-200 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              <DocumentTextIcon className="w-4 h-4" /> Extra Template
+            </button>
           </div>
         </div>
       </div>
 
       {currentTab === 'templates' ? (
         <AgreementTemplatesConfig />
+      ) : currentTab === 'extra' ? (
+        <ExtraTemplateConfig />
       ) : (
         <>
           {/* Search and Filters */}
