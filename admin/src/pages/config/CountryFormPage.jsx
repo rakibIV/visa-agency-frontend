@@ -62,7 +62,11 @@ export default function CountryFormPage() {
     onSuccess: (res) => {
       toast.success(isEdit ? 'Country updated successfully!' : 'Country added successfully!');
       queryClient.invalidateQueries(['config-countries']);
-      queryClient.invalidateQueries(['config-country', slug]);
+      queryClient.invalidateQueries(['config-country']);
+      queryClient.invalidateQueries(['country']);
+      queryClient.invalidateQueries(['countries']);
+      queryClient.invalidateQueries(['countries-list']);
+      queryClient.invalidateQueries(['settings-countries-list']);
       const targetSlug = res?.data?.slug || slug;
       if (isEdit && targetSlug) {
         navigate(`/config/countries/${targetSlug}`);
@@ -87,7 +91,7 @@ export default function CountryFormPage() {
 
     const fd = new FormData();
     fd.append('name', name);
-    fd.append('slug', name.toLowerCase().replace(/ /g, '-'));
+    if (name) fd.append('slug', name.toLowerCase().trim().replace(/\s+/g, '-'));
     fd.append('currency', currency);
     fd.append('language', language);
     fd.append('nationality', nationality);
@@ -97,8 +101,8 @@ export default function CountryFormPage() {
     fd.append('short_description', shortDescription);
     fd.append('description', description);
     fd.append('display_order', displayOrder);
-    fd.append('is_featured', isFeatured);
-    fd.append('is_active', isActive);
+    fd.append('is_featured', isFeatured ? 'true' : 'false');
+    fd.append('is_active', isActive ? 'true' : 'false');
 
     if (flagFile) fd.append('flag', flagFile);
     if (imageFile) fd.append('image', imageFile);

@@ -22,6 +22,8 @@ import StarIcon from '@mui/icons-material/Star';
 import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 // Local Assets
 import heroImg from '../assets/hero.jpg';
@@ -61,6 +63,37 @@ export default function HomePage() {
 
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [activeReview, setActiveReview] = useState(0);
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+
+  const handleNextReview = () => {
+    if (!activeReviews.length) return;
+    setActiveReview((prev) => (prev + 1) % activeReviews.length);
+  };
+
+  const handlePrevReview = () => {
+    if (!activeReviews.length) return;
+    setActiveReview((prev) => (prev - 1 + activeReviews.length) % activeReviews.length);
+  };
+
+  const handleTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    if (distance > 40) {
+      handleNextReview();
+    } else if (distance < -40) {
+      handlePrevReview();
+    }
+  };
 
   const [requestData, setRequestData] = useState({ name: '', email: '', phone: '', message: '' });
   const [requestStatus, setRequestStatus] = useState('idle');
@@ -588,51 +621,93 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════════════════════════════════════
-          TESTIMONIALS — Single large quote
+          TESTIMONIALS — Single large quote slider
       ═══════════════════════════════════════════ */}
       {activeReviews.length > 0 && (
-        <section className="section-py bg-navy-950 relative grain overflow-hidden">
+        <section className="section-py bg-navy-950 relative grain overflow-hidden select-none">
           <div className="container-wide relative z-10">
             <div className="max-w-3xl mx-auto text-center">
               <span className="eyebrow text-accent-400 mb-3 block">Testimonials</span>
               <h2 className="display-md font-heading text-white mb-12">What Our Clients Say</h2>
 
-              {/* Large quote */}
-              <div className="relative min-h-[200px]">
-                <FormatQuoteIcon className="text-white/5 absolute -top-6 left-1/2 -translate-x-1/2" style={{ fontSize: 120 }} />
+              {/* Slider Container with Touch Swipe Support */}
+              <div
+                className="relative min-h-[220px] flex items-center justify-center"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+                {/* Previous Button (Left Chevron) */}
+                {activeReviews.length > 1 && (
+                  <button
+                    onClick={handlePrevReview}
+                    className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 active:bg-accent-600 border border-white/20 flex items-center justify-center text-white transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-accent-400 cursor-pointer"
+                    aria-label="Previous review"
+                  >
+                    <ChevronLeftIcon fontSize="medium" />
+                  </button>
+                )}
 
-                <div className="relative z-10">
-                  <div className="flex justify-center text-gold-400 mb-6 gap-0.5">
-                    {[1, 2, 3, 4, 5].map(star => <StarIcon key={star} fontSize="small" />)}
-                  </div>
+                {/* Next Button (Right Chevron) */}
+                {activeReviews.length > 1 && (
+                  <button
+                    onClick={handleNextReview}
+                    className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 active:bg-accent-600 border border-white/20 flex items-center justify-center text-white transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-accent-400 cursor-pointer"
+                    aria-label="Next review"
+                  >
+                    <ChevronRightIcon fontSize="medium" />
+                  </button>
+                )}
 
-                  <p className="text-xl sm:text-2xl text-white/90 leading-relaxed font-medium mb-8 max-w-2xl mx-auto">
-                    "{activeReviews[activeReview]?.comment}"
-                  </p>
+                {/* Animated Review Quote */}
+                <motion.div
+                  key={activeReview}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="px-10 sm:px-16 relative z-10 w-full"
+                >
+                  <FormatQuoteIcon className="text-white/5 absolute -top-8 left-1/2 -translate-x-1/2 pointer-events-none" style={{ fontSize: 120 }} />
 
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="w-12 h-12 rounded-full bg-accent-600 text-white flex items-center justify-center font-bold text-lg font-heading">
-                      {activeReviews[activeReview]?.name?.charAt(0)}
+                  <div className="relative z-10">
+                    <div className="flex justify-center text-gold-400 mb-6 gap-0.5">
+                      {[1, 2, 3, 4, 5].map(star => <StarIcon key={star} fontSize="small" />)}
                     </div>
-                    <div>
-                      <div className="font-bold text-white">{activeReviews[activeReview]?.name}</div>
-                      <div className="text-xs text-white/40 uppercase tracking-wide">Verified Client</div>
+
+                    <p className="text-lg sm:text-2xl text-white/90 leading-relaxed font-medium mb-8 max-w-2xl mx-auto">
+                      "{activeReviews[activeReview]?.comment}"
+                    </p>
+
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-12 h-12 rounded-full bg-accent-600 text-white flex items-center justify-center font-bold text-lg font-heading">
+                        {activeReviews[activeReview]?.name?.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="font-bold text-white">{activeReviews[activeReview]?.name}</div>
+                        <div className="text-xs text-white/40 uppercase tracking-wide">Verified Client</div>
+                      </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               </div>
 
-              {/* Navigation Dots */}
+              {/* Touch-friendly Navigation Dots */}
               {activeReviews.length > 1 && (
-                <div className="flex justify-center gap-2 mt-10">
+                <div className="flex justify-center items-center gap-1 mt-8">
                   {activeReviews.map((_, i) => (
                     <button
                       key={i}
                       onClick={() => setActiveReview(i)}
-                      className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${i === activeReview ? 'bg-accent-500 w-8' : 'bg-white/20 hover:bg-white/40'
-                        }`}
+                      className="p-3.5 focus:outline-none flex items-center justify-center cursor-pointer"
                       aria-label={`View review ${i + 1}`}
-                    />
+                    >
+                      <span
+                        className={`h-2.5 rounded-full transition-all duration-300 block ${
+                          i === activeReview ? 'bg-accent-500 w-8' : 'bg-white/30 hover:bg-white/50 w-2.5'
+                        }`}
+                      />
+                    </button>
                   ))}
                 </div>
               )}

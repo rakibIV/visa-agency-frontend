@@ -106,24 +106,73 @@ export default function AboutPage() {
       </section>
 
       {/* ═══════════════════════════════════════════
-          MISSION & VISION — Side-by-Side Clean Grid
+          MISSION & VISION — Side-by-Side Premium Cards
       ═══════════════════════════════════════════ */}
-      <section className="section-py bg-surface-dim grain relative border-y border-navy-50">
+      <section className="section-py bg-gradient-to-b from-navy-950/5 via-slate-50 to-white relative border-y border-navy-100/60 overflow-hidden">
+        {/* Ambient Glows */}
+        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-accent-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-navy-600/10 rounded-full blur-3xl pointer-events-none" />
+
         <div className="container-wide relative z-10">
-          <div className="grid md:grid-cols-2 gap-12 lg:gap-24">
+          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+            <span className="eyebrow text-accent-600 mb-3 block tracking-widest font-bold">Our Purpose & Direction</span>
+            <h2 className="display-lg font-heading text-navy-900 font-bold">Mission & Vision</h2>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-stretch">
             {/* Mission */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="h-full bg-white rounded-3xl p-6 sm:p-10 lg:p-12 border border-slate-200/80 shadow-xl shadow-navy-950/5 hover:shadow-2xl hover:border-accent-300 transition-all duration-300 relative overflow-hidden flex flex-col justify-between group"
             >
-              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-accent-600 mb-6 shadow-soft border border-navy-50">
-                <FlightTakeoffIcon fontSize="large" />
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-accent-500 via-accent-600 to-navy-900" />
+              
+              <div>
+                <div className="flex items-center justify-between mb-8">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-accent-50/80 border border-accent-100 flex items-center justify-center text-accent-600 group-hover:scale-105 transition-transform duration-300 shadow-sm">
+                    <FlightTakeoffIcon style={{ fontSize: 32 }} />
+                  </div>
+                  <span className="px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-accent-100/70 text-accent-800 border border-accent-200/50">
+                    OUR MISSION
+                  </span>
+                </div>
+
+                <h3 className="display-md font-heading text-navy-900 font-bold mb-6">
+                  Our Mission
+                </h3>
+
+                {/* Lead Paragraph */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-navy-50/80 border-l-4 border-accent-600 text-navy-900 text-base sm:text-lg font-semibold leading-relaxed mb-6 shadow-xs">
+                  At AL-RAIYAN GROUP, our mission is to provide transparent, professional, and responsible global visa and mobility services that help individuals and families navigate international opportunities with greater clarity and confidence.
+                </div>
+
+                {/* Paragraphs 2, 3, 4 */}
+                <div className="space-y-4 text-navy-700 text-sm sm:text-base leading-relaxed">
+                  <div className="flex gap-3.5 items-start p-3 rounded-xl hover:bg-slate-50/80 transition-colors">
+                    <div className="w-2 h-2 rounded-full bg-accent-600 mt-2 shrink-0" />
+                    <p>
+                      We are committed to delivering structured guidance throughout the journey—from documentation and application preparation to process coordination and ongoing client support—while maintaining clear communication, responsible practices, and respect for applicable laws and requirements.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3.5 items-start p-3 rounded-xl hover:bg-slate-50/80 transition-colors">
+                    <div className="w-2 h-2 rounded-full bg-accent-600 mt-2 shrink-0" />
+                    <p>
+                      By combining professional expertise, organized processes, digital communication, and client-focused service, we strive to make every stage of the international mobility journey more understandable, efficient, and accessible.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3.5 items-start p-3 rounded-xl hover:bg-slate-50/80 transition-colors">
+                    <div className="w-2 h-2 rounded-full bg-accent-600 mt-2 shrink-0" />
+                    <p>
+                      Our commitment is to build long-term relationships through integrity, transparency, accountability, and genuine care, enabling our clients to make informed decisions about their international plans.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <h2 className="display-md font-heading text-navy-900 mb-4">Our Mission</h2>
-              <p className="body-lg text-navy-600 leading-relaxed">
-                To simplify and secure the global mobility process by providing expert visa consultation, recruitment services, and comprehensive placement support. We empower individuals to achieve their career and educational aspirations worldwide.
-              </p>
             </motion.div>
 
             {/* Vision */}
@@ -131,15 +180,54 @@ export default function AboutPage() {
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
+              transition={{ duration: 0.6, delay: 0.15 }}
+              className="h-full bg-white rounded-3xl p-6 sm:p-10 lg:p-12 border border-slate-200/80 shadow-xl shadow-navy-950/5 hover:shadow-2xl hover:border-accent-300 transition-all duration-300 relative overflow-hidden flex flex-col justify-between group"
             >
-              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-accent-600 mb-6 shadow-soft border border-navy-50">
-                <PublicIcon fontSize="large" />
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-navy-900 via-accent-600 to-accent-500" />
+              
+              <div>
+                <div className="flex items-center justify-between mb-8">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-navy-50/80 border border-navy-100 flex items-center justify-center text-accent-600 group-hover:scale-105 transition-transform duration-300 shadow-sm">
+                    <PublicIcon style={{ fontSize: 32 }} />
+                  </div>
+                  <span className="px-3.5 py-1 rounded-full text-xs font-bold uppercase tracking-widest bg-navy-100/70 text-navy-800 border border-navy-200/50">
+                    OUR VISION
+                  </span>
+                </div>
+
+                <h3 className="display-md font-heading text-navy-900 font-bold mb-6">
+                  Our Vision
+                </h3>
+
+                {/* Lead Paragraph */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-navy-50/80 border-l-4 border-navy-800 text-navy-900 text-base sm:text-lg font-semibold leading-relaxed mb-6 shadow-xs">
+                  Our vision is to establish AL-RAIYAN GROUP as a trusted and internationally recognized visa and global mobility service partner, distinguished by integrity, professionalism, responsible practices, and client-focused excellence.
+                </div>
+
+                {/* Paragraphs 2, 3, 4 */}
+                <div className="space-y-4 text-navy-700 text-sm sm:text-base leading-relaxed">
+                  <div className="flex gap-3.5 items-start p-3 rounded-xl hover:bg-slate-50/80 transition-colors">
+                    <div className="w-2 h-2 rounded-full bg-navy-800 mt-2 shrink-0" />
+                    <p>
+                      We aspire to build a modern and digitally connected service platform where clients receive clear information, structured guidance, timely communication, and consistent support throughout their international journey.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3.5 items-start p-3 rounded-xl hover:bg-slate-50/80 transition-colors">
+                    <div className="w-2 h-2 rounded-full bg-navy-800 mt-2 shrink-0" />
+                    <p>
+                      Through continuous innovation, technology-driven service delivery, professional development, and strong ethical standards, we aim to expand our global reach while maintaining the trust and confidence of every client we serve.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3.5 items-start p-3 rounded-xl hover:bg-slate-50/80 transition-colors">
+                    <div className="w-2 h-2 rounded-full bg-navy-800 mt-2 shrink-0" />
+                    <p>
+                      Our long-term vision is to create a reliable, transparent, and people-centered global mobility experience that connects individuals and families with international opportunities responsibly and professionally.
+                    </p>
+                  </div>
+                </div>
               </div>
-              <h2 className="display-md font-heading text-navy-900 mb-4">Our Vision</h2>
-              <p className="body-lg text-navy-600 leading-relaxed">
-                To be the most trusted and leading international visa processing and recruitment agency in KSA, recognized globally for excellence, transparency, and high success rates in placing talent across Europe and beyond.
-              </p>
             </motion.div>
           </div>
         </div>

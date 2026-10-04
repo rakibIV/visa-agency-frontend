@@ -376,18 +376,27 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
                   <h3 className="font-bold text-slate-800 uppercase tracking-widest text-xs border-b-2 border-slate-200 pb-1 mb-3 font-serif">3. Financial Summary</h3>
                   <div className="bg-slate-50 p-5 rounded border border-slate-100 space-y-3">
                     <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
-                      {applicant?.payments?.map((payment, index) => (
-                        <React.Fragment key={payment.id || index}>
-                          <div className="flex justify-between border-b border-slate-200 pb-1">
-                            <span className="text-slate-500 font-medium text-[11px] uppercase">Installment {index + 1} (Receipt {payment.receipt_number || (index + 1)})</span>
-                            <span className="font-bold text-slate-900 text-xs">{formatPaymentAmount(payment)}</span>
-                          </div>
-                          <div className="flex justify-between border-b border-slate-200 pb-1">
-                            <span className="text-slate-500 font-medium text-[11px] uppercase">Payment Date</span>
-                            <span className="font-bold text-slate-900 text-xs">{payment.payment_date ? new Date(payment.payment_date).toLocaleDateString('en-GB') : '—'}</span>
-                          </div>
-                        </React.Fragment>
-                      ))}
+                      {applicant?.payments?.map((payment, index) => {
+                        const note = payment.important_note || payment.note;
+                        return (
+                          <React.Fragment key={payment.id || index}>
+                            <div className="flex justify-between border-b border-slate-200 pb-1">
+                              <span className="text-slate-500 font-medium text-[11px] uppercase">Installment {index + 1} (Receipt {payment.receipt_number || (index + 1)})</span>
+                              <span className="font-bold text-slate-900 text-xs">{formatPaymentAmount(payment)}</span>
+                            </div>
+                            <div className="flex justify-between border-b border-slate-200 pb-1">
+                              <span className="text-slate-500 font-medium text-[11px] uppercase">Payment Date</span>
+                              <span className="font-bold text-slate-900 text-xs">{payment.payment_date ? new Date(payment.payment_date).toLocaleDateString('en-GB') : '—'}</span>
+                            </div>
+                            {note && (
+                              <div className="col-span-2 bg-white p-2.5 rounded border border-slate-200 text-[11px] text-slate-700 mt-1 mb-2">
+                                <span className="font-bold text-slate-600 uppercase text-[9px] tracking-wider block mb-0.5">Installment {index + 1} Important Note:</span>
+                                <p className="whitespace-pre-line leading-relaxed font-sans">{note}</p>
+                              </div>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
                       {(!applicant?.payments || applicant.payments.length === 0) && (
                         <div className="col-span-2 text-center text-slate-400 text-xs py-2 italic">
                           No payments recorded yet.
