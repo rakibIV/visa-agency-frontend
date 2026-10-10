@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArticleIcon from '@mui/icons-material/Article';
-import ApartmentIcon from '@mui/icons-material/Apartment';
 
 export default function CountryCard({ country, index = 0 }) {
   return (
@@ -59,22 +58,18 @@ export default function CountryCard({ country, index = 0 }) {
 
             <div className="flex flex-col gap-3 opacity-80 group-hover:opacity-100 transition-opacity duration-300">
               
-              {/* Stats row */}
-              <div className="flex items-center gap-4 text-sm font-medium text-white/90">
-                <div className="flex items-center gap-1.5">
-                  <ArticleIcon fontSize="small" className="text-accent-400" />
-                  <span>{country.visas_count || 0} Programs</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <ApartmentIcon fontSize="small" className="text-accent-400" />
-                  <span>{country.companies_count || 0} Companies</span>
-                </div>
+              {/* Ongoing Visa indicator */}
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-500/20 text-accent-300 border border-accent-500/30 text-xs font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-accent-400 animate-pulse" />
+                  {country.visas_count ? `${country.visas_count} Ongoing ${country.visas_count === 1 ? 'Visa' : 'Visas'}` : 'Ongoing Visa'}
+                </span>
               </div>
               
               {/* Divider & CTA */}
               <div className="h-px w-full bg-white/10 mt-2 mb-1" />
               <div className="flex items-center justify-between text-white font-bold text-sm">
-                Explore Programs
+                Explore Ongoing Visas
                 <ArrowForwardIcon fontSize="small" className="transform group-hover:translate-x-1 transition-transform" />
               </div>
             </div>

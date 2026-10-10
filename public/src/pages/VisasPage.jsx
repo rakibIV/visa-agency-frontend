@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import api from '../api/client';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArticleIcon from '@mui/icons-material/Article';
+import { formatSalary, formatContractDuration, formatProcessingTime } from '../utils/currency';
 
 export default function VisasPage() {
   const [page, setPage] = useState(1);
@@ -78,6 +79,13 @@ export default function VisasPage() {
               {activeVisas.map((visa, i) => {
                 const countrySlug = visa.country?.slug || visa.country_slug;
                 const countryName = visa.country?.name || visa.country_name || 'Destination';
+                const visaTitle = visa.title || visa.name || 'Visa Program';
+                const categoryName = visa.category?.name || visa.visa_category?.name || visa.category_name || 'Visa Program';
+                const processingTime = formatProcessingTime(visa.minimum_processing_days, visa.maximum_processing_days) || visa.processing_time;
+                const duration = formatContractDuration(visa.duration_in_months);
+                const salaryStr = (visa.minimum_salary || visa.maximum_salary)
+                  ? formatSalary(visa.minimum_salary, visa.maximum_salary, visa.currency || visa.country?.currency)
+                  : null;
                 
                 // Determine accent color based on index or category
                 const accentColors = ['bg-blue-500', 'bg-accent-500', 'bg-emerald-500', 'bg-purple-500', 'bg-amber-500'];
@@ -108,30 +116,38 @@ export default function VisasPage() {
                             <span className="text-xs font-bold text-navy-500 uppercase tracking-widest">{countryName}</span>
                           </div>
                           <h3 className="heading-md font-heading text-navy-900 group-hover:text-accent-600 transition-colors line-clamp-2">
-                            {visa.title}
+                            {visaTitle}
                           </h3>
                         </div>
 
                         {/* Details Tags */}
                         <div className="flex flex-wrap gap-2 mb-8">
-                          {visa.processing_time && (
-                            <span className="px-3 py-1.5 bg-navy-50 text-navy-600 text-xs font-semibold rounded-lg">
-                              ⏱ {visa.processing_time}
+                          {processingTime && (
+                            <span className="px-3 py-1.5 bg-navy-50 text-navy-700 text-xs font-semibold rounded-lg">
+                              ⏱ {processingTime}
                             </span>
                           )}
-                          {visa.visa_category?.name && (
-                            <span className="px-3 py-1.5 bg-navy-50 text-navy-600 text-xs font-semibold rounded-lg">
-                              {visa.visa_category.name}
+                          {duration && (
+                            <span className="px-3 py-1.5 bg-navy-50 text-navy-700 text-xs font-semibold rounded-lg">
+                              📅 {duration}
+                            </span>
+                          )}
+                          {salaryStr && (
+                            <span className="px-3 py-1.5 bg-emerald-50 text-emerald-800 text-xs font-semibold rounded-lg">
+                              💰 {salaryStr}
                             </span>
                           )}
                         </div>
 
-                        {/* Footer */}
+                        {/* Footer: Replaced 'Consult' with Visa Category Name */}
                         <div className="flex justify-between items-center pt-6 border-t border-navy-50 mt-auto">
-                          <span className="text-lg font-bold text-navy-900 font-heading">
-                            {visa.price ? `$${visa.price}` : 'Consult'}
-                          </span>
-                          <div className="w-10 h-10 rounded-full bg-navy-50 group-hover:bg-accent-600 text-navy-400 group-hover:text-white flex items-center justify-center transition-colors">
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent-50 text-accent-700 text-xs font-bold border border-accent-200/60 font-heading">
+                              <span className="w-1.5 h-1.5 rounded-full bg-accent-600" />
+                              {categoryName}
+                            </span>
+                          </div>
+                          <div className="w-10 h-10 rounded-full bg-navy-50 group-hover:bg-accent-600 text-navy-400 group-hover:text-white flex items-center justify-center transition-colors shadow-xs">
                             <ArrowForwardIcon fontSize="small" />
                           </div>
                         </div>

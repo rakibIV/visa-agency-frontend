@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/client';
 import CountryCard from '../components/ui/CountryCard';
 import StaffProfileModal from '../components/ui/StaffProfileModal';
@@ -24,6 +24,8 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import PauseIcon from '@mui/icons-material/Pause';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 
 // Local Assets
 import heroImg from '../assets/hero.jpg';
@@ -43,7 +45,7 @@ export default function HomePage() {
 
   const { data: reviews, isLoading: isLoadingReviews } = useQuery({
     queryKey: ['reviews'],
-    queryFn: () => api.get('/reviews/').then(r => r.data.results ?? r.data),
+    queryFn: () => api.get('/reviews/', { params: { page_size: 100 } }).then(r => r.data.results ?? r.data),
   });
 
   const { data: updates, isLoading: isLoadingUpdates } = useQuery({
@@ -61,10 +63,19 @@ export default function HomePage() {
     queryFn: () => api.get('/public/applicant-statistics/').then(r => r.data),
   });
 
+  const featuredCountries = countries?.filter(c => c.is_active)?.slice(0, 6) || [];
+  const activeReviews = reviews?.filter(r => r.is_active !== false) || [];
+  const recentUpdates = updates?.slice(0, 8) || [];
+
   const [selectedStaff, setSelectedStaff] = useState(null);
   const [activeReview, setActiveReview] = useState(0);
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
+  const [isAutoplay, setIsAutoplay] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
+
+  const safeActiveReview = activeReviews.length > 0 && activeReview >= activeReviews.length ? 0 : activeReview;
+  const currentReview = activeReviews[safeActiveReview];
 
   const handleNextReview = () => {
     if (!activeReviews.length) return;
@@ -76,7 +87,17 @@ export default function HomePage() {
     setActiveReview((prev) => (prev - 1 + activeReviews.length) % activeReviews.length);
   };
 
+  // Autoplay with pause on hover/interaction
+  useEffect(() => {
+    if (!isAutoplay || isHovered || activeReviews.length <= 1) return;
+    const timer = setInterval(() => {
+      setActiveReview((prev) => (prev + 1) % activeReviews.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [isAutoplay, isHovered, activeReviews.length]);
+
   const handleTouchStart = (e) => {
+    setIsHovered(true);
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
   };
@@ -86,12 +107,21 @@ export default function HomePage() {
   };
 
   const handleTouchEnd = () => {
+    setIsHovered(false);
     if (!touchStart || !touchEnd) return;
     const distance = touchStart - touchEnd;
     if (distance > 40) {
       handleNextReview();
     } else if (distance < -40) {
       handlePrevReview();
+    }
+  };
+
+  const handleReviewKeyDown = (e) => {
+    if (e.key === 'ArrowLeft') {
+      handlePrevReview();
+    } else if (e.key === 'ArrowRight') {
+      handleNextReview();
     }
   };
 
@@ -111,10 +141,6 @@ export default function HomePage() {
       setTimeout(() => setRequestStatus('idle'), 5000);
     }
   };
-
-  const featuredCountries = countries?.filter(c => c.is_active)?.slice(0, 6) || [];
-  const activeReviews = reviews?.filter(r => r.is_active)?.slice(0, 5) || [];
-  const recentUpdates = updates?.slice(0, 8) || [];
 
   const baseServed = 17000;
   const dbServed = appStats?.total ?? 0;
@@ -621,96 +647,223 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════════════════════════════════════
-          TESTIMONIALS — Single large quote slider
+          TESTIMONIALS — Responsive Luxury Showcase
       ═══════════════════════════════════════════ */}
       {activeReviews.length > 0 && (
         <section className="section-py bg-navy-950 relative grain overflow-hidden select-none">
-          <div className="container-wide relative z-10">
-            <div className="max-w-3xl mx-auto text-center">
-              <span className="eyebrow text-accent-400 mb-3 block">Testimonials</span>
-              <h2 className="display-md font-heading text-white mb-12">What Our Clients Say</h2>
+          {/* Subtle Ambient Glow Behind Card */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] sm:w-[600px] h-[350px] sm:h-[450px] bg-accent-600/10 rounded-full blur-[100px] pointer-events-none" />
 
-              {/* Slider Container with Touch Swipe Support */}
-              <div
-                className="relative min-h-[220px] flex items-center justify-center"
-                onTouchStart={handleTouchStart}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-              >
-                {/* Previous Button (Left Chevron) */}
-                {activeReviews.length > 1 && (
-                  <button
-                    onClick={handlePrevReview}
-                    className="absolute -left-2 sm:left-0 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 active:bg-accent-600 border border-white/20 flex items-center justify-center text-white transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-accent-400 cursor-pointer"
-                    aria-label="Previous review"
-                  >
-                    <ChevronLeftIcon fontSize="medium" />
-                  </button>
-                )}
-
-                {/* Next Button (Right Chevron) */}
-                {activeReviews.length > 1 && (
-                  <button
-                    onClick={handleNextReview}
-                    className="absolute -right-2 sm:right-0 top-1/2 -translate-y-1/2 z-20 w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white/10 hover:bg-white/20 active:bg-accent-600 border border-white/20 flex items-center justify-center text-white transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-accent-400 cursor-pointer"
-                    aria-label="Next review"
-                  >
-                    <ChevronRightIcon fontSize="medium" />
-                  </button>
-                )}
-
-                {/* Animated Review Quote */}
-                <motion.div
-                  key={activeReview}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="px-10 sm:px-16 relative z-10 w-full"
-                >
-                  <FormatQuoteIcon className="text-white/5 absolute -top-8 left-1/2 -translate-x-1/2 pointer-events-none" style={{ fontSize: 120 }} />
-
-                  <div className="relative z-10">
-                    <div className="flex justify-center text-gold-400 mb-6 gap-0.5">
-                      {[1, 2, 3, 4, 5].map(star => <StarIcon key={star} fontSize="small" />)}
-                    </div>
-
-                    <p className="text-lg sm:text-2xl text-white/90 leading-relaxed font-medium mb-8 max-w-2xl mx-auto">
-                      "{activeReviews[activeReview]?.comment}"
-                    </p>
-
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-12 h-12 rounded-full bg-accent-600 text-white flex items-center justify-center font-bold text-lg font-heading">
-                        {activeReviews[activeReview]?.name?.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="font-bold text-white">{activeReviews[activeReview]?.name}</div>
-                        <div className="text-xs text-white/40 uppercase tracking-wide">Verified Client</div>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
+          <div className="container-wide relative z-10 px-4 sm:px-6 lg:px-8">
+            {/* Header */}
+            <div className="max-w-2xl mx-auto text-center mb-10 sm:mb-14">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-accent-500/10 border border-accent-500/20 text-accent-400 text-xs font-bold uppercase tracking-widest mb-3">
+                <StarIcon style={{ fontSize: 14 }} className="text-gold-400" />
+                Verified Client Testimonials
               </div>
+              <h2 className="display-md font-heading text-white mb-3">What Our Clients Say</h2>
+              <p className="body-sm sm:body-lg text-white/60 max-w-xl mx-auto">
+                Real experiences from clients who successfully achieved their global visa and immigration goals with our team.
+              </p>
 
-              {/* Touch-friendly Navigation Dots */}
-              {activeReviews.length > 1 && (
-                <div className="flex justify-center items-center gap-1 mt-8">
-                  {activeReviews.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setActiveReview(i)}
-                      className="p-3.5 focus:outline-none flex items-center justify-center cursor-pointer"
-                      aria-label={`View review ${i + 1}`}
-                    >
-                      <span
-                        className={`h-2.5 rounded-full transition-all duration-300 block ${
-                          i === activeReview ? 'bg-accent-500 w-8' : 'bg-white/30 hover:bg-white/50 w-2.5'
-                        }`}
-                      />
-                    </button>
+              {/* Rating summary pill */}
+              <div className="inline-flex items-center gap-2 sm:gap-3 px-4 py-1.5 mt-4 rounded-full bg-white/5 border border-white/10 text-xs text-white/80">
+                <div className="flex text-gold-400">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <StarIcon key={star} style={{ fontSize: 14 }} />
                   ))}
                 </div>
+                <span className="font-bold text-white">4.9 / 5.0</span>
+                <span className="text-white/40">•</span>
+                <span className="text-white/60">{activeReviews.length} Client Reviews</span>
+              </div>
+            </div>
+
+            {/* Main Interactive Card Container */}
+            <div
+              className="max-w-3xl lg:max-w-4xl mx-auto relative focus:outline-none"
+              tabIndex={0}
+              onKeyDown={handleReviewKeyDown}
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              {/* Desktop Side Previous Button (hidden on mobile to prevent any text overlap) */}
+              {activeReviews.length > 1 && (
+                <button
+                  onClick={handlePrevReview}
+                  className="hidden sm:flex absolute -left-5 lg:-left-7 top-1/2 -translate-y-1/2 z-20 w-11 h-11 lg:w-12 lg:h-12 rounded-full bg-navy-900/90 hover:bg-accent-600 active:scale-95 text-white border border-white/15 items-center justify-center shadow-xl transition-all duration-200 cursor-pointer backdrop-blur-md hover:border-accent-500"
+                  aria-label="Previous review"
+                >
+                  <ChevronLeftIcon fontSize="medium" />
+                </button>
               )}
+
+              {/* Desktop Side Next Button (hidden on mobile to prevent any text overlap) */}
+              {activeReviews.length > 1 && (
+                <button
+                  onClick={handleNextReview}
+                  className="hidden sm:flex absolute -right-5 lg:-right-7 top-1/2 -translate-y-1/2 z-20 w-11 h-11 lg:w-12 lg:h-12 rounded-full bg-navy-900/90 hover:bg-accent-600 active:scale-95 text-white border border-white/15 items-center justify-center shadow-xl transition-all duration-200 cursor-pointer backdrop-blur-md hover:border-accent-500"
+                  aria-label="Next review"
+                >
+                  <ChevronRightIcon fontSize="medium" />
+                </button>
+              )}
+
+              {/* The Glassmorphic Showcase Card */}
+              <div className="relative rounded-2xl sm:rounded-3xl bg-gradient-to-b from-navy-900/90 to-navy-950/95 border border-white/10 backdrop-blur-xl p-6 sm:p-10 lg:p-12 shadow-2xl overflow-hidden min-h-[300px] sm:min-h-[340px] flex flex-col justify-between">
+                {/* Watermark Quote in background */}
+                <FormatQuoteIcon
+                  className="text-white/[0.03] absolute -bottom-4 right-4 pointer-events-none"
+                  style={{ fontSize: 160 }}
+                />
+
+                {/* Animated Review Content */}
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={safeActiveReview}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -15 }}
+                    transition={{ duration: 0.28, ease: 'easeOut' }}
+                    className="relative z-10 flex flex-col justify-between h-full"
+                  >
+                    {/* Top Row: Quote Icon Accent Pill + Rating Stars */}
+                    <div className="flex items-center justify-between gap-4 mb-5 sm:mb-8">
+                      <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-accent-500/10 border border-accent-500/20 flex items-center justify-center text-accent-400 shrink-0">
+                        <FormatQuoteIcon fontSize="small" />
+                      </div>
+
+                      <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-full">
+                        <div className="flex text-gold-400 gap-0.5">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <StarIcon
+                              key={star}
+                              fontSize="small"
+                              className={star <= (Number(currentReview?.rating) || 5) ? 'text-gold-400' : 'text-white/20'}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs font-bold text-white font-mono">
+                          {(Number(currentReview?.rating) || 5).toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Middle: Review Quote Body */}
+                    <blockquote className="text-base sm:text-xl lg:text-2xl text-white/90 font-medium leading-relaxed mb-8 text-left">
+                      "{currentReview?.comment}"
+                    </blockquote>
+
+                    {/* Bottom Row: Client Info + Verified Badge */}
+                    <div className="flex items-center justify-between gap-4 pt-5 border-t border-white/10 mt-auto">
+                      <div className="flex items-center gap-3 sm:gap-4 text-left">
+                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-accent-500 to-accent-700 text-white flex items-center justify-center font-bold text-base sm:text-lg font-heading shadow-md shadow-accent-600/30 shrink-0">
+                          {currentReview?.name ? currentReview.name.charAt(0).toUpperCase() : 'C'}
+                        </div>
+                        <div>
+                          <div className="font-bold text-white text-sm sm:text-base flex items-center gap-1.5">
+                            {currentReview?.name}
+                            <CheckCircleIcon className="text-accent-400 shrink-0" style={{ fontSize: 16 }} />
+                          </div>
+                          <div className="text-xs text-white/50 tracking-wide">
+                            Verified Client
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Visa Approved
+                      </div>
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              {/* Navigation & Controls Dock — Fully Responsive */}
+              <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 px-1">
+                {/* Mobile Navigation Buttons (large easy touch targets) */}
+                {activeReviews.length > 1 && (
+                  <div className="flex sm:hidden items-center justify-between gap-3 w-full">
+                    <button
+                      onClick={handlePrevReview}
+                      className="flex-1 py-3 px-4 rounded-xl bg-white/10 hover:bg-white/20 active:bg-accent-600 border border-white/15 text-white flex items-center justify-center gap-1.5 text-xs font-bold transition-all cursor-pointer shadow-sm"
+                      aria-label="Previous review"
+                    >
+                      <ChevronLeftIcon fontSize="small" /> Previous
+                    </button>
+
+                    <div className="px-3.5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs font-mono text-white/80 font-semibold shrink-0">
+                      {String(safeActiveReview + 1).padStart(2, '0')} / {String(activeReviews.length).padStart(2, '0')}
+                    </div>
+
+                    <button
+                      onClick={handleNextReview}
+                      className="flex-1 py-3 px-4 rounded-xl bg-white/10 hover:bg-white/20 active:bg-accent-600 border border-white/15 text-white flex items-center justify-center gap-1.5 text-xs font-bold transition-all cursor-pointer shadow-sm"
+                      aria-label="Next review"
+                    >
+                      Next <ChevronRightIcon fontSize="small" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Desktop Left: Counter & Dynamic Progress Bar */}
+                <div className="hidden sm:flex items-center gap-3">
+                  <span className="text-xs font-mono text-white/60 font-semibold tracking-wider">
+                    {String(safeActiveReview + 1).padStart(2, '0')} / {String(activeReviews.length).padStart(2, '0')}
+                  </span>
+                  <div className="h-1.5 w-32 lg:w-44 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-accent-500 to-accent-400 rounded-full transition-all duration-300"
+                      style={{ width: `${activeReviews.length ? ((safeActiveReview + 1) / activeReviews.length) * 100 : 0}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Center: Adaptive Pill Dots (if <= 10 reviews) */}
+                {activeReviews.length > 1 && activeReviews.length <= 10 && (
+                  <div className="hidden sm:flex items-center gap-1.5">
+                    {activeReviews.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setActiveReview(i)}
+                        className="p-1 focus:outline-none cursor-pointer"
+                        aria-label={`Go to review ${i + 1}`}
+                      >
+                        <span
+                          className={`h-2 rounded-full transition-all duration-300 block ${
+                            i === safeActiveReview ? 'bg-accent-500 w-6' : 'bg-white/25 hover:bg-white/50 w-2'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Right: Autoplay Toggle Button */}
+                {activeReviews.length > 1 && (
+                  <button
+                    onClick={() => setIsAutoplay((prev) => !prev)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white text-xs font-medium transition-all cursor-pointer"
+                    title={isAutoplay ? 'Pause auto-slide' : 'Resume auto-slide'}
+                  >
+                    {isAutoplay ? (
+                      <>
+                        <PauseIcon style={{ fontSize: 13 }} />
+                        <span>Autoplay</span>
+                      </>
+                    ) : (
+                      <>
+                        <PlayArrowIcon style={{ fontSize: 13 }} />
+                        <span>Paused</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </section>

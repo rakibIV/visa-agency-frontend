@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   PencilSquareIcon,
@@ -12,11 +13,11 @@ import {
   DocumentTextIcon,
   SparklesIcon,
   PhotoIcon,
+  PaperAirplaneIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import toast from 'react-hot-toast';
 import Pagination from '../../components/common/Pagination';
-import { useEffect } from 'react';
 
 const DYNAMIC_VARIABLES = [
   { group: 'Applicant Details', items: [
@@ -388,10 +389,6 @@ export default function EmailTemplatesSettings() {
             ${formattedChunks.join('')}
             ${signatureHtml}
           </div>
-
-          <div style="background-color: #f8fafc; padding: 18px 25px; border-top: 1px solid #e2e8f0; text-align: center; font-size: 12px; color: #94a3b8;">
-            &copy; Al Raiyan Group. All rights reserved.
-          </div>
         </div>
       </div>
     `;
@@ -410,12 +407,20 @@ export default function EmailTemplatesSettings() {
             Customize notification templates sent to applicants on status updates or manual dispatch.
           </p>
         </div>
-        <button
-          onClick={openCreateModal}
-          className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition shadow-sm shrink-0"
-        >
-          <PlusIcon className="w-4 h-4" /> Create Email Template
-        </button>
+        <div className="flex items-center gap-2.5 shrink-0">
+          <Link
+            to="/communication/send-email"
+            className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl text-xs font-bold transition shadow-xs"
+          >
+            <PaperAirplaneIcon className="w-4 h-4 text-blue-600" /> Dispatch Email
+          </Link>
+          <button
+            onClick={openCreateModal}
+            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition shadow-sm"
+          >
+            <PlusIcon className="w-4 h-4" /> Create Email Template
+          </button>
+        </div>
       </div>
 
       {/* Category Tabs: General vs Status vs Generous Templates */}
@@ -590,6 +595,13 @@ export default function EmailTemplatesSettings() {
                       </td>
                       <td className="px-5 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <Link
+                            to={`/communication/send-email?template=${tmpl.id}`}
+                            className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                            title="Dispatch / Send this Template"
+                          >
+                            <PaperAirplaneIcon className="w-4 h-4" />
+                          </Link>
                           <button
                             onClick={() => openEditModal(tmpl)}
                             className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition"

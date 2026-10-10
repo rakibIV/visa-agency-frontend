@@ -227,12 +227,12 @@ export default function CountryDetailPage() {
           <div className="sticky top-28 space-y-6">
             
             <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-card border border-navy-50">
-              <span className="eyebrow text-accent-600 mb-2 block">Available Programs</span>
-              <h3 className="heading-md font-heading text-navy-900 mb-6">Visa Options in {country.name}</h3>
+              <span className="eyebrow text-accent-600 mb-2 block">Ongoing Visas</span>
+              <h3 className="heading-md font-heading text-navy-900 mb-6">Ongoing Visas in {country.name}</h3>
 
               {!visas || visas.length === 0 ? (
                 <p className="text-sm text-navy-500 bg-surface-dim p-4 rounded-xl border border-navy-50">
-                  There are currently no active visa programs listed for this destination.
+                  There are currently no ongoing visa opportunities listed for this destination.
                 </p>
               ) : (
                 <div className="space-y-3">
