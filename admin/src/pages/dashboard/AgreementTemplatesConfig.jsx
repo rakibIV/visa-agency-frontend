@@ -303,7 +303,7 @@ export default function AgreementTemplatesConfig() {
               </div>
               <div className="flex-1">
                 <h4 className="font-bold text-slate-800 uppercase">{clause.title_en || 'Untitled Clause'}</h4>
-                <p className="text-sm text-slate-500 line-clamp-2 mt-1">{clause.body_en}</p>
+                <p className="text-sm text-slate-500 whitespace-pre-line break-words line-clamp-3 mt-1">{clause.body_en}</p>
                 <div className="flex gap-2 mt-3">
                    {clause.visibility_mode === 'INCLUDE' && clause.countries?.length > 0 && (
                      <span className="text-[10px] px-2 py-0.5 bg-green-100 text-green-700 rounded-full font-bold">Includes specific countries</span>

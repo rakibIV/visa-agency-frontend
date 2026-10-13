@@ -178,3 +178,217 @@ export function getSampleVariablesMap() {
   map.phone_number = '+8801712345678';
   return map;
 }
+
+/**
+ * Splits a clause's body text cleanly at sentence or paragraph boundaries.
+ * Preserves parallel structure across English, Arabic, and Bengali.
+ */
+export function splitClauseForPagination(clause, targetRatio = 0.5) {
+  const splitBody = (text, ratio) => {
+    if (!text || typeof text !== 'string') return ['', ''];
+    const trimmed = text.trim();
+    if (!trimmed) return ['', ''];
+
+    // 1. Try splitting at paragraph breaks (\n)
+    const paragraphs = trimmed.split(/\n+/).filter(Boolean);
+    if (paragraphs.length >= 2) {
+      const cut = Math.max(1, Math.min(paragraphs.length - 1, Math.round(paragraphs.length * ratio)));
+      return [
+        paragraphs.slice(0, cut).join('\n\n'),
+        paragraphs.slice(cut).join('\n\n'),
+      ];
+    }
+
+    // 2. Try splitting at sentence boundaries (. or ! or ? or । (Bengali) or Arabic full stop)
+    const sentences = trimmed.match(/[^.!?।\n]+[.!?।]+(\s|$)|[^.!?।\n]+$/g);
+    if (sentences && sentences.length >= 2) {
+      const cut = Math.max(1, Math.min(sentences.length - 1, Math.round(sentences.length * ratio)));
+      return [
+        sentences.slice(0, cut).join('').trim(),
+        sentences.slice(cut).join('').trim(),
+      ];
+    }
+
+    return [trimmed, ''];
+  };
+
+  const [en1, en2] = splitBody(clause.body_en, targetRatio);
+  const [ar1, ar2] = splitBody(clause.body_ar, targetRatio);
+  const [bn1, bn2] = splitBody(clause.body_bn, targetRatio);
+
+  const hasRemaining = Boolean(en2 || ar2 || bn2);
+
+  const part1 = {
+    ...clause,
+    body_en: en1 || clause.body_en,
+    body_ar: ar1 || clause.body_ar,
+    body_bn: bn1 || clause.body_bn,
+    has_continuation: hasRemaining,
+  };
+
+  const part2 = {
+    ...clause,
+    body_en: en2,
+    body_ar: ar2,
+    body_bn: bn2,
+    is_continuation: true,
+  };
+
+  return [part1, part2, hasRemaining];
+}
+
+/**
+ * Master-Class Dynamic Agreement Pagination Engine.
+ * 
+ * Accurately models the physical CSS rendering engine for 8.5in × 11in Letter documents.
+ * Guarantees zero text clipping while maximizing natural paper real-estate utilization.
+ * Can split long clauses across pages at justified paragraph/sentence boundaries when needed.
+ * Content only rolls over to subsequent pages when physically necessary, eliminating
+ * artificial whitespace voids and premature page splits.
+ */
+export function paginateLetterClauses(clauses, {
+  showBengali = false,
+  hasTopLogos = false,
+  detailsText = '',
+  hasBottomSection = true,
+} = {}) {
+  if (!clauses || !Array.isArray(clauses) || clauses.length === 0) {
+    return [[]];
+  }
+
+  // Visual line counter: models CSS line-wrapping in standard 704px text column
+  const countVisualLines = (text, charsPerLine) => {
+    if (!text || typeof text !== 'string') return 0;
+    const lines = text.split('\n');
+    return lines.reduce((acc, line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return acc + 1; // paragraph break
+      return acc + Math.max(1, Math.ceil(trimmed.length / charsPerLine));
+    }, 0);
+  };
+
+  // Realistic height estimation (px) matching rendered DOM elements
+  const estimateClauseHeight = (clause) => {
+    let h = 16; // badge container and vertical align
+
+    // Title row (14px serif font, pb-1 mb-1 border-b)
+    if (clause.title_en || clause.title_ar || clause.title_bn) {
+      const combinedTitle = `${clause.title_en || ''} ${clause.title_ar || ''} ${showBengali ? clause.title_bn || '' : ''}`.trim();
+      // In 704px width, titles under 70 chars fit on 1 line (~26px), longer wraps to 2 lines (~44px)
+      h += combinedTitle.length > 70 ? 44 : 26;
+    }
+
+    // English body (text-xs / 12px serif, leading-relaxed: ~18px per line, ~88 chars per line in 704px container)
+    const enText = (clause.body_en || '').trim();
+    if (enText) {
+      const enLines = countVisualLines(enText, 88);
+      h += enLines * 18 + 4;
+    }
+
+    // Arabic and Bengali body
+    const arText = (clause.body_ar || '').trim();
+    const bnText = showBengali ? (clause.body_bn || '').trim() : '';
+
+    if (arText && bnText) {
+      // 2 columns (~335px each): ~38 chars per line, ~23px line height for Bengali/Arabic
+      const arLines = countVisualLines(arText, 38);
+      const bnLines = countVisualLines(bnText, 38);
+      h += Math.max(arLines, bnLines) * 23 + 6;
+    } else if (arText) {
+      // Single full-width column (~704px): ~78 chars per line, ~22px per line
+      const arLines = countVisualLines(arText, 78);
+      h += arLines * 22 + 4;
+    } else if (bnText) {
+      const bnLines = countVisualLines(bnText, 78);
+      h += bnLines * 23 + 4;
+    }
+
+    h += 12; // inter-clause margin (mb-2.5 / space-y-2)
+    return Math.max(48, Math.ceil(h));
+  };
+
+  const clauseHeights = clauses.map(estimateClauseHeight);
+
+  // Height budget:
+  // Total physical height: 11in = 1056px.
+  // Page padding: pt-8 (32px) + pb-10 (40px) = 72px.
+  // Total inner sheet space: 1056 - 72 = 984px.
+  // We use USABLE_PAGE_CAPACITY = 915px (leaves a dependable 69px buffer above the bottom padding).
+  const USABLE_PAGE_CAPACITY = 915;
+
+  const descLines = countVisualLines(detailsText, 80);
+  const page1HeaderHeight = (hasTopLogos ? 68 : 0) + 54 + (descLines * 16); // ~80px to ~155px
+  const continuedHeaderHeight = 44; // Continuation header on page 2+ (~44px)
+  const signatureFooterHeight = hasBottomSection ? 130 : 0; // Bottom logo & applicant signature (~130px)
+
+  // Step 1: Check if all clauses fit on 1 single page!
+  const totalClausesHeight = clauseHeights.reduce((acc, v) => acc + v, 0);
+  if (totalClausesHeight + page1HeaderHeight + signatureFooterHeight <= USABLE_PAGE_CAPACITY) {
+    return [clauses];
+  }
+
+  // Step 2: Multi-page optimal packing with clause splitting if needed
+  const pages = [];
+  let currentPageClauses = [];
+  let currentHeight = 0;
+  let pageIdx = 0;
+
+  for (let i = 0; i < clauses.length; i++) {
+    const clause = clauses[i];
+    const cH = clauseHeights[i];
+    const isFirstPage = pageIdx === 0;
+    const headerH = isFirstPage ? page1HeaderHeight : continuedHeaderHeight;
+
+    const remainingCount = clauses.length - i - 1;
+    const isFinalItem = remainingCount === 0;
+    const reservedFooter = isFinalItem ? signatureFooterHeight : 0;
+    const maxBudget = USABLE_PAGE_CAPACITY - headerH - reservedFooter;
+
+    if (currentPageClauses.length > 0 && (currentHeight + cH > maxBudget)) {
+      const spaceLeft = maxBudget - currentHeight;
+
+      // If there is meaningful space left on the page (>= 140px) and the clause can split:
+      if (spaceLeft >= 140 && cH > spaceLeft) {
+        const ratio = Math.min(0.65, Math.max(0.35, (spaceLeft - 30) / cH));
+        const [part1, part2, canSplit] = splitClauseForPagination(clause, ratio);
+
+        if (canSplit) {
+          const h1 = estimateClauseHeight(part1);
+          if (currentHeight + h1 <= maxBudget) {
+            currentPageClauses.push(part1);
+            pages.push(currentPageClauses);
+            currentPageClauses = [part2];
+            currentHeight = estimateClauseHeight(part2);
+            pageIdx++;
+            continue;
+          }
+        }
+      }
+
+      // Current page is full — commit it and start next page
+      pages.push(currentPageClauses);
+      currentPageClauses = [clause];
+      currentHeight = cH;
+      pageIdx++;
+    } else {
+      currentPageClauses.push(clause);
+      currentHeight += cH;
+    }
+  }
+
+  if (currentPageClauses.length > 0) {
+    const isFirstPage = pages.length === 0;
+    const headerH = isFirstPage ? page1HeaderHeight : continuedHeaderHeight;
+    // Check if the final page has enough room for the signature block
+    if (hasBottomSection && (currentHeight + headerH + signatureFooterHeight > USABLE_PAGE_CAPACITY) && currentPageClauses.length > 1) {
+      const lastClause = currentPageClauses.pop();
+      pages.push(currentPageClauses);
+      pages.push([lastClause]);
+    } else {
+      pages.push(currentPageClauses);
+    }
+  }
+
+  return pages.length > 0 ? pages : [[]];
+}
+

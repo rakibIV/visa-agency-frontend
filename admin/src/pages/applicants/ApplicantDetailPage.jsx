@@ -19,6 +19,9 @@ import {
   ArrowDownTrayIcon,
   EnvelopeIcon,
   ClockIcon,
+  DocumentCheckIcon,
+  EyeIcon,
+  CheckCircleIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import AgreementPrintView from './AgreementPrintView';
@@ -44,6 +47,8 @@ export default function ApplicantDetailPage() {
   const [selectedRefundForPrint, setSelectedRefundForPrint] = useState(null);
   const [printType, setPrintType] = useState('all'); // 'all', 'form', 'tc', 'clauses'
   const [showBengali, setShowBengali] = useState(false);
+  const [selectedAgreementDoc, setSelectedAgreementDoc] = useState('all');
+  const [agreementPreviewScale, setAgreementPreviewScale] = useState(0.72);
   const [editPaymentId, setEditPaymentId] = useState(null);
 
   // Status Log Edit State
@@ -1602,78 +1607,280 @@ export default function ApplicantDetailPage() {
               </div>
             ) : (
               <>
-                <div>
-                  <h3 className="font-bold text-slate-800 text-base">Agreement Document Printer</h3>
-                  <p className="text-slate-400 text-sm mt-0.5">Generate printable PDF pages for the applicant agreements.</p>
-                </div>
-
-                {/* Bengali Language Toggle */}
-                <label className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl cursor-pointer hover:bg-amber-100 transition-colors select-none">
-                  <div className="relative">
-                    <input
-                      type="checkbox"
-                      checked={showBengali}
-                      onChange={(e) => setShowBengali(e.target.checked)}
-                      className="sr-only"
-                    />
-                    <div className={`w-11 h-6 rounded-full transition-colors ${showBengali ? 'bg-amber-500' : 'bg-slate-300'}`}>
-                      <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${showBengali ? 'translate-x-5' : 'translate-x-0'}`} />
-                    </div>
-                  </div>
+                {/* Header & Main Print Action */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                   <div>
-                    <p className="font-semibold text-slate-800 text-sm">Include Bengali (বাংলা)</p>
-                    <p className="text-slate-500 text-xs mt-0.5">
-                      {showBengali
-                        ? 'ON — Agreement shows EN + AR + BN · Main agreement split into 3 pages'
-                        : 'OFF — Agreement shows EN + AR only · Main agreement fits in 2 pages'}
+                    <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                      <DocumentCheckIcon className="w-6 h-6 text-blue-600" />
+                      Applicant Agreements Dossier
+                    </h3>
+                    <p className="text-slate-500 text-sm mt-0.5">
+                      Review and print complete legal agreements for <span className="font-semibold text-slate-700">{applicant?.full_name}</span>. Documents are structured by agreement across standard Letter paper.
                     </p>
                   </div>
-                </label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => handlePrint('all')}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-blue-700 text-white rounded-xl text-sm font-semibold shadow hover:bg-blue-800 transition-colors shrink-0"
+                    >
+                      <PrinterIcon className="w-4 h-4" />
+                      Print All Agreements (Dossier Package)
+                    </button>
+                  </div>
+                </div>
 
+                {/* Bengali Language Toggle & Layout Mode Notice */}
+                <div className="p-4 bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-amber-50/80 border border-amber-200/80 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <label className="flex items-center gap-3 cursor-pointer select-none">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={showBengali}
+                        onChange={(e) => setShowBengali(e.target.checked)}
+                        className="sr-only"
+                      />
+                      <div className={`w-11 h-6 rounded-full transition-colors ${showBengali ? 'bg-amber-500' : 'bg-slate-300'}`}>
+                        <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${showBengali ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </div>
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        Include Bengali (বাংলা)
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${showBengali ? 'bg-amber-200 text-amber-800' : 'bg-slate-200 text-slate-600'}`}>
+                          {showBengali ? 'Trilingual Mode (EN + AR + BN)' : 'Bilingual Mode (EN + AR)'}
+                        </span>
+                      </p>
+                      <p className="text-slate-600 text-xs mt-0.5">
+                        {showBengali
+                          ? 'ON — Side-by-side Arabic & Bengali columns with generous line-heights, balanced margins, and justified text.'
+                          : 'OFF — English top, full-width Arabic bottom with clean RTL justification.'}
+                      </p>
+                    </div>
+                  </label>
+                  <div className="text-xs text-amber-900/80 bg-white/70 px-3.5 py-2 rounded-lg border border-amber-200/60 shadow-sm flex items-center gap-2">
+                    <span>📄</span>
+                    <span>Multi-page contracts auto-paginate across Letter sheets with sentence-justified page splits.</span>
+                  </div>
+                </div>
+
+                {/* Agreement Cards: Grouped by Agreement, NOT by Page */}
                 {(() => {
-                  const extraTemplates = [...(templates || [])].sort((a, b) => (a.sequence || 0) - (b.sequence || 0)).slice(2);
-                  const printItems = [
-                    { title: 'Page 1: Client Bio & Cover Page', desc: 'Application info, payment amounts, and signatures.', type: 'form' },
-                    { title: 'Page 2: Receipt & Agreement', desc: 'Payment receipt header with clauses 1-6 of Main Agreement.', type: 'tc' },
-                    { title: 'Page 3: Agreement Clauses', desc: 'The dynamic legal clauses (7-15) of Main Agreement.', type: 'clauses' },
-                    { title: 'Page 4: Terms & Conditions', desc: 'The 6 standard clauses of the General T&C Agreement.', type: 'tc2' },
-                    ...extraTemplates.map((tmpl, idx) => ({
-                      title: `Page ${idx + 5}: ${tmpl.title || tmpl.name || `Agreement ${tmpl.sequence || idx + 3}`}`,
-                      desc: `${(tmpl.clauses || []).length} Custom Clauses defined in this agreement template.`,
-                      type: tmpl.id,
+                  const isExtra = (t) => {
+                    if (!t) return false;
+                    if (t.sequence && t.sequence >= 3) return true;
+                    if (t.body && typeof t.body === 'string' && t.body.startsWith('{')) {
+                      try {
+                        const parsed = JSON.parse(t.body);
+                        if (parsed.is_extra || parsed.__is_extra) return true;
+                      } catch {}
+                    }
+                    return false;
+                  };
+                  const allTmpls = [...(templates || [])].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+                  const baseTmpls = allTmpls.filter(t => !isExtra(t));
+                  const tmpl1 = baseTmpls.length > 0 ? baseTmpls[0] : (allTmpls.find(t => t.sequence === 1) || null);
+                  const tmpl2 = baseTmpls.length > 1 ? baseTmpls[1] : (allTmpls.find(t => t.sequence === 2) || null);
+                  const extraTemplates = allTmpls.filter(t => isExtra(t) || (t.sequence && t.sequence >= 3) || !baseTmpls.slice(0, 2).includes(t));
+
+                  const agreementDocs = [
+                    {
+                      id: 'all',
+                      title: 'All Agreements (Full Dossier Package)',
+                      shortTitle: 'All Agreements',
+                      desc: 'Complete compiled packet including Main Service Agreement, General Terms, and all custom agreements.',
+                      type: 'all',
+                      badge: 'Complete Dossier',
+                      badgeColor: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+                      clausesCount: (tmpl1?.clauses?.length || 15) + (tmpl2?.clauses?.length || 6) + extraTemplates.reduce((sum, t) => sum + (t.clauses?.length || 0), 0),
+                      pagesEstimate: `${(showBengali ? 5 : 4) + extraTemplates.length} Pages`,
+                      isAll: true,
+                    },
+                    {
+                      id: 'main',
+                      title: '1. Employment & Visa Service Agreement',
+                      shortTitle: '1. Main Agreement',
+                      desc: 'Primary contract comprising Applicant Info, Payment Details & Receipt, and Clauses 1–15.',
+                      type: 'main',
+                      badge: 'Multi-Page Agreement',
+                      badgeColor: 'bg-blue-100 text-blue-700 border-blue-200',
+                      clausesCount: (tmpl1?.clauses || []).length || 15,
+                      pagesEstimate: showBengali ? '3 to 4 Pages' : '2 to 3 Pages',
+                    },
+                    {
+                      id: 'general',
+                      title: '2. General Terms & Conditions',
+                      shortTitle: '2. General T&C',
+                      desc: 'Standard agency operational policies, candidate obligations, and service terms.',
+                      type: 'general',
+                      badge: 'Multi-Page Agreement',
+                      badgeColor: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+                      clausesCount: (tmpl2?.clauses || []).length || 6,
+                      pagesEstimate: showBengali ? '1 to 2 Pages' : '1 Page',
+                    },
+                    ...extraTemplates.map((t, idx) => ({
+                      id: String(t.id),
+                      title: `${idx + 3}. ${t.title || t.name || `Agreement ${t.sequence || idx + 3}`}`,
+                      shortTitle: `${idx + 3}. ${t.title || t.name || `Agreement ${idx + 3}`}`,
+                      desc: t.details || (!t.body?.startsWith('{') ? t.body : '') || `${(t.clauses || []).length} custom clauses defined in this agreement template.`,
+                      type: t.id,
+                      badge: 'Custom Agreement',
+                      badgeColor: 'bg-purple-100 text-purple-700 border-purple-200',
+                      clausesCount: (t.clauses || []).length,
+                      pagesEstimate: `${Math.max(1, Math.ceil((t.clauses || []).length / (showBengali ? 3 : 5)))} Page(s)`,
                     })),
                   ];
 
+                  const currentActiveDoc = agreementDocs.find(d => d.type === selectedAgreementDoc) || agreementDocs[0];
+
                   return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {printItems.map((printItem) => (
-                        <div key={printItem.title} className="p-4 border border-slate-200/60 rounded-xl flex items-start justify-between gap-4 bg-slate-50/50 hover:bg-slate-50 transition-colors">
-                          <div>
-                            <h4 className="font-bold text-slate-800 text-sm">{printItem.title}</h4>
-                            <p className="text-slate-400 text-xs mt-1 leading-snug">{printItem.desc}</p>
+                    <div className="space-y-6">
+                      {/* Agreements Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {agreementDocs.map((doc) => {
+                          const isSelected = selectedAgreementDoc === doc.type;
+                          return (
+                            <div
+                              key={doc.id}
+                              onClick={() => setSelectedAgreementDoc(doc.type)}
+                              className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
+                                isSelected
+                                  ? 'border-blue-600 bg-blue-50/70 shadow-md ring-2 ring-blue-500/30'
+                                  : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-300'
+                              }`}
+                            >
+                              <div>
+                                <div className="flex items-center justify-between gap-2 mb-2">
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${doc.badgeColor}`}>
+                                    {doc.badge}
+                                  </span>
+                                  <span className="text-[11px] font-semibold text-slate-500 font-mono">
+                                    {doc.pagesEstimate}
+                                  </span>
+                                </div>
+                                <h4 className="font-bold text-slate-800 text-sm">{doc.title}</h4>
+                                <p className="text-slate-500 text-xs mt-1.5 leading-relaxed">{doc.desc}</p>
+                              </div>
+
+                              <div className="pt-3 mt-3 border-t border-slate-200/80 flex items-center justify-between gap-2">
+                                <span className="text-[11px] font-medium text-slate-500">
+                                  {doc.clausesCount} Clause{doc.clausesCount === 1 ? '' : 's'}
+                                </span>
+                                <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                  <button
+                                    onClick={() => setSelectedAgreementDoc(doc.type)}
+                                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors ${
+                                      isSelected
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
+                                    }`}
+                                    title="View this agreement in the live preview canvas below"
+                                  >
+                                    <EyeIcon className="w-3.5 h-3.5" />
+                                    {isSelected ? 'Viewing' : 'Inspect'}
+                                  </button>
+                                  <button
+                                    onClick={() => handlePrint(doc.type)}
+                                    className="p-1.5 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-600 hover:text-white transition-colors"
+                                    title="Print / Save PDF for this agreement"
+                                  >
+                                    <PrinterIcon className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Embedded Live Multi-Page Letter Document Canvas */}
+                      <div className="rounded-2xl border border-slate-300 bg-slate-900 shadow-xl overflow-hidden mt-8">
+                        {/* Canvas Header & Toolbar */}
+                        <div className="px-5 py-3.5 bg-slate-800/90 border-b border-slate-700 flex flex-wrap items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <div>
+                              <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                                Live Agreement Preview Canvas
+                              </div>
+                              <h4 className="font-bold text-white text-sm">
+                                {currentActiveDoc?.title}
+                              </h4>
+                            </div>
                           </div>
-                          <button
-                            onClick={() => handlePrint(printItem.type)}
-                            className="p-2.5 bg-blue-100 text-blue-700 rounded-xl hover:bg-blue-600 hover:text-white shadow-sm transition-all shrink-0"
-                            title="Print / PDF"
-                          >
-                            <PrinterIcon className="w-5 h-5" />
-                          </button>
+
+                          {/* Quick Document Pills Selector */}
+                          <div className="flex flex-wrap items-center gap-1.5 bg-slate-900/80 p-1 rounded-xl border border-slate-700/80">
+                            {agreementDocs.map((doc) => (
+                              <button
+                                key={doc.id}
+                                onClick={() => setSelectedAgreementDoc(doc.type)}
+                                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                                  selectedAgreementDoc === doc.type
+                                    ? 'bg-blue-600 text-white shadow-sm'
+                                    : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                                }`}
+                              >
+                                {doc.shortTitle}
+                              </button>
+                            ))}
+                          </div>
+
+                          {/* Zoom & Action Controls */}
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center bg-slate-900 border border-slate-700 rounded-lg p-0.5 text-xs text-slate-300">
+                              <button
+                                onClick={() => setAgreementPreviewScale(0.60)}
+                                className={`px-2 py-1 rounded ${agreementPreviewScale === 0.60 ? 'bg-slate-700 text-white font-bold' : 'hover:text-white'}`}
+                                title="Fit preview width"
+                              >
+                                60%
+                              </button>
+                              <button
+                                onClick={() => setAgreementPreviewScale(0.75)}
+                                className={`px-2 py-1 rounded ${agreementPreviewScale === 0.75 ? 'bg-slate-700 text-white font-bold' : 'hover:text-white'}`}
+                                title="Default balanced preview"
+                              >
+                                75%
+                              </button>
+                              <button
+                                onClick={() => setAgreementPreviewScale(1.0)}
+                                className={`px-2 py-1 rounded ${agreementPreviewScale === 1.0 ? 'bg-slate-700 text-white font-bold' : 'hover:text-white'}`}
+                                title="100% full scale Letter paper"
+                              >
+                                100%
+                              </button>
+                            </div>
+
+                            <button
+                              onClick={() => handlePrint(selectedAgreementDoc)}
+                              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-bold hover:bg-blue-500 shadow transition-colors"
+                            >
+                              <PrinterIcon className="w-4 h-4" />
+                              Print / PDF
+                            </button>
+                          </div>
                         </div>
-                      ))}
+
+                        {/* Letter Pages Viewport */}
+                        <div className="p-4 sm:p-8 bg-slate-800 overflow-x-auto flex justify-center min-h-[600px]">
+                          <div
+                            style={{ zoom: agreementPreviewScale }}
+                            className="flex flex-col items-center w-full transition-transform"
+                          >
+                            <AgreementPrintView
+                              applicant={applicant}
+                              templates={templates}
+                              type={selectedAgreementDoc}
+                              companyInfo={companyInfo}
+                              showBengali={showBengali}
+                              currenciesList={currenciesList}
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   );
                 })()}
-
-                <div className="pt-4 border-t flex justify-end">
-                  <button
-                    onClick={() => handlePrint('all')}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-700 text-white rounded-xl text-sm font-semibold shadow hover:bg-blue-800 transition-colors"
-                  >
-                    <PrinterIcon className="w-5 h-5" />
-                    Print Full Agreement Package ({(showBengali ? 5 : 4) + Math.max(0, (templates || []).length - 2)} Pages)
-                  </button>
-                </div>
               </>
             )}
           </div>

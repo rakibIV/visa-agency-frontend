@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../../api/client';
 import topIllustration from '../../assets/top-illustration.png';
 import companyLogo from '../../assets/logo.png';
-import { getApplicantVariablesMap, interpolateTemplateVariables } from '../../utils/templateVariables';
+import { getApplicantVariablesMap, interpolateTemplateVariables, paginateLetterClauses } from '../../utils/templateVariables';
 
 export default function AgreementPrintView({ applicant, templates = [], type, companyInfo, showBengali = false, currenciesList = [] }) {
   React.useEffect(() => {
@@ -93,49 +93,116 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
       .join(' + ');
   };
 
-  // Page visibility toggles
-  const showCover = type === 'all' || type === 'form';
-  const showTemplate1Part1 = type === 'all' || type === 'tc';
-  const showTemplate1Part2 = type === 'all' || type === 'clauses';
-  const showTemplate2 = type === 'all' || type === 'tc2';
+  // Fetch countries list for clause visibility filtering
+  const { data: countriesData } = useQuery({
+    queryKey: ['config-countries'],
+    queryFn: () => api.get('/countries/').then((r) => r.data.results ?? r.data ?? []),
+    staleTime: 1000 * 60 * 30,
+  });
+  const allCountriesList = Array.isArray(countriesData) ? countriesData : [];
 
-  const sortedTemplates = [...(templates || [])].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
-  const template1 = sortedTemplates.length > 0 ? sortedTemplates[0] : null;
-  const template2 = sortedTemplates.length > 1 ? sortedTemplates[1] : null;
+  // Helper to detect if a template is an Extra Template
+  const isExtraTemplate = (tmpl) => {
+    if (!tmpl) return false;
+    if (tmpl.sequence && tmpl.sequence >= 3) return true;
+    if (tmpl.body && typeof tmpl.body === 'string' && tmpl.body.startsWith('{')) {
+      try {
+        const parsed = JSON.parse(tmpl.body);
+        if (parsed.is_extra || parsed.__is_extra) return true;
+      } catch {}
+    }
+    const titleKey = tmpl.title || tmpl.name;
+    const keysToTry = [
+      tmpl.id ? `extra_tmpl_meta_${tmpl.id}` : null,
+      titleKey ? `extra_tmpl_meta_title_${titleKey}` : null,
+      tmpl.sequence ? `extra_tmpl_meta_seq_${tmpl.sequence}` : null,
+    ].filter(Boolean);
+    for (const key of keysToTry) {
+      try {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && (parsed.is_extra || parsed.__is_extra)) return true;
+        }
+      } catch {}
+    }
+    return false;
+  };
 
-  // Filter clauses based on country condition
+  const allTemplatesList = [...(templates || [])].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
+  const baseTemplates = allTemplatesList.filter((t) => !isExtraTemplate(t));
+  const template1 = baseTemplates.length > 0 ? baseTemplates[0] : (allTemplatesList.find((t) => t.sequence === 1) || null);
+  const template2 = baseTemplates.length > 1 ? baseTemplates[1] : (allTemplatesList.find((t) => t.sequence === 2) || null);
+
+  // Agreement / Document visibility toggles
+  const isMainType = type === 'all' || type === 'main' || (template1 && (type === template1.id || type === String(template1.id)));
+  const showCover = isMainType || type === 'form';
+  const showTemplate1Part1 = isMainType || type === 'tc';
+  const showTemplate1Part2 = isMainType || type === 'clauses';
+  const showTemplate2 = type === 'all' || type === 'tc2' || type === 'general' || (template2 && (type === template2.id || type === String(template2.id)));
+
+  const extraTemplatesToRender = allTemplatesList.filter((t) =>
+    isExtraTemplate(t) ||
+    (t.sequence && t.sequence >= 3) ||
+    (t.id !== template1?.id && t.id !== template2?.id)
+  );
+
+  // Filter clauses based on country condition (guarantees NO missed clauses for extra templates)
   const getVisibleClauses = (template) => {
     if (!template || !template.clauses) return [];
     let clauses = [...template.clauses].sort((a, b) => a.clause_number - b.clause_number);
-    const countryName = (applicant?.country?.name || applicant?.visa_name || '').toLowerCase();
-    const isSaudi = countryName.includes('saudi');
+    const applicantCountryName = (
+      applicant?.country?.name || 
+      (typeof applicant?.country === 'string' ? applicant.country : '') || 
+      applicant?.visa_name || 
+      ''
+    ).toLowerCase();
+    const applicantCountryId = applicant?.country?.id || (typeof applicant?.country === 'number' ? applicant.country : null);
+    const isSaudi = applicantCountryName.includes('saudi');
+    const isExtra = isExtraTemplate(template);
 
-    return clauses.filter(c => {
+    return clauses.filter((c) => {
       if (c.is_active === false) return false;
 
       // Clause 15 of Template 1 is strictly hidden for Saudi Arabia applicants
-      if (template.sequence === 1 && c.clause_number === 15 && isSaudi) {
+      if (!isExtra && template.sequence === 1 && c.clause_number === 15 && isSaudi) {
         return false;
+      }
+
+      // If visibility_mode is ALL or unspecified, show unconditionally
+      if (c.visibility_mode === 'ALL' || !c.visibility_mode) {
+        return true;
       }
 
       if (c.visibility_mode === 'INCLUDE') {
         if (!c.countries || c.countries.length === 0) return true;
-        return c.countries?.includes(applicant?.country?.id) || c.countries?.includes(applicant?.country);
+        const matchId = applicantCountryId ? c.countries.includes(applicantCountryId) : false;
+        const matchName = allCountriesList.some((cntry) =>
+          c.countries.includes(cntry.id) && applicantCountryName.includes(cntry.name?.toLowerCase())
+        );
+        // If applicant has no country specified, do not hide the clause
+        if (!applicantCountryId && !applicantCountryName) return true;
+        return matchId || matchName;
       }
+
       if (c.visibility_mode === 'EXCLUDE') {
         if (!c.countries || c.countries.length === 0) return true;
-        return !c.countries?.includes(applicant?.country?.id) && !c.countries?.includes(applicant?.country);
+        const matchId = applicantCountryId ? c.countries.includes(applicantCountryId) : false;
+        const matchName = allCountriesList.some((cntry) =>
+          c.countries.includes(cntry.id) && applicantCountryName.includes(cntry.name?.toLowerCase())
+        );
+        return !(matchId || matchName);
       }
+
       return true;
     });
   };
 
   const template1Clauses = getVisibleClauses(template1);
-  // Without Bengali: 2 pages for Template 1 (clauses 1-6 / 7+)
-  // With Bengali: 3 pages for Template 1 (clauses 1-3 / 4-8 / 9+)
-  const template1Part1 = template1Clauses.filter(c => showBengali ? c.clause_number <= 3 : c.clause_number <= 6);
-  const template1Part2 = template1Clauses.filter(c => showBengali ? (c.clause_number > 3 && c.clause_number <= 8) : c.clause_number > 6);
-  const template1Part3 = showBengali ? template1Clauses.filter(c => c.clause_number > 8) : [];
+  // Safe pagination chunking for Template 1 to prevent text clipping
+  const template1Part1 = template1Clauses.filter(c => showBengali ? c.clause_number <= 3 : c.clause_number <= 5);
+  const template1Part2 = template1Clauses.filter(c => showBengali ? (c.clause_number > 3 && c.clause_number <= 7) : (c.clause_number > 5 && c.clause_number <= 10));
+  const template1Part3 = template1Clauses.filter(c => showBengali ? c.clause_number > 7 : c.clause_number > 10);
 
   const template2Clauses = getVisibleClauses(template2);
 
@@ -162,7 +229,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
       <div className="w-full flex justify-between items-end mt-6">
         <div>
           <h2 className="text-lg font-bold uppercase tracking-widest text-slate-800">{title}</h2>
-          {subtitle && <p className="text-[10px] text-slate-500 font-medium tracking-wide mt-1">{subtitle}</p>}
+          {subtitle && <p className="text-[10px] text-slate-500 font-medium tracking-wide mt-1 whitespace-pre-line break-words">{parseClauseText(subtitle)}</p>}
         </div>
         <div className="text-right text-[10px] font-mono text-slate-600 space-y-0.5 relative z-20">
           {showReceiptDetails && (
@@ -184,44 +251,73 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
     return interpolateTemplateVariables(text, applicantVariablesMap);
   };
 
-  const ClauseBlock = ({ clause, isTerms = false }) => (
-    <div className="mb-3 flex gap-4 break-inside-avoid">
-      <div className="w-8 shrink-0 flex justify-center">
-        <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-700 border border-slate-300">
-          {clause.clause_number}
-        </div>
-      </div>
-      <div className="flex-1 space-y-1.5">
-        {clause.title_en && (
-          <div className="flex justify-between items-end border-b border-slate-100 pb-1 mb-1">
-            <h4 className="font-bold text-slate-800 text-sm uppercase tracking-wide font-serif">{clause.title_en}</h4>
-            <h4 className="font-bold text-slate-700 text-[11px]">
-              {clause.title_ar}{showBengali ? ` | ${clause.title_bn}` : ''}
-            </h4>
+  const ClauseBlock = ({ clause, isTerms = false }) => {
+    const isContinuation = Boolean(clause.is_continuation);
+    const hasContinuation = Boolean(clause.has_continuation);
+
+    return (
+      <div className="mb-2.5 flex gap-3.5 break-inside-avoid">
+        <div className="w-6 shrink-0 flex justify-center pt-0.5">
+          <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${
+            isContinuation 
+              ? 'bg-amber-50 text-amber-700 border-amber-300' 
+              : 'bg-slate-100 text-slate-700 border-slate-300'
+          }`}>
+            {clause.clause_number}
           </div>
-        )}
-        <div className="grid grid-cols-1 gap-2">
-          {clause.body_en && (
-            <p className="text-slate-700 text-xs leading-relaxed font-serif text-justify">
-              {parseClauseText(clause.body_en)}
-            </p>
+        </div>
+        <div className="flex-1 space-y-1 min-w-0">
+          {clause.title_en && (
+            <div className="flex justify-between items-end border-b border-slate-100 pb-0.5 mb-0.5">
+              <h4 className="font-bold text-slate-800 text-sm uppercase tracking-wide font-serif flex items-center gap-2">
+                <span>{parseClauseText(clause.title_en)}</span>
+                {isContinuation && (
+                  <span className="text-[10px] font-sans font-medium text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 lowercase">
+                    (continued)
+                  </span>
+                )}
+              </h4>
+              <h4 className="font-bold text-slate-700 text-[11px]">
+                {parseClauseText(clause.title_ar)}{showBengali ? ` | ${parseClauseText(clause.title_bn)}` : ''}
+              </h4>
+            </div>
           )}
-          <div className={showBengali ? 'grid grid-cols-2 gap-6 pt-1' : 'pt-1'}>
-            {showBengali && clause.body_bn && (
-              <p className="text-slate-600 text-[11px] leading-relaxed font-sans text-justify">
-                {parseClauseText(clause.body_bn)}
+          <div className="grid grid-cols-1 gap-1.5">
+            {clause.body_en && (
+              <p
+                className="text-slate-700 text-xs leading-relaxed font-serif text-justify whitespace-pre-line break-words"
+                style={{ textJustify: 'inter-word' }}
+              >
+                {parseClauseText(clause.body_en)}
+                {hasContinuation && (
+                  <span className="text-slate-400 font-sans text-[10px] italic ml-1">... [Continues on next page]</span>
+                )}
               </p>
             )}
-            {clause.body_ar && (
-              <p className={`text-slate-800 text-[11px] leading-relaxed font-sans text-justify ${showBengali ? '' : 'w-full'}`} dir="rtl">
-                {parseClauseText(clause.body_ar)}
-              </p>
-            )}
+            <div className={showBengali ? 'grid grid-cols-2 gap-5 pt-0.5' : 'pt-0.5'}>
+              {showBengali && clause.body_bn && (
+                <p
+                  className="text-slate-600 text-[11px] leading-[1.65] font-sans text-justify whitespace-pre-line break-words"
+                  style={{ textJustify: 'inter-word' }}
+                >
+                  {parseClauseText(clause.body_bn)}
+                </p>
+              )}
+              {clause.body_ar && (
+                <p
+                  className={`text-slate-800 text-[11px] leading-[1.65] font-sans text-justify whitespace-pre-line break-words ${showBengali ? '' : 'w-full'}`}
+                  dir="rtl"
+                  style={{ textJustify: 'inter-word' }}
+                >
+                  {parseClauseText(clause.body_ar)}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const SignatureBlock = ({ showThumb = false, showSeal = false }) => (
     <div className={`grid ${showThumb || showSeal ? 'grid-cols-4' : 'grid-cols-3'} gap-6 pt-4 text-center text-[10px] font-semibold text-slate-600 break-inside-avoid relative z-20`}>
@@ -277,7 +373,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
   // Letter Page Container styling wrapper
   const PageContainer = ({ children }) => (
     <div className="w-full overflow-x-auto bg-slate-100 print:bg-transparent print:overflow-visible flex sm:justify-center">
-      <div className="print-page w-full min-w-[8.5in] max-w-[8.5in] print:max-w-full print:min-w-full print:w-full min-h-[11in] print:min-h-[100vh] mx-auto bg-white mb-8 shadow-[0_0_15px_rgba(0,0,0,0.1)] print:shadow-none print:m-0 flex flex-col pt-8 pb-16 px-8 box-border relative overflow-hidden shrink-0">
+      <div className="print-page w-[8.5in] min-w-[8.5in] max-w-[8.5in] min-h-[11in] print:w-[8.5in] print:min-h-[11in] mx-auto bg-white mb-8 shadow-[0_0_20px_rgba(0,0,0,0.15)] print:shadow-none print:m-0 flex flex-col justify-between pt-8 pb-16 px-8 box-border relative shrink-0">
         {/* Company Logo PNG Watermark (Layered at z-30 with mix-blend-multiply) */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] h-[380px] flex items-center justify-center opacity-15 mix-blend-multiply pointer-events-none z-30">
           <img
@@ -301,18 +397,32 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
     </div>
   );
 
-
-  // Remove old secondPayment logic
-
   return (
     <>
       <style>{`
         @media print {
           @page { size: letter portrait; margin: 0 !important; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           html { font-size: 13.6px !important; }
           html, body { width: 100% !important; height: auto !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
           body > *:not(.print-portal) { display: none !important; }
           .print-portal { display: block !important; position: static !important; width: 100%; height: auto !important; overflow: visible !important; }
+          .print-page {
+            width: 8.5in !important;
+            min-height: 11in !important;
+            box-sizing: border-box !important;
+            page-break-after: always !important;
+            break-after: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            margin: 0 auto !important;
+            padding: 32px 32px 40px 32px !important;
+            background: white !important;
+          }
+          .print-page:last-child {
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+          }
         }
       `}</style>
       <div className="w-full bg-slate-100 py-8 print:py-0 print:bg-white text-slate-900">
@@ -466,9 +576,10 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
         )}
 
         {/* ========================================================== */}
-        {/* PAGE 3b: TEMPLATE 1 Part 3 — only shown when Bengali is ON (clauses 9-15) */}
         {/* ========================================================== */}
-        {showBengali && showTemplate1Part2 && template1Part3.length > 0 && (
+        {/* PAGE 3b: TEMPLATE 1 Part 3 — shown whenever clauses overflow past page 2 */}
+        {/* ========================================================== */}
+        {showTemplate1Part2 && template1Part3.length > 0 && (
           <PageContainer>
             <div className="flex-1 w-full relative z-20">
               <DocumentHeader title="Agreement Terms (Continued)" />
@@ -483,35 +594,65 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
         )}
 
         {/* ========================================================== */}
-        {/* PAGE 4: TEMPLATE 2 (Terms & Conditions) */}
+        {/* TEMPLATE 2 (General Terms & Conditions) */}
         {/* ========================================================== */}
-        {showTemplate2 && (
-          <PageContainer>
-            <div className="flex-1 w-full relative z-20">
-              <DocumentHeader
-                title={template2?.title || template2?.name || "General Terms & Conditions"}
-                subtitle={template2?.body || template2?.details || "الشروط والأحكام العامة | সাধারণ শর্তাবলী"}
-              />
-              <div className="space-y-1 mt-6">
-                {template2Clauses.map(clause => (
-                  <ClauseBlock key={clause.id} clause={clause} isTerms={true} />
-                ))}
-                {template2Clauses.length === 0 && (
-                  <p className="text-slate-400 text-xs text-center py-10 italic font-medium">
-                    No active clauses defined for this agreement template.
-                  </p>
-                )}
-              </div>
-            </div>
-            <SignatureBlock showThumb={true} />
-          </PageContainer>
-        )}
+        {showTemplate2 && (() => {
+          const t2Pages = paginateLetterClauses(template2Clauses, {
+            showBengali,
+            hasTopLogos: false,
+            detailsText: template2?.body || template2?.details || "الشروط والأحكام العامة | সাধারণ শর্তাবলী",
+            hasBottomSection: true,
+          });
+          const totalT2Pages = t2Pages.length;
+
+          return t2Pages.map((pageClauses, pIdx) => {
+            const isFirst = pIdx === 0;
+            const isLast = pIdx === totalT2Pages - 1;
+
+            return (
+              <PageContainer key={`tmpl2-p${pIdx}`}>
+                <div className="flex-1 w-full relative z-20">
+                  {isFirst ? (
+                    <DocumentHeader
+                      title={template2?.title || template2?.name || "General Terms & Conditions"}
+                      subtitle={template2?.body || template2?.details || "الشروط والأحكام العامة | সাধারণ শর্তাবলী"}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-between border-b border-slate-300 pb-2 mb-3">
+                      <div>
+                        <h3 className="text-base font-bold uppercase tracking-widest text-slate-800 font-serif">
+                          {template2?.title || template2?.name || "General Terms & Conditions"}{' '}
+                          <span className="text-xs font-normal text-slate-500">(Continued)</span>
+                        </h3>
+                      </div>
+                      <div className="text-right text-[10px] font-mono text-slate-600">
+                        <span>Page {pIdx + 1} of {totalT2Pages}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2 mt-3">
+                    {pageClauses.map(clause => (
+                      <ClauseBlock key={clause.id || clause.clause_number} clause={clause} isTerms={true} />
+                    ))}
+                    {pageClauses.length === 0 && isFirst && (
+                      <p className="text-slate-400 text-xs text-center py-10 italic font-medium">
+                        No active clauses defined for this agreement template.
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {isLast && <SignatureBlock showThumb={true} />}
+              </PageContainer>
+            );
+          });
+        })()}
 
         {/* ========================================================== */}
-        {/* EXTRA TEMPLATES & ADDITIONAL TEMPLATES (Sequence 3+) */}
+        {/* EXTRA TEMPLATES & ADDITIONAL TEMPLATES */}
         {/* ========================================================== */}
-        {sortedTemplates.slice(2).map((tmpl, idx) => {
-          const shouldShow = type === 'all' || type === tmpl.id || type === `tmpl-${tmpl.id}`;
+        {extraTemplatesToRender.map((tmpl, idx) => {
+          const shouldShow = type === 'all' || type === tmpl.id || type === String(tmpl.id) || type === `tmpl-${tmpl.id}` || type === `extra-${tmpl.id}`;
           if (!shouldShow) return null;
 
           const clauses = getVisibleClauses(tmpl);
@@ -561,31 +702,17 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
             if (!meta.company_logo && metaFromBody.company_logo) meta.company_logo = metaFromBody.company_logo;
           }
 
-          // Multi-page chunking logic (maximized clause content capacity per page)
-          const paginateClauses = (items) => {
-            if (!items || items.length === 0) return [[]];
-            if (items.length <= 6) return [items];
-            const pages = [];
-            pages.push(items.slice(0, 6));
-            let rem = items.slice(6);
-            while (rem.length > 0) {
-              if (rem.length <= 7) {
-                pages.push(rem);
-                break;
-              }
-              if (rem.length > 8) {
-                pages.push(rem.slice(0, 8));
-                rem = rem.slice(8);
-              } else {
-                pages.push(rem.slice(0, 4));
-                pages.push(rem.slice(4));
-                break;
-              }
-            }
-            return pages;
-          };
+          const templateTitle = parseClauseText(tmpl.title || tmpl.name || `Agreement ${tmpl.sequence || idx + 3}`);
+          const templateDesc = parseClauseText(meta?.details || tmpl.details || (!tmpl.body?.startsWith('{') ? tmpl.body : ''));
+          const hasTopLogos = Boolean(meta?.top_left_logo || meta?.top_center_logo || meta?.top_right_logo);
+          const hasBottom = Boolean(meta?.company_logo || meta?.applicant_signature || applicant?.profile?.signature || meta?.show_applicant_signature !== false);
 
-          const pages = paginateClauses(clauses);
+          const pages = paginateLetterClauses(clauses, {
+            showBengali,
+            hasTopLogos,
+            detailsText: templateDesc,
+            hasBottomSection: hasBottom,
+          });
           const totalPages = pages.length;
 
           // Fixed standard sizes for watermark, bottom logo, and applicant signature
@@ -601,9 +728,6 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
             return 'max-h-12 max-w-[140px]'; // medium
           };
 
-          const templateTitle = parseClauseText(tmpl.title || tmpl.name || `Agreement ${tmpl.sequence || idx + 3}`);
-          const templateDesc = parseClauseText(meta?.details || tmpl.details || (!tmpl.body?.startsWith('{') ? tmpl.body : ''));
-
           return (
             <React.Fragment key={tmpl.id || idx}>
               {pages.map((pageClauses, pageIdx) => {
@@ -612,7 +736,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
 
                 return (
                   <div key={`${tmpl.id || idx}-p${pageIdx}`} className="w-full overflow-x-auto bg-slate-100 print:bg-transparent print:overflow-visible flex sm:justify-center">
-                    <div className="print-page w-full min-w-[8.5in] max-w-[8.5in] print:max-w-full print:min-w-full print:w-full min-h-[11in] print:min-h-[100vh] mx-auto bg-white mb-8 shadow-[0_0_15px_rgba(0,0,0,0.1)] print:shadow-none print:m-0 flex flex-col pt-8 pb-16 px-8 box-border relative overflow-hidden shrink-0">
+                    <div className="print-page w-[8.5in] min-w-[8.5in] max-w-[8.5in] min-h-[11in] print:w-[8.5in] print:min-h-[11in] mx-auto bg-white mb-8 shadow-[0_0_20px_rgba(0,0,0,0.15)] print:shadow-none print:m-0 flex flex-col justify-between pt-8 pb-12 px-8 box-border relative shrink-0 text-slate-800">
                       
                       {/* Watermark: Rendered centrally on every page */}
                       {customWatermark && (
@@ -633,9 +757,9 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
                           {/* FIRST PAGE ONLY: Top 3 Logos Header */}
                           {/* ============================================== */}
                           {isFirstPage ? (
-                            <div className="flex flex-col border-b-2 border-slate-800 pb-4 mb-6">
+                            <div className="flex flex-col border-b-2 border-slate-800 pb-3 mb-4">
                               {(meta?.top_left_logo || meta?.top_center_logo || meta?.top_right_logo) && (
-                                <div className="flex items-center justify-between gap-4 mb-4 pb-3 border-b border-slate-200">
+                                <div className="flex items-center justify-between gap-4 mb-3 pb-2 border-b border-slate-200">
                                   <div className="w-1/3 flex items-center justify-start">
                                     {meta?.top_left_logo && (
                                       <img
@@ -672,7 +796,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
                                     {templateTitle}
                                   </h2>
                                   {templateDesc && (
-                                    <p className="text-xs text-slate-600 font-medium tracking-wide mt-1">
+                                    <p className="text-xs text-slate-600 font-medium tracking-wide mt-1 whitespace-pre-line break-words">
                                       {templateDesc}
                                     </p>
                                   )}
@@ -688,7 +812,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
                             </div>
                           ) : (
                             /* Middle & Subsequent Pages: Clean Header WITHOUT top 3 logos */
-                            <div className="flex items-center justify-between border-b border-slate-300 pb-3 mb-6">
+                            <div className="flex items-center justify-between border-b border-slate-300 pb-2 mb-3">
                               <div>
                                 <h3 className="text-base font-bold uppercase tracking-widest text-slate-800 font-serif">
                                   {templateTitle} <span className="text-xs font-normal text-slate-500">(Continued)</span>
@@ -701,7 +825,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
                           )}
 
                           {/* Clauses List */}
-                          <div className="space-y-3 mt-4">
+                          <div className="space-y-2 mt-2">
                             {pageClauses.map((clause) => (
                               <ClauseBlock key={clause.id || clause.clause_number} clause={clause} />
                             ))}
@@ -743,7 +867,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
                           if (!showLogo && !showSignature) return null;
 
                           return (
-                            <div className="pt-6 border-t border-slate-300 mt-8 flex items-end justify-between gap-6 relative z-20 break-inside-avoid">
+                            <div className="pt-3 border-t border-slate-300 mt-4 flex items-end justify-between gap-6 relative z-20 break-inside-avoid">
                               {/* 1. Company Logo (if turned on) */}
                               <div className="flex flex-col items-center justify-center">
                                 {showLogo ? (
