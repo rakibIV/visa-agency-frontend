@@ -51,6 +51,15 @@ export default function ApplicantDetailPage() {
   const [agreementPreviewScale, setAgreementPreviewScale] = useState(0.72);
   const [editPaymentId, setEditPaymentId] = useState(null);
 
+  // Agreement Print Customization: Reference No and Date (Static frontend fields for generous templates)
+  const [agreementRefNo, setAgreementRefNo] = useState('');
+  const [agreementDate, setAgreementDate] = useState('');
+
+  // activeRefNo is purely static from user input - blank by default, not fetched from backend
+  const activeRefNo = agreementRefNo;
+  // activeDate defaults to current date if not inputted; if inputted, uses user inputted date
+  const activeDate = agreementDate.trim() !== '' ? agreementDate : new Date().toLocaleDateString('en-GB');
+
   // Status Log Edit State
   const [showStatusLogEditModal, setShowStatusLogEditModal] = useState(false);
   const [editStatusLogId, setEditStatusLogId] = useState(null);
@@ -498,27 +507,78 @@ export default function ApplicantDetailPage() {
       {/* Screen preview overlay */}
       {showPrintView && (
         <div className="fixed inset-0 bg-white z-[999] overflow-y-auto">
-          <div className="p-4 bg-slate-100 print:hidden flex items-center justify-between border-b sticky top-0 z-50">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-800">🖨️ Agreement Print Preview</span>
+          <div className="p-4 bg-slate-100 print:hidden flex flex-wrap items-center justify-between gap-3 border-b sticky top-0 z-50 shadow-xs">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="font-bold text-slate-800 text-sm">🖨️ Agreement Print Preview</span>
+              <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 text-xs shadow-2xs">
+                <span className="text-slate-500 font-bold">Ref No (Generous):</span>
+                <input
+                  type="text"
+                  value={agreementRefNo}
+                  onChange={(e) => setAgreementRefNo(e.target.value)}
+                  placeholder="Optional (blank)"
+                  className="font-mono font-bold text-slate-900 bg-transparent focus:outline-none w-32 px-1 border-b border-transparent hover:border-slate-300 focus:border-blue-500"
+                  title="Edit Reference No for generous templates (blank if empty)"
+                />
+                <span className="text-slate-300">|</span>
+                <span className="text-slate-500 font-bold">Date:</span>
+                <input
+                  type="text"
+                  value={agreementDate}
+                  onChange={(e) => setAgreementDate(e.target.value)}
+                  placeholder={new Date().toLocaleDateString('en-GB')}
+                  className="font-mono text-slate-700 bg-transparent focus:outline-none w-28 px-1 border-b border-transparent hover:border-slate-300 focus:border-blue-500"
+                  title="Edit Agreement Date (defaults to current date if left empty)"
+                />
+                <button
+                  type="button"
+                  onClick={() => setAgreementDate(new Date().toLocaleDateString('en-GB'))}
+                  className="text-[10px] text-blue-600 hover:text-blue-800 font-bold underline cursor-pointer"
+                  title="Set to today's date"
+                >
+                  Today
+                </button>
+                {agreementDate && (
+                  <button
+                    type="button"
+                    onClick={() => setAgreementDate('')}
+                    className="text-[10px] text-slate-400 hover:text-slate-600 font-bold cursor-pointer"
+                    title="Clear custom date (will use current date)"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => window.print()}
-                className="flex items-center gap-2 px-5 py-2.5 bg-blue-700 text-white rounded-xl text-sm font-bold hover:bg-blue-800 transition shadow-md"
+                className="flex items-center gap-2 px-5 py-2.5 bg-blue-700 text-white rounded-xl text-sm font-bold hover:bg-blue-800 transition shadow-md cursor-pointer"
               >
                 <PrinterIcon className="w-5 h-5" /> Save as PDF / Print
               </button>
               <button
                 onClick={() => setShowPrintView(false)}
-                className="px-4 py-2 bg-slate-600 text-white rounded-lg text-sm font-semibold hover:bg-slate-700 transition"
+                className="px-4 py-2 bg-slate-600 text-white rounded-lg text-sm font-semibold hover:bg-slate-700 transition cursor-pointer"
               >
                 ✕ Close
               </button>
             </div>
           </div>
           <div id="agreement-preview-content" className="p-4 flex justify-center">
-            <AgreementPrintView applicant={applicant} templates={templates} type={printType} companyInfo={companyInfo} showBengali={showBengali} currenciesList={currenciesList} />
+            <AgreementPrintView
+              applicant={applicant}
+              templates={templates}
+              type={printType}
+              companyInfo={companyInfo}
+              showBengali={showBengali}
+              currenciesList={currenciesList}
+              customRefNo={activeRefNo}
+              customDate={activeDate}
+              onRefNoChange={setAgreementRefNo}
+              onDateChange={setAgreementDate}
+              isEditable={true}
+            />
           </div>
         </div>
       )}
@@ -526,7 +586,17 @@ export default function ApplicantDetailPage() {
       {/* Print portal: injected directly into document.body so CSS body>*:not(.print-portal) works correctly */}
       {showPrintView && createPortal(
         <div className="print-portal">
-          <AgreementPrintView applicant={applicant} templates={templates} type={printType} companyInfo={companyInfo} showBengali={showBengali} currenciesList={currenciesList} />
+          <AgreementPrintView
+            applicant={applicant}
+            templates={templates}
+            type={printType}
+            companyInfo={companyInfo}
+            showBengali={showBengali}
+            currenciesList={currenciesList}
+            customRefNo={activeRefNo}
+            customDate={activeDate}
+            isEditable={false}
+          />
         </div>,
         document.body
       )}
@@ -1663,6 +1733,70 @@ export default function ApplicantDetailPage() {
                   </div>
                 </div>
 
+                {/* Agreement Print Customization: Reference No & Date */}
+                <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-blue-50 text-blue-600 rounded-lg shrink-0">
+                      <PencilSquareIcon className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide flex items-center gap-2">
+                        Generous Agreement Print Settings
+                        <span className="text-[10px] font-normal lowercase text-slate-400 bg-slate-100 px-2 py-0.5 rounded">customizable</span>
+                      </h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Reference No displays on generous templates only (leave blank if not needed). Date defaults to current date.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                      <label className="text-[11px] font-bold text-slate-600 shrink-0">
+                        Reference No:
+                      </label>
+                      <input
+                        type="text"
+                        value={agreementRefNo}
+                        onChange={(e) => setAgreementRefNo(e.target.value)}
+                        placeholder="Leave blank or type..."
+                        className="px-2 py-1 text-xs font-mono font-bold text-slate-900 bg-white border border-slate-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none w-36"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200">
+                      <label className="text-[11px] font-bold text-slate-600 shrink-0">
+                        Date:
+                      </label>
+                      <input
+                        type="text"
+                        value={agreementDate}
+                        onChange={(e) => setAgreementDate(e.target.value)}
+                        placeholder={new Date().toLocaleDateString('en-GB')}
+                        className="px-2 py-1 text-xs font-mono font-medium text-slate-900 bg-white border border-slate-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none w-28"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setAgreementDate(new Date().toLocaleDateString('en-GB'))}
+                        className="text-[10px] text-blue-600 hover:text-blue-800 font-bold underline cursor-pointer"
+                        title="Set to today's date"
+                      >
+                        Today
+                      </button>
+                      {agreementDate && (
+                        <button
+                          type="button"
+                          onClick={() => setAgreementDate('')}
+                          className="text-[10px] text-slate-400 hover:text-slate-600 font-bold cursor-pointer"
+                          title="Clear custom date (will use current date)"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Agreement Cards: Grouped by Agreement, NOT by Page */}
                 {(() => {
                   const isExtra = (t) => {
@@ -1874,6 +2008,11 @@ export default function ApplicantDetailPage() {
                               companyInfo={companyInfo}
                               showBengali={showBengali}
                               currenciesList={currenciesList}
+                              customRefNo={activeRefNo}
+                              customDate={activeDate}
+                              onRefNoChange={setAgreementRefNo}
+                              onDateChange={setAgreementDate}
+                              isEditable={true}
                             />
                           </div>
                         </div>

@@ -12,8 +12,8 @@ import {
   InformationCircleIcon,
   DocumentTextIcon,
   SparklesIcon,
-  PhotoIcon,
   PaperAirplaneIcon,
+  DocumentDuplicateIcon,
 } from '@heroicons/react/24/outline';
 import api from '../../api/client';
 import toast from 'react-hot-toast';
@@ -40,6 +40,109 @@ const DYNAMIC_VARIABLES = [
     { tag: '{{ staff }}', label: 'Assigned Staff' },
   ]},
 ];
+
+/**
+ * Generates a unique duplicated template name that increments or assigns its serial sequence.
+ * - If template starts with a serial number (e.g. "4. Profile Creation writing", "12 - Processing"):
+ *   increments to the next available integer (e.g. "5. Profile Creation writing").
+ * - If template ends with parentheses (e.g. "Generous Template (2)"):
+ *   increments to the next available integer (e.g. "Generous Template (3)").
+ * - If template ends with a number (e.g. "General 1" or "Template #1"):
+ *   increments to the next available integer.
+ * - If template has no number (e.g. "Generous Email Template"):
+ *   assigns next serial sequence suffix "(2)", then "(3)", etc.
+ * Enforces max length <= 150 characters (Django model unique CharField).
+ */
+function generateDuplicatedTemplateName(sourceTemplate, allTemplates = []) {
+  const existingNames = new Set(
+    (allTemplates || []).map((t) => (t.name || '').trim().toLowerCase())
+  );
+  const originalName = (sourceTemplate?.name || '').trim();
+
+  if (!originalName) {
+    let fallback = 'New Email Template';
+    let counter = 1;
+    while (existingNames.has(fallback.toLowerCase())) {
+      counter++;
+      fallback = `New Email Template (${counter})`;
+    }
+    return fallback;
+  }
+
+  // Pattern 1: Leading serial number prefix, e.g. "4. Profile Creation writing", "12 - Processing", "1: Notice"
+  const prefixMatch = originalName.match(/^(\d+)(\s*[.\-:]\s*|\s+)(.*)$/);
+  if (prefixMatch) {
+    const currentNum = parseInt(prefixMatch[1], 10);
+    const delimiter = prefixMatch[2];
+    const baseTitle = prefixMatch[3].trim();
+
+    let nextNum = currentNum + 1;
+    let candidate = `${nextNum}${delimiter}${baseTitle}`;
+
+    while (existingNames.has(candidate.toLowerCase())) {
+      nextNum++;
+      candidate = `${nextNum}${delimiter}${baseTitle}`;
+    }
+
+    if (candidate.length <= 150) {
+      return candidate;
+    }
+    const maxBaseLen = 150 - `${nextNum}${delimiter}`.length;
+    return `${nextNum}${delimiter}${baseTitle.slice(0, Math.max(1, maxBaseLen))}`;
+  }
+
+  // Pattern 2: Ends with a number in parentheses, e.g. "Generous Email Template (2)" or "General Template (Copy 1)"
+  const parenthesizedMatch = originalName.match(/^(.*?)(?:\s*\((?:Copy\s*)?(\d+)\))$/i);
+  if (parenthesizedMatch) {
+    const baseTitle = parenthesizedMatch[1].trim();
+    let nextNum = parseInt(parenthesizedMatch[2], 10) + 1;
+    let candidate = `${baseTitle} (${nextNum})`;
+
+    while (existingNames.has(candidate.toLowerCase())) {
+      nextNum++;
+      candidate = `${baseTitle} (${nextNum})`;
+    }
+
+    if (candidate.length <= 150) {
+      return candidate;
+    }
+    const maxBaseLen = 150 - ` (${nextNum})`.length;
+    return `${baseTitle.slice(0, Math.max(1, maxBaseLen))} (${nextNum})`;
+  }
+
+  // Pattern 3: Ends with a hash or standalone number, e.g. "Generous Template #1" or "General Template 1"
+  const trailingNumMatch = originalName.match(/^(.*?\s+#?|.*?#)(\d+)$/);
+  if (trailingNumMatch) {
+    const basePrefix = trailingNumMatch[1];
+    let nextNum = parseInt(trailingNumMatch[2], 10) + 1;
+    let candidate = `${basePrefix}${nextNum}`;
+
+    while (existingNames.has(candidate.toLowerCase())) {
+      nextNum++;
+      candidate = `${basePrefix}${nextNum}`;
+    }
+
+    if (candidate.length <= 150) {
+      return candidate;
+    }
+    const maxBaseLen = 150 - `${nextNum}`.length;
+    return `${basePrefix.slice(0, Math.max(1, maxBaseLen))}${nextNum}`;
+  }
+
+  // Pattern 4: Does not contain an explicit serial sequence number, e.g. "Generous Email Template"
+  let nextNum = 2;
+  let candidate = `${originalName} (${nextNum})`;
+  while (existingNames.has(candidate.toLowerCase())) {
+    nextNum++;
+    candidate = `${originalName} (${nextNum})`;
+  }
+
+  if (candidate.length <= 150) {
+    return candidate;
+  }
+  const maxBaseLen = 150 - ` (${nextNum})`.length;
+  return `${originalName.slice(0, Math.max(1, maxBaseLen))} (${nextNum})`;
+}
 
 export default function EmailTemplatesSettings() {
   const queryClient = useQueryClient();
@@ -131,8 +234,58 @@ export default function EmailTemplatesSettings() {
     return true;
   });
 
-  const totalPages = Math.ceil(filteredTemplates.length / pageSize) || 1;
-  const paginatedTemplates = filteredTemplates.slice((page - 1) * pageSize, page * pageSize);
+  const sortedTemplates = [...filteredTemplates].sort((a, b) => {
+    if (categoryTab === 'status') {
+      return (a.status?.display_order ?? 0) - (b.status?.display_order ?? 0);
+    }
+    return (a.name || '').localeCompare(b.name || '', undefined, { numeric: true, sensitivity: 'base' });
+  });
+
+  const totalPages = Math.ceil(sortedTemplates.length / pageSize) || 1;
+  const paginatedTemplates = sortedTemplates.slice((page - 1) * pageSize, page * pageSize);
+
+  const [duplicatingId, setDuplicatingId] = useState(null);
+
+  // Duplication mutation
+  const duplicateMutation = useMutation({
+    mutationFn: (payload) => api.post('/email-templates/', payload),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries(['settings-email-templates']);
+      toast.success(
+        `Template duplicated successfully as "${res.data?.name || 'new template'}"!`
+      );
+    },
+    onError: (err) => {
+      const errMsg =
+        err.response?.data?.name?.[0] ||
+        err.response?.data?.detail ||
+        err.message ||
+        'Failed to duplicate template';
+      toast.error(`Duplication failed: ${errMsg}`);
+    },
+  });
+
+  const handleDuplicateTemplate = (tmpl) => {
+    if (duplicateMutation.isPending) return;
+    setDuplicatingId(tmpl.id);
+    const newName = generateDuplicatedTemplateName(tmpl, templates);
+
+    duplicateMutation.mutate(
+      {
+        name: newName,
+        status: null, // General and Generous templates have no status
+        subject: tmpl.subject || '',
+        body: tmpl.body || '',
+        is_active: tmpl.is_active ?? true,
+        is_generous: Boolean(tmpl.is_generous),
+        top_left_logo: tmpl.top_left_logo || '',
+        top_center_logo: tmpl.top_center_logo || '',
+      },
+      {
+        onSettled: () => setDuplicatingId(null),
+      }
+    );
+  };
 
   // Save (Create/Update) mutation
   const saveMutation = useMutation({
@@ -552,7 +705,8 @@ export default function EmailTemplatesSettings() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 border-b border-slate-100 text-slate-400 uppercase tracking-wider font-bold">
                 <tr>
-                  <th className="px-5 py-3.5">{categoryTab === 'general' ? 'Category' : 'Linked Status'}</th>
+                  <th className="px-4 py-3.5 w-14 text-center">SL #</th>
+                  <th className="px-5 py-3.5">{categoryTab === 'general' ? 'Category' : categoryTab === 'generous' ? 'Category' : 'Linked Status'}</th>
                   <th className="px-5 py-3.5">Template Name</th>
                   <th className="px-5 py-3.5">Email Subject</th>
                   <th className="px-5 py-3.5">Status</th>
@@ -560,12 +714,16 @@ export default function EmailTemplatesSettings() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
-                {paginatedTemplates.map((tmpl) => {
+                {paginatedTemplates.map((tmpl, idx) => {
                   const statusName = tmpl.status_name || (statuses.find(s => String(s.id) === String(tmpl.status))?.name);
                   const isRejected = statusName?.toLowerCase().includes('reject');
+                  const serialNumber = (page - 1) * pageSize + idx + 1;
 
                   return (
                     <tr key={tmpl.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="px-4 py-4 text-center font-mono font-bold text-slate-400 text-xs">
+                        #{serialNumber}
+                      </td>
                       <td className="px-5 py-4">
                         {statusName ? (
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
@@ -575,8 +733,14 @@ export default function EmailTemplatesSettings() {
                           }`}>
                             {statusName}
                           </span>
+                        ) : tmpl.is_generous ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                            Generous Template
+                          </span>
                         ) : (
-                          <span className="text-slate-400 italic">General / Manual</span>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-50 text-slate-600 border border-slate-200">
+                            General / Manual
+                          </span>
                         )}
                       </td>
                       <td className="px-5 py-4 font-bold text-slate-800">
@@ -594,7 +758,24 @@ export default function EmailTemplatesSettings() {
                         </span>
                       </td>
                       <td className="px-5 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Duet Button - Beside every General or Generous template */}
+                          {(!tmpl.status && !tmpl.status_name) && (
+                            <button
+                              type="button"
+                              onClick={() => handleDuplicateTemplate(tmpl)}
+                              disabled={duplicateMutation.isPending && duplicatingId === tmpl.id}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200/80 rounded-lg text-xs font-bold transition cursor-pointer disabled:opacity-50 shadow-2xs"
+                              title="Duet (Duplicate template setting serial sequence)"
+                            >
+                              {duplicateMutation.isPending && duplicatingId === tmpl.id ? (
+                                <div className="w-3.5 h-3.5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <DocumentDuplicateIcon className="w-3.5 h-3.5 text-purple-600" />
+                              )}
+                              <span>Duet</span>
+                            </button>
+                          )}
                           <Link
                             to={`/communication/send-email?template=${tmpl.id}`}
                             className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
@@ -884,6 +1065,21 @@ export default function EmailTemplatesSettings() {
               </span>
 
               <div className="flex items-center gap-2">
+                {editingTemplate && (!editingTemplate.status && !editingTemplate.status_name) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleDuplicateTemplate(editingTemplate);
+                      closeModal();
+                    }}
+                    disabled={duplicateMutation.isPending}
+                    className="px-3.5 py-2 bg-purple-50 text-purple-700 border border-purple-200/80 hover:bg-purple-100 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                    title="Duet / Duplicate this template with serial sequence"
+                  >
+                    <DocumentDuplicateIcon className="w-4 h-4 text-purple-600" />
+                    <span>Duet Template</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={closeModal}

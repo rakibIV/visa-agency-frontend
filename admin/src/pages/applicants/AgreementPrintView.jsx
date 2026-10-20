@@ -5,7 +5,26 @@ import topIllustration from '../../assets/top-illustration.png';
 import companyLogo from '../../assets/logo.png';
 import { getApplicantVariablesMap, interpolateTemplateVariables, paginateLetterClauses } from '../../utils/templateVariables';
 
-export default function AgreementPrintView({ applicant, templates = [], type, companyInfo, showBengali = false, currenciesList = [] }) {
+export default function AgreementPrintView({
+  applicant,
+  templates = [],
+  type,
+  companyInfo,
+  showBengali = false,
+  currenciesList = [],
+  customRefNo,
+  customDate,
+  onRefNoChange,
+  onDateChange,
+  isEditable = false,
+}) {
+  // Reference No: static frontend input for generous templates only. Blank if not provided.
+  const displayRefNo = customRefNo !== undefined && customRefNo !== null ? customRefNo : '';
+
+  // Date: defaults to current date if not inputted; if inputted, uses user inputted date.
+  const defaultDate = new Date().toLocaleDateString('en-GB');
+  const displayDate = customDate && customDate.trim() !== '' ? customDate : defaultDate;
+
   React.useEffect(() => {
     const originalTitle = document.title;
     const name = applicant?.full_name || 'Applicant';
@@ -802,8 +821,36 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
                                   )}
                                 </div>
                                 <div className="text-right text-[10px] font-mono text-slate-600 space-y-0.5">
-                                  <p>Application No: <span className="font-bold text-slate-900">{applicant?.application_number || `APP-${applicant?.id?.slice(0, 8)}`}</span></p>
-                                  <p>Date: {new Date().toLocaleDateString('en-GB')}</p>
+                                  <p className="flex items-center justify-end gap-1">
+                                    <span>Reference No:</span>
+                                    {isEditable && onRefNoChange ? (
+                                      <input
+                                        type="text"
+                                        value={displayRefNo}
+                                        onChange={(e) => onRefNoChange(e.target.value)}
+                                        placeholder="Optional"
+                                        className="font-bold text-slate-900 text-right bg-transparent border-b border-dashed border-slate-300 hover:border-blue-400 focus:border-blue-600 focus:bg-blue-50/40 focus:outline-none px-1 py-0 rounded transition print:border-none print:p-0 print:bg-transparent min-w-[80px]"
+                                        title="Click to edit Reference No (static, leave empty for blank)"
+                                      />
+                                    ) : (
+                                      <span className="font-bold text-slate-900">{displayRefNo}</span>
+                                    )}
+                                  </p>
+                                  <p className="flex items-center justify-end gap-1">
+                                    <span>Date:</span>
+                                    {isEditable && onDateChange ? (
+                                      <input
+                                        type="text"
+                                        value={customDate !== undefined && customDate !== null ? customDate : ''}
+                                        onChange={(e) => onDateChange(e.target.value)}
+                                        placeholder={defaultDate}
+                                        className="font-mono text-slate-700 text-right bg-transparent border-b border-dashed border-slate-300 hover:border-blue-400 focus:border-blue-600 focus:bg-blue-50/40 focus:outline-none px-1 py-0 rounded transition print:border-none print:p-0 print:bg-transparent min-w-[85px]"
+                                        title="Click to edit Date (defaults to current date if left empty)"
+                                      />
+                                    ) : (
+                                      <span>{displayDate}</span>
+                                    )}
+                                  </p>
                                   {totalPages > 1 && (
                                     <p className="font-bold text-slate-700">Page {pageIdx + 1} of {totalPages}</p>
                                   )}
@@ -898,7 +945,7 @@ export default function AgreementPrintView({ applicant, templates = [], type, co
                                       Applicant's Signature
                                     </p>
                                     <p className="text-[8px] text-slate-500 mt-0.5">
-                                      Date: {new Date().toLocaleDateString('en-GB')}
+                                      Date: {displayDate}
                                     </p>
                                   </div>
                                 </div>

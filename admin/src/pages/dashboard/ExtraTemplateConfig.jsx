@@ -752,8 +752,8 @@ export default function ExtraTemplateConfig() {
                   </div>
                   <div className="text-right text-[10px] font-mono text-slate-600 space-y-1 shrink-0 ml-4">
                     <p className="flex items-center justify-end gap-1">
-                      <span>Application No:</span>
-                      {renderPreviewTemplateContent('{{ applicant_id }}')}
+                      <span>Reference No:</span>
+                      <span className="text-slate-400 italic">(Optional / Blank)</span>
                     </p>
                     <p className="flex items-center justify-end gap-1">
                       <span>Date:</span>
