@@ -39,25 +39,25 @@ export default function VisaFormPage() {
 
   const { data: countries } = useQuery({
     queryKey: ['config-countries'],
-    queryFn: () => api.get('/countries/').then(r => r.data.results ?? r.data),
+    queryFn: () => api.get('/countries/', { params: { page_size: 200 } }).then(r => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 10,
   });
 
   const { data: categories } = useQuery({
     queryKey: ['config-visa-categories'],
-    queryFn: () => api.get('/visa-categories/').then(r => r.data.results ?? r.data),
+    queryFn: () => api.get('/visa-categories/', { params: { page_size: 200 } }).then(r => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 10,
   });
 
   const { data: agencyServices } = useQuery({
     queryKey: ['config-services'],
-    queryFn: () => api.get('/agency-services/').then(r => r.data.results ?? r.data),
+    queryFn: () => api.get('/agency-services/', { params: { page_size: 200 } }).then(r => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 10,
   });
 
   const { data: allJobs } = useQuery({
     queryKey: ['config-jobs'],
-    queryFn: () => api.get('/jobs/').then(r => r.data.results ?? r.data),
+    queryFn: () => api.get('/jobs/', { params: { page_size: 200 } }).then(r => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 10,
   });
 

@@ -31,6 +31,7 @@ import RefundPrintView from './RefundPrintView';
 import FormModal from '../../components/common/FormModal';
 import CrudTable from '../../components/common/CrudTable';
 import toast from 'react-hot-toast';
+import { parseApiError } from '../../utils/errorParser';
 
 export default function ApplicantDetailPage() {
   const { id } = useParams();
@@ -228,11 +229,7 @@ export default function ApplicantDetailPage() {
       setPaymentError(null);
     },
     onError: (err) => {
-      const data = err?.response?.data;
-      const msg = data
-        ? Object.entries(data).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join(' | ')
-        : err.message || 'Unknown error';
-      setPaymentError(msg);
+      setPaymentError(parseApiError(err));
     },
   });
 
@@ -250,11 +247,7 @@ export default function ApplicantDetailPage() {
       toast.success('Payment updated successfully!');
     },
     onError: (err) => {
-      const data = err?.response?.data;
-      const msg = data
-        ? Object.entries(data).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join(' | ')
-        : err.message || 'Unknown error';
-      setPaymentError(msg);
+      setPaymentError(parseApiError(err));
     },
   });
 
@@ -1022,10 +1015,10 @@ export default function ApplicantDetailPage() {
 
             {/* Payments Table */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto w-full">
-              <table className="w-full text-sm whitespace-nowrap min-w-[600px]">
+              <table className="w-full text-sm whitespace-nowrap min-w-[700px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100">
-                    {['Receipt No.', 'Amount', 'Date', 'Method', 'Remarks', 'Action'].map((h) => (
+                    {['Receipt No.', 'Installment', 'Received Amount', 'Euro Equivalent (€)', 'Date', 'Method', 'Remarks', 'Action'].map((h) => (
                       <th key={h} className="px-5 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
@@ -1034,7 +1027,17 @@ export default function ApplicantDetailPage() {
                   {applicant.payments?.map((payment) => (
                     <tr key={payment.id} className="hover:bg-slate-50/50">
                       <td className="px-5 py-4 font-mono text-xs font-bold text-slate-500">{payment.receipt_number || `REC-${payment.id}`}</td>
-                      <td className="px-5 py-4 font-semibold text-slate-800">{getCurrencySymbol(payment.currency)}{Number(payment.amount).toLocaleString()}</td>
+                      <td className="px-5 py-4">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 capitalize">
+                          {payment.installment_type ? payment.installment_type.toLowerCase() : 'installment'}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 font-semibold text-slate-800">
+                        {getCurrencySymbol(payment.currency)}{Number(payment.amount).toLocaleString()} <span className="text-xs text-slate-400 font-mono font-normal">({payment.currency || 'EUR'})</span>
+                      </td>
+                      <td className="px-5 py-4 font-mono font-bold text-emerald-700">
+                        €{Number(payment.euro_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
                       <td className="px-5 py-4 text-slate-500">{payment.payment_date || '—'}</td>
                       <td className="px-5 py-4 capitalize text-slate-600">{payment.payment_method || '—'}</td>
                       <td className="px-5 py-4 text-slate-500">{payment.remarks || '—'}</td>
@@ -1077,10 +1080,21 @@ export default function ApplicantDetailPage() {
                   ))}
                   {(!applicant.payments || applicant.payments.length === 0) && (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-slate-400">No payment logs found</td>
+                      <td colSpan={8} className="py-12 text-center text-slate-400">No payment logs found</td>
                     </tr>
                   )}
                 </tbody>
+                {applicant.payments && applicant.payments.length > 0 && (
+                  <tfoot className="bg-slate-50 border-t-2 border-slate-200">
+                    <tr>
+                      <td colSpan={3} className="px-5 py-3.5 text-right font-bold text-slate-600 uppercase text-xs">Total Euro Amount Received:</td>
+                      <td className="px-5 py-3.5 font-mono font-extrabold text-emerald-800 text-sm">
+                        €{applicant.payments.reduce((acc, p) => acc + (Number(p.euro_amount) || 0), 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td colSpan={4}></td>
+                    </tr>
+                  </tfoot>
+                )}
               </table>
             </div>
 
@@ -1525,10 +1539,10 @@ export default function ApplicantDetailPage() {
 
             {/* Refunds Table */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-x-auto w-full">
-              <table className="w-full text-sm whitespace-nowrap min-w-[600px]">
+              <table className="w-full text-sm whitespace-nowrap min-w-[700px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-100">
-                    {['Refund Receipt No.', 'Amount', 'Status', 'Method', 'Remarks', 'Actions'].map((h) => (
+                    {['Refund Receipt No.', 'Refund Amount', 'Euro Equivalent (€)', 'Status', 'Method', 'Remarks', 'Actions'].map((h) => (
                       <th key={h} className="px-5 py-3.5 text-left text-xs font-bold text-slate-400 uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
@@ -1537,7 +1551,12 @@ export default function ApplicantDetailPage() {
                   {applicant.refunds?.map((refund) => (
                     <tr key={refund.id} className="hover:bg-slate-50/50">
                       <td className="px-5 py-4 font-mono text-xs font-bold text-slate-500">{refund.receipt_number || `REF-${refund.id}`}</td>
-                      <td className="px-5 py-4 font-semibold text-slate-800">{getCurrencySymbol(refund.currency || applicant.payments?.[0]?.currency || 'BDT')}{Number(refund.refund_amount).toLocaleString()}</td>
+                      <td className="px-5 py-4 font-semibold text-slate-800">
+                        {getCurrencySymbol(refund.currency || 'EUR')}{Number(refund.refund_amount).toLocaleString()} <span className="text-xs text-slate-400 font-mono font-normal">({refund.currency || 'EUR'})</span>
+                      </td>
+                      <td className="px-5 py-4 font-mono font-bold text-emerald-700">
+                        €{Number(refund.euro_amount || refund.refund_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
                       <td className="px-5 py-4">
                         <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700 capitalize">
                           {refund.refund_status}
@@ -2140,11 +2159,29 @@ export default function ApplicantDetailPage() {
                         className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
                       >
                         <option value="">(Keep current log status)</option>
-                        {statusesList?.map((st) => (
-                          <option key={st.id} value={st.id}>
-                            {st.name}
-                          </option>
-                        ))}
+                        {statusesList?.map((st) => {
+                          const name = (st.name || '').toLowerCase();
+                          const slug = (st.slug || '').toLowerCase();
+                          let isLocked = false;
+                          let lockReason = '';
+
+                          if ((name.includes('1st payment') || slug.includes('1st-payment')) && !hasInitial) {
+                            isLocked = true;
+                            lockReason = 'Requires 1st Payment';
+                          } else if ((name.includes('2nd payment') || slug.includes('2nd-payment')) && !hasSecond) {
+                            isLocked = true;
+                            lockReason = 'Requires 2nd Payment';
+                          } else if ((name.includes('payment confirmed') || slug.includes('payment-confirmed')) && !isPaymentComplete) {
+                            isLocked = true;
+                            lockReason = 'Requires All Payments';
+                          }
+
+                          return (
+                            <option key={st.id} value={st.id} disabled={isLocked} className={isLocked ? 'text-slate-400 bg-slate-50' : ''}>
+                              {st.name}{lockReason ? ` (${lockReason})` : ''}
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
 

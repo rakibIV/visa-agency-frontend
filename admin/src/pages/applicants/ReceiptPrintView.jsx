@@ -100,6 +100,19 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo, curr
     (l) => l.title?.toLowerCase().includes('side') || l.serial_number === 3
   );
 
+  // Find "Up & Down" titled logo from DB variations (used as watermark in Main Agreement & Terms and Conditions)
+  const upDownLogoObj = allLogos.find((l) => {
+    if (!l?.title) return false;
+    const t = l.title.toLowerCase().trim();
+    return (
+      t.includes('up & down') ||
+      t.includes('up and down') ||
+      t.includes('up&down') ||
+      (t.includes('up') && t.includes('down')) ||
+      l.serial_number === 2
+    );
+  });
+
   const getLogoUrl = (img) => {
     if (!img) return null;
     if (typeof img === 'string') {
@@ -109,6 +122,7 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo, curr
   };
 
   const headerLogoUrl = getLogoUrl(sideBySideLogoObj?.image) || getLogoUrl(companyInfo?.company_logo) || companyLogo;
+  const watermarkLogoUrl = getLogoUrl(upDownLogoObj?.image) || getLogoUrl(companyInfo?.company_logo) || companyLogo;
 
   // Construct Plain Text for QR Code Scanning
   const qrPlainText = [
@@ -163,9 +177,9 @@ export default function ReceiptPrintView({ applicant, payment, companyInfo, curr
           />
 
           {/* Center Company Logo PNG Watermark (Layered at z-30 with mix-blend-multiply so no box can obscure it) */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 flex items-center justify-center opacity-20 mix-blend-multiply pointer-events-none z-30">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 flex items-center justify-center opacity-15 mix-blend-multiply pointer-events-none z-30">
             <img
-              src={companyInfo?.company_logo || companyLogo}
+              src={watermarkLogoUrl}
               alt="Watermark Logo"
               className="w-full h-full object-contain"
             />

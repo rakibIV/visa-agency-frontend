@@ -34,7 +34,7 @@ export default function SendEmailPage() {
   // Fetch Lawyers
   const { data: lawyers = [] } = useQuery({
     queryKey: ['lawyers-list'],
-    queryFn: () => api.get('/lawyers/').then(res => res.data.results || res.data || []),
+    queryFn: () => api.get('/lawyers/', { params: { page_size: 100 } }).then(res => res.data.results || res.data || []),
   });
 
   // Fetch ALL Templates (page_size: 500 to ensure every saved template is loaded)

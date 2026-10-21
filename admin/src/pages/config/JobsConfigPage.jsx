@@ -23,7 +23,7 @@ export default function JobsConfigPage() {
   // Fetch all visas to populate selector
   const { data: visas } = useQuery({
     queryKey: ['config-visas-dropdown'],
-    queryFn: () => api.get('/visas/').then((r) => {
+    queryFn: () => api.get('/visas/', { params: { page_size: 100 } }).then((r) => {
       const results = r.data.results ?? r.data;
       if (results?.length > 0 && !selectedVisaId) setSelectedVisaId(results[0].id);
       return results;

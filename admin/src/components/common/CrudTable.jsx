@@ -37,9 +37,8 @@ export default function CrudTable({
 
   const data = rawData?.results ?? (Array.isArray(rawData) ? rawData : []);
   const count = rawData?.count;
-  const hasNextOrPrev = !!(rawData?.next || rawData?.previous);
-  const pageSize = (data.length > 0 && rawData?.next) ? data.length : 10;
-  const totalPages = !hasNextOrPrev ? 1 : (count ? Math.ceil(count / pageSize) : 1);
+  const pageSize = 20;
+  const totalPages = typeof count === 'number' ? Math.max(1, Math.ceil(count / pageSize)) : 1;
 
   const mutationCreate = useMutation({
     mutationFn: ({ data, config }) => api.post(endpoint, data, config),

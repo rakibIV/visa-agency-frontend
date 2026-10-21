@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
@@ -112,7 +112,7 @@ export default function ApplicantFormPage() {
 
   const { data: statuses } = useQuery({
     queryKey: ['application-statuses', 'v2'],
-    queryFn: () => api.get('/application-statuses/').then(r => r.data.results ?? r.data),
+    queryFn: () => api.get('/application-statuses/', { params: { page_size: 100 } }).then(r => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 10,
   });
 
@@ -126,13 +126,13 @@ export default function ApplicantFormPage() {
 
   const { data: visas } = useQuery({
     queryKey: ['form-visas'],
-    queryFn: () => api.get('/visas/').then(r => r.data.results ?? r.data),
+    queryFn: () => api.get('/visas/', { params: { page_size: 100 } }).then(r => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 10,
   });
 
-  const { data: jobs } = useQuery({
+  const { data: jobs, isLoading: isJobsLoading } = useQuery({
     queryKey: ['form-jobs', selectedVisaId],
-    queryFn: () => api.get(`/visas/${selectedVisaId}/jobs/`).then(r => r.data.results ?? r.data),
+    queryFn: () => api.get(`/visas/${selectedVisaId}/jobs/`, { params: { page_size: 100 } }).then(r => r.data.results ?? r.data),
     enabled: !!selectedVisaId,
     staleTime: 1000 * 60 * 5,
   });
@@ -152,13 +152,13 @@ export default function ApplicantFormPage() {
 
   const { data: staffs } = useQuery({
     queryKey: ['form-staffs'],
-    queryFn: () => api.get('/staffs/').then(r => r.data.results ?? r.data),
+    queryFn: () => api.get('/staffs/', { params: { page_size: 100 } }).then(r => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 10,
   });
 
   const { data: slots } = useQuery({
     queryKey: ['form-slots', selectedStaffId],
-    queryFn: () => api.get(`/staffs/${selectedStaffId}/monthly-slots/`).then(r => r.data.results ?? r.data),
+    queryFn: () => api.get(`/staffs/${selectedStaffId}/monthly-slots/`, { params: { page_size: 100 } }).then(r => r.data.results ?? r.data),
     enabled: !!selectedStaffId,
     staleTime: 1000 * 60 * 5,
   });
@@ -176,7 +176,7 @@ export default function ApplicantFormPage() {
 
   const { data: lawyers } = useQuery({
     queryKey: ['form-lawyers'],
-    queryFn: () => api.get('/lawyers/').then(r => r.data.results ?? r.data),
+    queryFn: () => api.get('/lawyers/', { params: { page_size: 100 } }).then(r => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 10,
   });
 
@@ -502,20 +502,54 @@ export default function ApplicantFormPage() {
                 <label className={labelCls}>Target Visa <span className="text-red-500">*</span></label>
                 <select value={selectedVisaId} onChange={e => setSelectedVisaId(e.target.value)} className={`${inputCls} bg-white`} required>
                   <option value="">— Select Visa —</option>
-                  {visas?.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                  {visas?.map(v => (
+                    <option key={v.id} value={v.id}>
+                      {v.country?.name ? `${v.country.name} - ` : ''}{v.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
                 <label className={labelCls}>Target Job (Primary) <span className="text-red-500">*</span></label>
-                <select value={selectedJobId} onChange={e => setSelectedJobId(e.target.value)} disabled={!selectedVisaId} className={`${inputCls} bg-white disabled:opacity-50`} required>
-                  <option value="">— Select Job —</option>
+                <select 
+                  value={selectedJobId} 
+                  onChange={e => setSelectedJobId(e.target.value)} 
+                  disabled={!selectedVisaId || isJobsLoading} 
+                  className={`${inputCls} bg-white disabled:opacity-50`} 
+                  required
+                >
+                  <option value="">
+                    {!selectedVisaId 
+                      ? '— Select Visa First —' 
+                      : isJobsLoading 
+                      ? 'Loading jobs...' 
+                      : jobs?.length === 0 
+                      ? '— No jobs configured for this visa —' 
+                      : '— Select Job —'}
+                  </option>
                   {jobs?.map(j => <option key={j.id} value={j.id}>{j.title}</option>)}
                 </select>
+                {selectedVisaId && !isJobsLoading && jobs?.length === 0 && (
+                  <p className="text-xs text-amber-600 mt-1 font-medium">
+                    ⚠️ No jobs configured for this visa. Configure in <a href="/config/jobs" target="_blank" rel="noreferrer" className="underline font-bold hover:text-amber-800">Visa Jobs</a>.
+                  </p>
+                )}
               </div>
               <div>
                 <label className={labelCls}>Target Job (Secondary)</label>
-                <select value={selectedSecondaryJobId} onChange={e => setSelectedSecondaryJobId(e.target.value)} disabled={!selectedVisaId} className={`${inputCls} bg-white disabled:opacity-50`}>
-                  <option value="">— Optional —</option>
+                <select 
+                  value={selectedSecondaryJobId} 
+                  onChange={e => setSelectedSecondaryJobId(e.target.value)} 
+                  disabled={!selectedVisaId || isJobsLoading || jobs?.length === 0} 
+                  className={`${inputCls} bg-white disabled:opacity-50`}
+                >
+                  <option value="">
+                    {!selectedVisaId 
+                      ? '— Select Visa First —' 
+                      : jobs?.length === 0 
+                      ? '— No jobs available —' 
+                      : '— Optional —'}
+                  </option>
                   {jobs?.filter(j => String(j.id) !== String(selectedJobId)).map(j => (
                     <option key={j.id} value={j.id}>{j.title}</option>
                   ))}
@@ -542,7 +576,29 @@ export default function ApplicantFormPage() {
                 {isEdit && applicant?.payments?.length > 0 ? (
                   <select value={selectedStatusId} onChange={e => setSelectedStatusId(e.target.value)} className={`${inputCls} bg-white`}>
                     <option value="">— Select Status —</option>
-                    {statuses?.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                    {statuses?.map(s => {
+                      const name = (s.name || '').toLowerCase();
+                      const slug = (s.slug || '').toLowerCase();
+                      let isLocked = false;
+                      let lockReason = '';
+
+                      if ((name.includes('1st payment') || slug.includes('1st-payment')) && !hasInitial) {
+                        isLocked = true;
+                        lockReason = 'Requires 1st Payment';
+                      } else if ((name.includes('2nd payment') || slug.includes('2nd-payment')) && !hasSecond) {
+                        isLocked = true;
+                        lockReason = 'Requires 2nd Payment';
+                      } else if ((name.includes('payment confirmed') || slug.includes('payment-confirmed')) && !isPaymentComplete) {
+                        isLocked = true;
+                        lockReason = 'Requires All Payments';
+                      }
+
+                      return (
+                        <option key={s.id} value={s.id} disabled={isLocked} className={isLocked ? 'text-slate-400 bg-slate-50' : ''}>
+                          {s.name}{lockReason ? ` (${lockReason})` : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 ) : (
                   <div className="px-3 py-2 border border-slate-100 rounded-xl text-sm bg-slate-50 text-slate-600 font-semibold">

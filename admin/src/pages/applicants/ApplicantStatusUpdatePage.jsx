@@ -89,8 +89,68 @@ export default function ApplicantStatusUpdatePage() {
     onError: (err) => toast.error(parseApiError(err)),
   });
 
+  const isPaymentStatus = (status) => {
+    if (!status) return null;
+    const name = (status.name || '').toLowerCase();
+    const slug = (status.slug || '').toLowerCase();
+    if (name.includes('1st payment') || slug.includes('1st-payment') || name.includes('first payment')) {
+      return { type: 'INITIAL', label: '1st Payment', lockReason: 'Requires 1st Payment' };
+    }
+    if (name.includes('2nd payment') || slug.includes('2nd-payment') || name.includes('second payment')) {
+      return { type: 'SECOND', label: '2nd Payment', lockReason: 'Requires 2nd Payment' };
+    }
+    if (name.includes('payment confirmed') || slug.includes('payment-confirmed')) {
+      return { type: 'CONFIRMED', label: 'Payment Confirmed', lockReason: 'Requires All Payments' };
+    }
+    return null;
+  };
+
   const handleStatusChange = (applicantId, newStatusId) => {
     if (!newStatusId) return;
+
+    const targetStatus = statuses?.find(s => String(s.id) === String(newStatusId));
+    const applicant = applicants.find(a => String(a.id) === String(applicantId));
+
+    if (targetStatus && applicant) {
+      const pInfo = isPaymentStatus(targetStatus);
+      if (pInfo) {
+        const hasInitial = Boolean(applicant.has_initial_payment || (applicant.paid_installments || []).includes('INITIAL'));
+        const hasSecond = Boolean(applicant.has_second_payment || (applicant.paid_installments || []).includes('SECOND'));
+        const isConfirmed = Boolean(applicant.is_payment_confirmed);
+
+        if (pInfo.type === 'INITIAL' && !hasInitial) {
+          toast.error(
+            `⚠️ Cannot directly update to "${targetStatus.name}" without making payment! Please record the 1st payment in the applicant's profile first.`,
+            { duration: 6000 }
+          );
+          return;
+        }
+        if (pInfo.type === 'SECOND' && !hasSecond) {
+          toast.error(
+            `⚠️ Cannot directly update to "${targetStatus.name}" without making payment! Please record the 2nd installment payment first.`,
+            { duration: 6000 }
+          );
+          return;
+        }
+        if (pInfo.type === 'CONFIRMED' && !isConfirmed) {
+          toast.error(
+            `⚠️ Cannot directly update to "${targetStatus.name}" without making payment! Please record all required installment payments first.`,
+            { duration: 6000 }
+          );
+          return;
+        }
+      }
+
+      const hasAnyPayment = (applicant.paid_installments || []).length > 0 || applicant.has_initial_payment;
+      if (!hasAnyPayment && !targetStatus.name?.toLowerCase().includes('disable') && !targetStatus.name?.toLowerCase().includes('reject')) {
+        toast.error(
+          `⚠️ Applicant has no recorded payments. Please make a payment before updating status.`,
+          { duration: 6000 }
+        );
+        return;
+      }
+    }
+
     updateStatusMutation.mutate({ id: applicantId, statusId: newStatusId });
   };
 
@@ -106,19 +166,38 @@ export default function ApplicantStatusUpdatePage() {
 
     const currentSerial = currIdx >= 0 ? currIdx + 1 : null;
 
+    const hasInitial = Boolean(applicant.has_initial_payment || (applicant.paid_installments || []).includes('INITIAL'));
+    const hasSecond = Boolean(applicant.has_second_payment || (applicant.paid_installments || []).includes('SECOND'));
+    const isConfirmed = Boolean(applicant.is_payment_confirmed);
+
     const options = sorted.map((s, idx) => {
       const isCurrent = String(s.id) === String(currentId) || s.name === currentName;
       const isForward = currIdx >= 0 && idx > currIdx;
       const isRejection = s.name?.toLowerCase().includes('reject') || s.slug?.toLowerCase().includes('reject');
 
-      // Admin can move forward to any step ahead, stay at current, or select Rejection
-      const isAllowed = currIdx === -1 || isCurrent || isForward || isRejection;
+      let isAllowed = currIdx === -1 || isCurrent || isForward || isRejection;
+      let lockReason = '';
+
+      const pInfo = isPaymentStatus(s);
+      if (pInfo && !isCurrent) {
+        if (pInfo.type === 'INITIAL' && !hasInitial) {
+          isAllowed = false;
+          lockReason = pInfo.lockReason;
+        } else if (pInfo.type === 'SECOND' && !hasSecond) {
+          isAllowed = false;
+          lockReason = pInfo.lockReason;
+        } else if (pInfo.type === 'CONFIRMED' && !isConfirmed) {
+          isAllowed = false;
+          lockReason = pInfo.lockReason;
+        }
+      }
 
       return {
         ...s,
         serialNumber: idx + 1,
         isCurrent,
         isAllowed,
+        lockReason,
       };
     });
 
@@ -251,7 +330,7 @@ export default function ApplicantStatusUpdatePage() {
                               <select
                                 value={applicant.status || ''}
                                 onChange={(e) => handleStatusChange(applicant.id, e.target.value)}
-                                className="w-full max-w-[210px] border border-slate-200 rounded-lg py-1.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                className="w-full max-w-[240px] border border-slate-200 rounded-lg py-1.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                               >
                                 <option value="" disabled>Select Status...</option>
                                 {statusOptions.map(s => (
@@ -261,10 +340,20 @@ export default function ApplicantStatusUpdatePage() {
                                     disabled={!s.isAllowed}
                                     className={!s.isAllowed ? 'text-slate-400 bg-slate-50' : 'text-slate-800 font-semibold'}
                                   >
-                                    {s.name}{s.isCurrent ? ' (Current)' : !s.isAllowed ? ' (Locked)' : ''}
+                                    {s.name}{s.isCurrent ? ' (Current)' : s.lockReason ? ` (${s.lockReason})` : !s.isAllowed ? ' (Locked)' : ''}
                                   </option>
                                 ))}
                               </select>
+
+                              {(!applicant.has_initial_payment || !applicant.is_payment_confirmed) && (
+                                <Link
+                                  to={`/applicants/${applicant.id}`}
+                                  className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold transition-all shrink-0 flex items-center gap-1 shadow-2xs"
+                                  title="Record payment for applicant"
+                                >
+                                  + Pay
+                                </Link>
+                              )}
 
                               {applicant.status_name?.toLowerCase().includes('reject') && (
                                 <button

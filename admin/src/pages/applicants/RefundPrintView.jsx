@@ -1,4 +1,6 @@
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import api from '../../api/client';
 import topIllustration from '../../assets/top-illustration.png';
 import companyLogo from '../../assets/logo.png';
 import { UserIcon, IdentificationIcon, DocumentTextIcon, BanknotesIcon, ShieldCheckIcon, MapPinIcon, EnvelopeIcon, GlobeAltIcon } from '@heroicons/react/24/outline';
@@ -59,14 +61,21 @@ export default function RefundPrintView({ applicant, refund, companyInfo, curren
     ? (dbExchangeRate > 1 ? dbExchangeRate.toFixed(2) : (1 / dbExchangeRate).toFixed(2))
     : (eurRatio > 0 ? (1 / eurRatio).toFixed(2) : '140.00');
 
-  const paidAmount = Number(refund.refund_amount) || 0;
-  const eurAmount = paidAmount * eurRatio;
+  const rawRefundAmount = Number(refund.refund_amount) || 0;
+  const refundCurr = refund.currency || 'EUR';
+  
+  // Calculate EUR amount and local paid currency amount
+  const eurAmount = Number(refund.euro_amount || (refundCurr === 'EUR' ? rawRefundAmount : rawRefundAmount * eurRatio)) || 0;
+  const paidAmount = refundCurr === 'EUR'
+    ? (paidCurrency === 'EUR' ? eurAmount : eurAmount * Number(exchangeRate))
+    : rawRefundAmount;
   
   const paidCurrencyName = getCurrencyName(paidCurrency);
   const amountInWordsPaid = numberToWords(Math.floor(paidAmount)) + ` ${paidCurrencyName} Only`;
 
-  const totalPaid = Number(refund.refundable_payment_total) || 0;
-  const nonRefundable = Number(refund.non_refundable_amount) || 0;
+  const rawTotal = Number(refund.refundable_payment_total) || 0;
+  const totalPaid = paidCurrency === 'EUR' ? rawTotal : rawTotal * Number(exchangeRate);
+  const nonRefundable = Math.max(0, totalPaid - paidAmount);
   
   const refundPercentage = refund.refund_percentage ? Number(refund.refund_percentage) : 80;
   const nonRefundPercentage = 100 - refundPercentage;
@@ -92,13 +101,42 @@ export default function RefundPrintView({ applicant, refund, companyInfo, curren
     </div>
   );
 
+  const { data: companyLogosList } = useQuery({
+    queryKey: ['company-logos-list'],
+    queryFn: () => api.get('/company-logos/').then((r) => r.data.results ?? r.data).catch(() => []),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const allLogos = Array.isArray(companyInfo?.logos) && companyInfo.logos.length ? companyInfo.logos : (companyLogosList || []);
+  const upDownLogoObj = allLogos.find((l) => {
+    if (!l?.title) return false;
+    const t = l.title.toLowerCase().trim();
+    return (
+      t.includes('up & down') ||
+      t.includes('up and down') ||
+      t.includes('up&down') ||
+      (t.includes('up') && t.includes('down')) ||
+      l.serial_number === 2
+    );
+  });
+
+  const getLogoUrl = (img) => {
+    if (!img) return null;
+    if (typeof img === 'string') {
+      return img.startsWith('http') ? img : `https://res.cloudinary.com/prfvuhln/${img}`;
+    }
+    return null;
+  };
+
+  const watermarkLogoUrl = getLogoUrl(upDownLogoObj?.image) || getLogoUrl(companyInfo?.company_logo) || companyLogo;
+
   const PageContainer = ({ children }) => (
     <div className="w-full overflow-x-auto bg-slate-100 print:bg-transparent print:overflow-visible flex sm:justify-center">
       <div className="print-page w-full min-w-[8.5in] max-w-[8.5in] print:max-w-full print:min-w-full print:w-full min-h-[11in] print:min-h-[100vh] mx-auto bg-white mb-8 shadow-xl print:shadow-none print:m-0 flex flex-col pt-6 pb-14 px-8 box-border relative shrink-0">
         {/* Center Company Logo PNG Watermark */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] flex items-center justify-center opacity-15 mix-blend-multiply pointer-events-none z-30">
           <img
-            src={companyInfo?.company_logo || companyLogo}
+            src={watermarkLogoUrl}
             alt="Watermark Logo"
             className="w-full h-full object-contain"
           />

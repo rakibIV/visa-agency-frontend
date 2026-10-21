@@ -119,23 +119,23 @@ export default function FakeLiveResultsPage() {
 
   const { data: visas } = useQuery({
     queryKey: ['visas-list'],
-    queryFn: () => api.get('/visas/').then(r => r.data.results ?? r.data)
+    queryFn: () => api.get('/visas/', { params: { page_size: 100 } }).then(r => r.data.results ?? r.data)
   });
 
   const { data: jobs, isLoading: isJobsLoading } = useQuery({
     queryKey: ['jobs-for-visa', selectedVisaId],
-    queryFn: () => api.get(`/visas/${selectedVisaId}/jobs/`).then(r => r.data.results ?? r.data),
+    queryFn: () => api.get(`/visas/${selectedVisaId}/jobs/`, { params: { page_size: 100 } }).then(r => r.data.results ?? r.data),
     enabled: !!selectedVisaId,
   });
 
   const { data: countries } = useQuery({
     queryKey: ['countries-list'],
-    queryFn: () => api.get('/countries/').then(r => r.data.results ?? r.data)
+    queryFn: () => api.get('/countries/', { params: { page_size: 200 } }).then(r => r.data.results ?? r.data)
   });
 
   const { data: statuses } = useQuery({
     queryKey: ['statuses-list'],
-    queryFn: () => api.get('/application-statuses/').then(r => r.data.results ?? r.data)
+    queryFn: () => api.get('/application-statuses/', { params: { page_size: 100 } }).then(r => r.data.results ?? r.data)
   });
 
   const visaOptions = visas?.map(v => ({ value: v.id, label: v.name })) || [];

@@ -52,20 +52,20 @@ export default function StaffFormPage() {
 
   const { data: designations } = useQuery({
     queryKey: ['config-designations'],
-    queryFn: () => api.get('/designations/').then(r => r.data.results ?? r.data),
+    queryFn: () => api.get('/designations/', { params: { page_size: 100 } }).then(r => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 10,
   });
 
   const { data: offices } = useQuery({
     queryKey: ['config-offices'],
-    queryFn: () => api.get('/branches/').then(r => r.data.results ?? r.data),
+    queryFn: () => api.get('/branches/', { params: { page_size: 100 } }).then(r => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 10,
   });
 
 
   const { data: allStaffs } = useQuery({
     queryKey: ['all-staffs'],
-    queryFn: () => api.get('/staffs/').then(r => r.data.results ?? r.data),
+    queryFn: () => api.get('/staffs/', { params: { page_size: 100 } }).then(r => r.data.results ?? r.data),
     staleTime: 1000 * 60 * 10,
   });
 
